@@ -318,14 +318,13 @@ function ElephantEdgeBatchDetail() {
         {activeStep === 'decision-maker' && (
           <div className="step-panel">
             <p className="hint">
-              Searches for the primary decision-maker at each company: CEO &rarr; Founder &rarr; Co-Founder waterfall.
-              Calls real Deepline search_contact API and spends real credits per contact found.
+              Finds the primary decision-maker at each company (Founder/CEO, or a sales/GTM leader if no founder record exists).
             </p>
             <div className="inline-form">
               <button
                 type="button"
                 disabled={running || (batch.companies || []).length === 0}
-                onClick={() => runPhase('decision-maker', 'Decision Maker', 'Run decision-maker search for all companies in this batch?\n\nThis spends real Deepline credits.\n\nProceed?')}
+                onClick={() => runPhase('decision-maker', 'Decision Maker', 'Run decision-maker search for all companies in this batch?')}
               >
                 {running ? 'Running...' : 'Execute'}
               </button>
@@ -338,13 +337,13 @@ function ElephantEdgeBatchDetail() {
           <div className="step-panel">
             <p className="hint">
               Pushes every contact found so far to the HeyReach campaign configured in Settings.
-              Sends REAL LinkedIn connection requests. This cannot be undone.
+              Sends a LinkedIn connection request to each contact. This cannot be undone.
             </p>
             <div className="inline-form">
               <button
                 type="button"
                 disabled={running}
-                onClick={() => runPhase('outreach', 'Push to HeyReach', 'Push all found contacts in this batch to HeyReach?\n\nThis sends REAL LinkedIn connection requests and cannot be undone.\n\nProceed?')}
+                onClick={() => runPhase('outreach', 'Push to HeyReach', 'Push all found contacts in this batch to HeyReach?\n\nThis sends LinkedIn connection requests and cannot be undone.\n\nProceed?')}
               >
                 {running ? 'Pushing...' : 'Execute'}
               </button>
