@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import client from '../api/client'
 
 export default function BatchList() {
@@ -7,6 +7,7 @@ export default function BatchList() {
   const [name, setName] = useState('')
   const [error, setError] = useState(null)
   const navigate = useNavigate()
+  const { tenantSlug } = useParams()
 
   const load = () => {
     client.get('/batches')
@@ -22,7 +23,7 @@ export default function BatchList() {
     try {
       const res = await client.post('/batches', null, { params: { name } })
       setName('')
-      navigate(`/batches/${res.data.id}`)
+      navigate(`/${tenantSlug}/batches/${res.data.id}`)
     } catch (err) {
       setError(err.message)
     }
@@ -63,7 +64,7 @@ export default function BatchList() {
           <tbody>
             {(batches || []).map(b => (
               <tr key={b.id}>
-                <td><Link to={`/batches/${b.id}`}>{b.name}</Link></td>
+                <td><Link to={`/${tenantSlug}/batches/${b.id}`}>{b.name}</Link></td>
                 <td>{b.current_phase}</td>
                 <td>{b.status}</td>
                 <td>{b.company_count}</td>

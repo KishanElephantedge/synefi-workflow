@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import client from '../api/client'
 
 export default function Autonomous() {
+  const { tenantSlug } = useParams()
   const [status, setStatus] = useState(null)
   const [runs, setRuns] = useState([])
   const [report, setReport] = useState(null)
@@ -161,7 +162,7 @@ export default function Autonomous() {
             {(runs || []).map(r => (
               <tr key={r.id}>
                 <td>{new Date(r.run_date).toLocaleString()}</td>
-                <td>{r.batch_id ? <Link to={`/batches/${r.batch_id}`}>#{r.batch_id}</Link> : '-'}</td>
+                <td>{r.batch_id ? <Link to={`/${tenantSlug}/batches/${r.batch_id}`}>#{r.batch_id}</Link> : '-'}</td>
                 <td>{r.status}</td>
                 <td>{r.companies_discovered}</td>
                 <td>{r.companies_selected}</td>

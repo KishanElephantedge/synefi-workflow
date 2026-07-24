@@ -33,7 +33,7 @@ const PHASES = [
 ]
 
 export default function BatchDetail() {
-  const { batchId } = useParams()
+  const { batchId, tenantSlug } = useParams()
   const [batch, setBatch] = useState(null)
   const [error, setError] = useState(null)
   const [runningPhase, setRunningPhase] = useState(null)
@@ -83,7 +83,7 @@ export default function BatchDetail() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/" className="breadcrumb">&larr; Back to batches</Link>
+        <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to batches</Link>
         <h1>{batch.name}</h1>
         <p className="meta">Phase: <strong>{batch.current_phase}</strong> &middot; Status: {batch.status}</p>
       </div>
