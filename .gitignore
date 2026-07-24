@@ -1,0 +1,26 @@
+.env
+venv/
+__pycache__/
+*.pyc
+node_modules/
+dashboard/dist/
+deepline/data/*/*.csv
+deepline/data/*/*.json
+.DS_Store
+
+# Prospect/contact data and enrichment working files -- real PII, never committed.
+*.csv
+list.txt
+manual.txt
+total.md
+current.md
+clean_names.json
+extracted_names.json
+
+# Session transcripts -- contain real API keys/secrets pasted into chat during the
+# session; must never be pushed to a remote repo.
+session-log-full.md
+session-transcript-raw.md
+otherai.txt
+abm_workshop_extracted.txt
+deepline/data/newlist.md
