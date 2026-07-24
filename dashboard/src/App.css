@@ -243,6 +243,77 @@ tbody tr:hover {
   overflow: hidden;
 }
 
+/* ---------- Step flow (Elephant Edge batch detail) ---------- */
+
+.step-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.step-flow-arrow {
+  color: var(--text-faint);
+  font-size: 1rem;
+  padding: 0 0.15rem;
+}
+
+.step-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.step-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.step-pill.done .step-pill-dot {
+  background: var(--success);
+}
+
+.step-pill.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.step-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.step-panel textarea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
 /* ---------- Forms ---------- */
 
 .inline-form {
