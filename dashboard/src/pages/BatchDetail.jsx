@@ -73,7 +73,7 @@ export default function BatchDetail() {
   if (!batch) return <div className="page"><p className="hint">Loading...</p></div>
 
   const tierCounts = { hot: 0, warm: 0, cool: 0, excluded: 0 }
-  batch.companies.forEach(c => {
+  ;(batch.companies || []).forEach(c => {
     if (c.tier) tierCounts[c.tier] = (tierCounts[c.tier] || 0) + 1
   })
   const chartData = Object.entries(tierCounts)
@@ -141,7 +141,7 @@ export default function BatchDetail() {
         </div>
       )}
 
-      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({batch.companies.length})</h2>
+      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({(batch.companies || []).length})</h2>
       <div className="table-wrap">
         <table>
           <thead>
@@ -155,7 +155,7 @@ export default function BatchDetail() {
             </tr>
           </thead>
           <tbody>
-            {batch.companies.map(c => (
+            {(batch.companies || []).map(c => (
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.domain}</td>
@@ -167,7 +167,7 @@ export default function BatchDetail() {
                 <td>{c.contact_count}</td>
               </tr>
             ))}
-            {batch.companies.length === 0 && (
+            {(batch.companies || []).length === 0 && (
               <tr><td colSpan={6} className="empty-state">No companies yet - run Phase 1.</td></tr>
             )}
           </tbody>

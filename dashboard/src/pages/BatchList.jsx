@@ -61,7 +61,7 @@ export default function BatchList() {
             </tr>
           </thead>
           <tbody>
-            {batches.map(b => (
+            {(batches || []).map(b => (
               <tr key={b.id}>
                 <td><Link to={`/batches/${b.id}`}>{b.name}</Link></td>
                 <td>{b.current_phase}</td>

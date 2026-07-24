@@ -158,7 +158,7 @@ export default function Autonomous() {
             </tr>
           </thead>
           <tbody>
-            {runs.map(r => (
+            {(runs || []).map(r => (
               <tr key={r.id}>
                 <td>{new Date(r.run_date).toLocaleString()}</td>
                 <td>{r.batch_id ? <Link to={`/batches/${r.batch_id}`}>#{r.batch_id}</Link> : '-'}</td>

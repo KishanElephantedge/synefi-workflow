@@ -242,7 +242,7 @@ export default function Settings() {
           <table>
             <thead><tr><th>Name</th><th>Set?</th><th>Updated</th><th></th></tr></thead>
             <tbody>
-              {credentials.map(c => (
+              {(credentials || []).map(c => (
                 <tr key={c.name}>
                   <td>{c.name}</td>
                   <td>{c.is_set ? 'Yes' : 'No'}</td>
@@ -267,7 +267,7 @@ export default function Settings() {
           <table>
             <thead><tr><th>Key</th><th>Value</th><th>Description</th></tr></thead>
             <tbody>
-              {parameters.map(p => (
+              {(parameters || []).map(p => (
                 <tr key={p.key}>
                   <td>{p.key}</td>
                   <td><code>{JSON.stringify(p.value)}</code></td>

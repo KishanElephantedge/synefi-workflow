@@ -20,8 +20,8 @@ function TenantSwitcher() {
         value={tenantId ?? ''}
         onChange={e => setTenantId(Number(e.target.value))}
       >
-        {tenants.length === 0 && <option value="">No tenants yet</option>}
-        {tenants.map(t => (
+        {(!tenants || tenants.length === 0) && <option value="">No tenants yet</option>}
+        {(tenants || []).map(t => (
           <option key={t.id} value={t.id}>{t.name}</option>
         ))}
       </select>
