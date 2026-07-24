@@ -254,13 +254,13 @@ function ElephantEdgeBatchDetail() {
     }
   }
 
-  const runPhase = async (key, label, confirmMessage) => {
+  const runPhase = async (key, label, confirmMessage, body) => {
     if (confirmMessage && !window.confirm(confirmMessage)) return
     setRunning(true)
     setError(null)
     setLastResult(null)
     try {
-      const res = await client.post(`/batches/${batchId}/phases/${key}`)
+      const res = await client.post(`/batches/${batchId}/phases/${key}`, body)
       setLastResult({ step: label, data: res.data })
       load()
     } catch (err) {
@@ -269,6 +269,13 @@ function ElephantEdgeBatchDetail() {
       setRunning(false)
     }
   }
+
+  const retryCompany = (companyName, companyId) => runPhase(
+    'decision-maker',
+    'Decision Maker',
+    `Retry decision-maker search for ${companyName}?`,
+    { retry_company_ids: [companyId] },
+  )
 
   return (
     <div className="page">
@@ -367,6 +374,7 @@ function ElephantEdgeBatchDetail() {
               <th>Name</th>
               <th>Domain</th>
               <th>Contacts</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -375,10 +383,17 @@ function ElephantEdgeBatchDetail() {
                 <td>{c.name}</td>
                 <td>{c.domain}</td>
                 <td>{c.contact_count}</td>
+                <td>
+                  {c.contact_count === 0 && c.decision_maker_searched && (
+                    <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
+                      Retry
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {(batch.companies || []).length === 0 && (
-              <tr><td colSpan={3} className="empty-state">No companies yet - use Import Companies above.</td></tr>
+              <tr><td colSpan={4} className="empty-state">No companies yet - use Import Companies above.</td></tr>
             )}
           </tbody>
         </table>
