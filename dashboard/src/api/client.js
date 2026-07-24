@@ -5,7 +5,10 @@ import axios from 'axios'
 // JS, never in localStorage) and, for tenant-scoped calls, resolves the tenant slug to the
 // correct backend server-side before proxying. The frontend never sees or stores a raw
 // backend URL.
-const GATEWAY_URL = 'http://localhost:9000'
+//
+// VITE_GATEWAY_URL is a build-time env var (set in Vercel's project settings for the
+// deployed gateway's real URL); falls back to localhost for local dev.
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:9000'
 
 const client = axios.create({
   baseURL: GATEWAY_URL,

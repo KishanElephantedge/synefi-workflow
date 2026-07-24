@@ -1,0 +1,10 @@
+dashboard/
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+*.csv
+*.md
+tests/
+deepline/

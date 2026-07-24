@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+# Node.js is needed only for the Deepline CLI (an npm package), which this backend calls
+# as a subprocess (see app/deepline_client.py). Everything else here is a normal Python app --
+# Docker is used specifically to bundle this one cross-runtime dependency, the standard way
+# to handle "Python app needs a CLI written in another runtime" in production.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    npm install -g deepline && \
+    apt-get purge -y curl && apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ ./app/
+
+# Deepline auth is env-var based (DEEPLINE_API_KEY, DEEPLINE_HOST_URL) -- set as regular
+# Render environment variables, not baked into this image or committed to the repo.
+
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
