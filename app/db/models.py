@@ -65,6 +65,33 @@ class Company(Base):
     location = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Elephant Edge only (Phases 3/5/8 of its own framework) -- unused by Synefi, kept here only
+    # because both backends share this physical table. See elephantedge-abm/app/db/models.py.
+    decision_maker_searched_at = Column(DateTime, nullable=True)
+    estimated_revenue_lower_usd = Column(Integer, nullable=True)
+    estimated_revenue_higher_usd = Column(Integer, nullable=True)
+    last_funding_round_type = Column(String, nullable=True)
+    last_funding_date = Column(DateTime, nullable=True)
+    crunchbase_total_investment_usd = Column(Float, nullable=True)
+    headcount_growth_12m_percent = Column(Float, nullable=True)
+    source = Column(String, nullable=True)
+    active_head_of_sales_posting = Column(Boolean, nullable=True)
+    buying_signal_checked_at = Column(DateTime, nullable=True)
+    # Elephant Edge only (Signal Framework v2) -- unused by Synefi, shared physical table.
+    sales_headcount_percent = Column(Float, nullable=True)
+    marketing_headcount_percent = Column(Float, nullable=True)
+    geography_tier = Column(String, nullable=True)
+    industry_classification = Column(String, nullable=True)
+    active_job_title = Column(String, nullable=True)
+    hiring_signal_role = Column(String, nullable=True)
+    hiring_signal_hire_type = Column(String, nullable=True)
+    hiring_signal_strength = Column(String, nullable=True)
+    hiring_signal_reasoning = Column(Text, nullable=True)
+    detected_tech_stack = Column(JSON, nullable=True)
+    has_outbound_tooling = Column(Boolean, nullable=True)
+    has_ai_sdr_tool = Column(Boolean, nullable=True)
+    tech_stack_checked_at = Column(DateTime, nullable=True)
+
     batch = relationship("Batch", back_populates="companies")
     signals = relationship("Signal", back_populates="company", cascade="all, delete-orphan")
     score = relationship("Score", back_populates="company", uselist=False, cascade="all, delete-orphan")
@@ -100,6 +127,8 @@ class Score(Base):
     compliance_complexity = Column(Float, default=0)
     greenfield_legacy = Column(Float, default=0)
     stacking_bonus = Column(Float, default=0)
+    # Elephant Edge only -- unused by Synefi, shared physical table.
+    decision_maker_match = Column(Float, default=0)
     total_score = Column(Float, default=0)
     tier = Column(String, default="excluded")  # hot | warm | cool | excluded
     passed_industry_gate = Column(Boolean, default=False)
@@ -123,6 +152,9 @@ class Contact(Base):
     thread_role = Column(String, nullable=True)  # champion | domain_compliance | economic_buyer
     matched_title_reasoning = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Elephant Edge only -- unused by Synefi, shared physical table.
+    hubspot_synced_at = Column(DateTime, nullable=True)
+    personalization_hook = Column(Text, nullable=True)
 
     company = relationship("Company", back_populates="contacts")
     enrichment = relationship("Enrichment", back_populates="contact", uselist=False, cascade="all, delete-orphan")
@@ -186,6 +218,9 @@ class AutonomousRun(Base):
     error_message = Column(Text, nullable=True)
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
+    # Elephant Edge only -- unused by Synefi, shared physical table.
+    awaiting_approval_until = Column(DateTime, nullable=True)
+    cancelled = Column(Boolean, default=False)
 
     batch = relationship("Batch")
 

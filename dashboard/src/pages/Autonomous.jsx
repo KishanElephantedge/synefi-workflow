@@ -2,6 +2,144 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import client from '../api/client'
 
+// Read-only visualization of the latest autonomous run's pipeline -- purely so you can see how
+// the flow went (which phase found what), since the autonomous cycle runs entirely on its own.
+// Elephant Edge only: Synefi's autonomous data shape (persona-based, no hiring-signal/tech-stack
+// fields) doesn't match this step structure.
+const PIPELINE_STEPS = [
+  { key: 'discovery', label: 'Discovery', isDone: (b) => (b.companies || []).length > 0 },
+  { key: 'buying-signal', label: 'Buying Signal', isDone: (b) => (b.companies || []).some(c => c.active_head_of_sales_posting !== null && c.active_head_of_sales_posting !== undefined) },
+  { key: 'tech-stack', label: 'Tech Stack', isDone: (b) => (b.companies || []).some(c => c.has_outbound_tooling !== null && c.has_outbound_tooling !== undefined) },
+  { key: 'scoring', label: 'Scoring', isDone: (b) => (b.companies || []).some(c => c.tier != null) },
+  { key: 'decision-maker', label: 'Decision Maker', isDone: (b) => (b.companies || []).some(c => c.contact_count > 0) },
+  { key: 'outreach', label: 'Outreach', isDone: (b) => b.current_phase === 'outreach_done' },
+]
+
+function PipelineFlow({ batchId, tenantSlug }) {
+  const [batch, setBatch] = useState(null)
+  const [activeStep, setActiveStep] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!batchId) return
+    client.get(`/batches/${batchId}`).then(res => setBatch(res.data)).catch(err => setError(err.message))
+  }, [batchId])
+
+  if (!batchId) return null
+  if (error) return <p className="error">{error}</p>
+  if (!batch) return <p className="hint">Loading pipeline...</p>
+
+  return (
+    <div className="card">
+      <h2>Latest run — pipeline flow <Link to={`/${tenantSlug}/batches/${batchId}`} style={{ fontSize: '0.8rem', fontWeight: 400 }}>(open batch #{batchId})</Link></h2>
+      <div className="step-flow">
+        {PIPELINE_STEPS.map((step, i) => {
+          const done = step.isDone(batch)
+          return (
+            <div key={step.key} className="step-flow-item">
+              {i > 0 && <span className="step-flow-arrow">&rarr;</span>}
+              <button
+                type="button"
+                className={`step-pill ${activeStep === step.key ? 'active' : ''} ${done ? 'done' : ''}`}
+                onClick={() => setActiveStep(activeStep === step.key ? null : step.key)}
+              >
+                <span className="step-pill-dot" />
+                {step.label} {done && '✓'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {activeStep === 'discovery' && (
+        <div className="step-panel">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Domain</th><th>Geo</th><th>Industry</th></tr></thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <tr key={c.id}><td>{c.name}</td><td>{c.domain}</td><td>{c.geography_tier || '-'}</td><td>{c.industry_classification || '-'}</td></tr>
+                ))}
+                {(batch.companies || []).length === 0 && <tr><td colSpan={4} className="empty-state">No companies discovered yet this run.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'buying-signal' && (
+        <div className="step-panel">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Hiring Signal</th><th>Sales HC%</th></tr></thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <tr key={c.id}>
+                    <td>{c.name}</td>
+                    <td title={c.hiring_signal_reasoning || ''}>{c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : (c.active_head_of_sales_posting === false ? 'None found' : '-')}</td>
+                    <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'tech-stack' && (
+        <div className="step-panel">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Outbound Tooling</th><th>AI SDR Tool</th></tr></thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <tr key={c.id}><td>{c.name}</td><td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}</td><td>{c.has_ai_sdr_tool ? 'Yes' : '-'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'scoring' && (
+        <div className="step-panel">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Tier</th><th>Score</th></tr></thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <tr key={c.id}><td>{c.name}</td><td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td><td>{c.score ?? '-'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'decision-maker' && (
+        <div className="step-panel">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Company</th><th>Contacts Found</th></tr></thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <tr key={c.id}><td>{c.name}</td><td>{c.contact_count}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeStep === 'outreach' && (
+        <div className="step-panel">
+          <p className="hint">Current phase: <strong>{batch.current_phase}</strong> &middot; Status: {batch.status}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Autonomous() {
   const { tenantSlug } = useParams()
   const [status, setStatus] = useState(null)
@@ -41,6 +179,12 @@ export default function Autonomous() {
         window.alert('Nothing ran: the autonomous system is currently paused. Click "Start" first, then "Run now".')
       } else if (res.data.status === 'failed') {
         window.alert(`Run failed: ${res.data.error}`)
+      } else if (res.data.status === 'awaiting_approval') {
+        window.alert(
+          `Run paused for approval. Companies discovered: ${res.data.companies_discovered}, ` +
+          `decision-makers found: ${res.data.decision_maker_result?.decision_makers_found ?? 0}. ` +
+          `A review email has been sent -- outreach will proceed automatically after the approval window, unless cancelled.`
+        )
       } else {
         window.alert(
           `Run complete. Companies discovered: ${res.data.companies_discovered}, ` +
@@ -50,6 +194,19 @@ export default function Autonomous() {
       load()
     } catch (err) {
       setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelRun = async (runId) => {
+    if (!window.confirm('Cancel this run? Nothing will be pushed to the outreach channel for it.')) return
+    setBusy(true)
+    try {
+      await client.post(`/autonomous/runs/${runId}/cancel`)
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
     } finally {
       setBusy(false)
     }
@@ -110,9 +267,28 @@ export default function Autonomous() {
             ) : (
               <p className="hint">No runs yet.</p>
             )}
+
+            {status.last_run?.status === 'awaiting_approval' && (
+              <div className="card" style={{ marginTop: '1rem', background: 'var(--surface-alt)' }}>
+                <p style={{ margin: '0 0 0.75rem' }}>
+                  <span className="status-pill warn">Awaiting approval</span>{' '}
+                  A review email with the decision-makers found has been sent. This run will push to the
+                  outreach channel at{' '}
+                  <strong>{status.last_run.awaiting_approval_until ? new Date(status.last_run.awaiting_approval_until).toLocaleTimeString() : '-'}</strong>{' '}
+                  unless cancelled first.
+                </p>
+                <button type="button" className="secondary" disabled={busy} onClick={() => cancelRun(status.last_run.id)}>
+                  Cancel this run
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {tenantSlug === 'elephant-edge' && status?.last_run?.batch_id && (
+        <PipelineFlow batchId={status.last_run.batch_id} tenantSlug={tenantSlug} />
+      )}
 
       <div className="card">
         <h2>Weekly rollup</h2>

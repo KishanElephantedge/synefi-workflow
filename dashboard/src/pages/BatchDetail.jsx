@@ -183,15 +183,35 @@ function SynefiBatchDetail() {
   )
 }
 
-// Elephant Edge has no Discovery/Qualification/Scoring yet (Phase 1 ICP unconfirmed) --
-// batches here are hand-picked lists run through Import -> Decision Maker -> Outreach only.
-// Rendered as a step flow (click a step, its panel opens below, edit/execute inline) rather
-// than Synefi's flat "run a phase" button list, per how this was asked to look.
+// Elephant Edge's full pipeline: Discovery (Phase 3, ICP-driven) or manual Import both feed the
+// same batch; either path continues through Buying Signal -> Scoring -> Decision Maker -> Outreach.
+// Rendered as a step flow (click a step, its panel opens below, edit/execute inline) rather than
+// Synefi's flat "run a phase" button list, per how this was asked to look.
 const EE_STEPS = [
+  {
+    key: 'discovery',
+    label: 'Discovery',
+    isDone: (batch) => (batch.companies || []).length > 0,
+  },
   {
     key: 'import',
     label: 'Import Companies',
     isDone: (batch) => (batch.companies || []).length > 0,
+  },
+  {
+    key: 'buying-signal',
+    label: 'Buying Signal',
+    isDone: (batch) => batch.current_phase === 'buying_signal_done' || batch.current_phase === 'scoring_done' || batch.current_phase === 'decision_maker_done' || batch.current_phase === 'outreach_done',
+  },
+  {
+    key: 'tech-stack',
+    label: 'Tech Stack',
+    isDone: (batch) => batch.current_phase === 'tech_stack_done' || batch.current_phase === 'scoring_done' || batch.current_phase === 'decision_maker_done' || batch.current_phase === 'outreach_done',
+  },
+  {
+    key: 'scoring',
+    label: 'Scoring',
+    isDone: (batch) => (batch.companies || []).some(c => c.tier != null),
   },
   {
     key: 'decision-maker',
@@ -213,6 +233,7 @@ function ElephantEdgeBatchDetail() {
   const [running, setRunning] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   const [importText, setImportText] = useState('')
+  const [discoveryTarget, setDiscoveryTarget] = useState(10)
 
   const load = () => {
     client.get(`/batches/${batchId}`)
@@ -277,6 +298,21 @@ function ElephantEdgeBatchDetail() {
     { retry_company_ids: [companyId] },
   )
 
+  const runDiscovery = async () => {
+    setRunning(true)
+    setError(null)
+    setLastResult(null)
+    try {
+      const res = await client.post(`/batches/${batchId}/phases/discovery`, null, { params: { target: discoveryTarget } })
+      setLastResult({ step: 'Discovery', data: res.data })
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    } finally {
+      setRunning(false)
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -304,9 +340,31 @@ function ElephantEdgeBatchDetail() {
           ))}
         </div>
 
+        {activeStep === 'discovery' && (
+          <div className="step-panel">
+            <p className="hint">
+              Automatically finds companies matching the confirmed ICP (11-50 employees, $2.5M-$5M revenue, US).
+            </p>
+            <div className="inline-form">
+              <label>Target companies</label>
+              <input
+                type="number"
+                value={discoveryTarget}
+                min={1}
+                max={50}
+                onChange={e => setDiscoveryTarget(Number(e.target.value))}
+                style={{ width: '4.5rem' }}
+              />
+              <button type="button" disabled={running} onClick={runDiscovery}>
+                {running ? 'Discovering...' : 'Execute'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeStep === 'import' && (
           <div className="step-panel">
-            <p className="hint">Paste one company per line: <code>Company Name, domain.com</code></p>
+            <p className="hint">Or paste hand-picked companies, one per line: <code>Company Name, domain.com</code></p>
             <textarea
               rows={8}
               value={importText}
@@ -317,6 +375,59 @@ function ElephantEdgeBatchDetail() {
             <div className="inline-form">
               <button type="button" disabled={running} onClick={runImport}>
                 {running ? 'Importing...' : 'Import'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeStep === 'buying-signal' && (
+          <div className="step-panel">
+            <p className="hint">
+              Checks each company for a recent funding event, headcount growth, or an active Head of Sales/VP Sales job posting.
+            </p>
+            <div className="inline-form">
+              <button
+                type="button"
+                disabled={running || (batch.companies || []).length === 0}
+                onClick={() => runPhase('buying-signal', 'Buying Signal', 'Check buying signals for all companies in this batch?')}
+              >
+                {running ? 'Checking...' : 'Execute'}
+              </button>
+              {(batch.companies || []).length === 0 && <span className="hint">Add companies first.</span>}
+            </div>
+          </div>
+        )}
+
+        {activeStep === 'tech-stack' && (
+          <div className="step-panel">
+            <p className="hint">
+              Checks each company's detected tech stack for outbound/CRM tooling (Apollo, Clay, HubSpot, Outreach, etc.) and AI SDR tools.
+            </p>
+            <div className="inline-form">
+              <button
+                type="button"
+                disabled={running || (batch.companies || []).length === 0}
+                onClick={() => runPhase('tech-stack', 'Tech Stack', 'Check tech stack for all companies in this batch?')}
+              >
+                {running ? 'Checking...' : 'Execute'}
+              </button>
+              {(batch.companies || []).length === 0 && <span className="hint">Add companies first.</span>}
+            </div>
+          </div>
+        )}
+
+        {activeStep === 'scoring' && (
+          <div className="step-panel">
+            <p className="hint">
+              Ranks companies using the 5-category ICP Fit Score (Need, Ability to Pay, Outbound Maturity, Product Fit, Buying Intent). Run after Buying Signal, Tech Stack, and Decision Maker.
+            </p>
+            <div className="inline-form">
+              <button
+                type="button"
+                disabled={running || (batch.companies || []).length === 0}
+                onClick={() => runPhase('scoring', 'Scoring', null)}
+              >
+                {running ? 'Scoring...' : 'Execute'}
               </button>
             </div>
           </div>
@@ -373,6 +484,13 @@ function ElephantEdgeBatchDetail() {
             <tr>
               <th>Name</th>
               <th>Domain</th>
+              <th>Tier</th>
+              <th>Score</th>
+              <th>Sales HC%</th>
+              <th>Geo</th>
+              <th>Industry</th>
+              <th>Hiring Signal</th>
+              <th>Outbound Tools</th>
               <th>Contacts</th>
               <th></th>
             </tr>
@@ -382,6 +500,15 @@ function ElephantEdgeBatchDetail() {
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.domain}</td>
+                <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
+                <td>{c.score ?? '-'}</td>
+                <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
+                <td>{c.geography_tier === 'tier_1' ? 'T1' : (c.geography_tier === 'tier_2' ? 'T2' : '-')}</td>
+                <td>{c.industry_classification || '-'}</td>
+                <td title={c.hiring_signal_reasoning || ''}>
+                  {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
+                </td>
+                <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
                 <td>{c.contact_count}</td>
                 <td>
                   {c.contact_count === 0 && c.decision_maker_searched && (
@@ -393,7 +520,7 @@ function ElephantEdgeBatchDetail() {
               </tr>
             ))}
             {(batch.companies || []).length === 0 && (
-              <tr><td colSpan={4} className="empty-state">No companies yet - use Import Companies above.</td></tr>
+              <tr><td colSpan={11} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
             )}
           </tbody>
         </table>
