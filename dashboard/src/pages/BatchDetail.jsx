@@ -420,6 +420,7 @@ function ElephantEdgeBatchDetail() {
           <div className="step-panel">
             <p className="hint">
               Ranks companies using the 5-category ICP Fit Score (Need, Ability to Pay, Outbound Maturity, Product Fit, Buying Intent). Run after Buying Signal, Tech Stack, and Decision Maker.
+              Companies scoring below 70 (Excluded) never proceed to Decision Maker or Outreach -- they stay visible here so it's always clear why.
             </p>
             <div className="inline-form">
               <button
@@ -430,6 +431,50 @@ function ElephantEdgeBatchDetail() {
                 {running ? 'Scoring...' : 'Execute'}
               </button>
             </div>
+
+            {(batch.companies || []).some(c => c.score_breakdown) && (
+              <div className="table-wrap" style={{ marginTop: '1rem' }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Company</th>
+                      <th>Need</th>
+                      <th>Ability to Pay</th>
+                      <th>Outbound Maturity</th>
+                      <th>Product Fit</th>
+                      <th>Buying Intent</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(batch.companies || []).filter(c => c.score_breakdown).map(c => {
+                      const b = c.score_breakdown
+                      const qualified = c.tier !== 'excluded'
+                      const proceeded = c.decision_maker_searched || c.contact_count > 0
+                      return (
+                        <tr key={c.id}>
+                          <td>{c.name}</td>
+                          <td>{b.need}/30</td>
+                          <td>{b.ability_to_pay}/20</td>
+                          <td>{b.outbound_maturity}/20</td>
+                          <td>{b.product_fit}/20</td>
+                          <td>{b.buying_intent}/10</td>
+                          <td><strong>{b.total}/100</strong> <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span></td>
+                          <td>
+                            {qualified
+                              ? (proceeded
+                                  ? <span style={{ color: '#2a9d8f' }}>&#10003; Qualified — moved to Decision Maker</span>
+                                  : <span style={{ color: '#457b9d' }}>Qualified — awaiting Decision Maker</span>)
+                              : <span style={{ color: '#888' }}>Excluded — stays here (below 70)</span>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
