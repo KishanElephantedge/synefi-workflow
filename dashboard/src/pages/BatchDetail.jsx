@@ -234,6 +234,7 @@ function ElephantEdgeBatchDetail() {
   const [lastResult, setLastResult] = useState(null)
   const [importText, setImportText] = useState('')
   const [discoveryTarget, setDiscoveryTarget] = useState(10)
+  const [expandedCompanyId, setExpandedCompanyId] = useState(null)
 
   const load = () => {
     client.get(`/batches/${batchId}`)
@@ -542,27 +543,56 @@ function ElephantEdgeBatchDetail() {
           </thead>
           <tbody>
             {(batch.companies || []).map(c => (
-              <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.domain}</td>
-                <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
-                <td>{c.score ?? '-'}</td>
-                <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
-                <td>{c.geography_tier === 'tier_1' ? 'T1' : (c.geography_tier === 'tier_2' ? 'T2' : '-')}</td>
-                <td>{c.industry_classification || '-'}</td>
-                <td title={c.hiring_signal_reasoning || ''}>
-                  {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
-                </td>
-                <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
-                <td>{c.contact_count}</td>
-                <td>
-                  {c.contact_count === 0 && c.decision_maker_searched && (
-                    <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
-                      Retry
-                    </button>
-                  )}
-                </td>
-              </tr>
+              <>
+                <tr key={c.id}>
+                  <td>{c.name}</td>
+                  <td>{c.domain}</td>
+                  <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
+                  <td>
+                    {c.score_breakdown ? (
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => setExpandedCompanyId(expandedCompanyId === c.id ? null : c.id)}
+                        title="Click to see the full 5-category breakdown"
+                      >
+                        {c.score ?? '-'} {expandedCompanyId === c.id ? '▾' : '▸'}
+                      </button>
+                    ) : (c.score ?? '-')}
+                  </td>
+                  <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
+                  <td>{c.geography_tier === 'tier_1' ? 'T1' : (c.geography_tier === 'tier_2' ? 'T2' : '-')}</td>
+                  <td>{c.industry_classification || '-'}</td>
+                  <td title={c.hiring_signal_reasoning || ''}>
+                    {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
+                  </td>
+                  <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
+                  <td>{c.contact_count}</td>
+                  <td>
+                    {c.contact_count === 0 && c.decision_maker_searched && (
+                      <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
+                        Retry
+                      </button>
+                    )}
+                  </td>
+                </tr>
+                {expandedCompanyId === c.id && c.score_breakdown && (
+                  <tr key={`${c.id}-breakdown`}>
+                    <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
+                      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                        <div><strong>Need:</strong> {c.score_breakdown.need}/30 <span className="hint">(hiring signal: {c.hiring_signal_role ? `${c.hiring_signal_strength} match on "${c.hiring_signal_role}"` : 'none found'})</span></div>
+                        <div><strong>Ability to Pay:</strong> {c.score_breakdown.ability_to_pay}/20 <span className="hint">(revenue band + funding on record)</span></div>
+                        <div><strong>Outbound Maturity:</strong> {c.score_breakdown.outbound_maturity}/20 <span className="hint">(existing tooling: {c.has_outbound_tooling ? 'yes' : 'no'}{c.has_ai_sdr_tool ? ', AI SDR tool detected' : ''})</span></div>
+                        <div><strong>Product Fit:</strong> {c.score_breakdown.product_fit}/20 <span className="hint">(industry: {c.industry_classification || '-'}, geo: {c.geography_tier || '-'})</span></div>
+                        <div><strong>Buying Intent:</strong> {c.score_breakdown.buying_intent}/10 <span className="hint">(JD product-fit matches: {(c.product_fit_jd_categories || []).length > 0 ? c.product_fit_jd_categories.join(', ') : 'none'})</span></div>
+                      </div>
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <strong>Total: {c.score_breakdown.total}/100 — {c.score_breakdown.tier_label}</strong>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
             {(batch.companies || []).length === 0 && (
               <tr><td colSpan={11} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
