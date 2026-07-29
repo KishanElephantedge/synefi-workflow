@@ -364,7 +364,6 @@ export default function Autonomous() {
               <th>Selected</th>
               <th>Contacts found</th>
               <th>Contacts pushed</th>
-              <th>Budget</th>
               <th>Error</th>
             </tr>
           </thead>
@@ -378,11 +377,6 @@ export default function Autonomous() {
                 <td>{r.companies_selected}</td>
                 <td>{r.contacts_found}</td>
                 <td>{r.contacts_pushed}</td>
-                <td>
-                  {r.budget_stopped_early ? (
-                    <span className="status-pill warn" title="Budget cap hit -- decision-maker/outreach skipped">cap hit</span>
-                  ) : '-'}
-                </td>
                 <td style={{ maxWidth: '320px' }}>
                   {r.error_message ? (
                     <div>
@@ -422,7 +416,7 @@ export default function Autonomous() {
               </tr>
             ))}
             {runs.length === 0 && (
-              <tr><td colSpan={9} className="empty-state">No autonomous runs yet.</td></tr>
+              <tr><td colSpan={8} className="empty-state">No autonomous runs yet.</td></tr>
             )}
           </tbody>
         </table>

@@ -15,6 +15,12 @@ export default function Settings() {
   const [heyreachApiKey, setHeyreachApiKey] = useState('')
   const [heyreachApiKeySet, setHeyreachApiKeySet] = useState(false)
   const [heyreachCampaignId, setHeyreachCampaignId] = useState('')
+  const [salesrobotApiKey, setSalesrobotApiKey] = useState('')
+  const [salesrobotApiKeySet, setSalesrobotApiKeySet] = useState(false)
+  const [salesrobotCampaignUuid, setSalesrobotCampaignUuid] = useState('')
+  const [salesrobotLinkedinAccountUuid, setSalesrobotLinkedinAccountUuid] = useState('')
+  const [joboApiKey, setJoboApiKey] = useState('')
+  const [joboApiKeySet, setJoboApiKeySet] = useState(false)
   const [error, setError] = useState(null)
 
   const load = () => {
@@ -22,6 +28,10 @@ export default function Settings() {
       setCredentials(res.data)
       const key = res.data.find(c => c.name === 'heyreach_api_key')
       setHeyreachApiKeySet(!!key?.is_set)
+      const srKey = res.data.find(c => c.name === 'salesrobot_api_key')
+      setSalesrobotApiKeySet(!!srKey?.is_set)
+      const joboKey = res.data.find(c => c.name === 'jobo_api_key')
+      setJoboApiKeySet(!!joboKey?.is_set)
     }).catch(err => setError(err.message))
     client.get('/parameters').then(res => {
       setParameters(res.data)
@@ -33,6 +43,10 @@ export default function Settings() {
       setPersonaTitles(titles ? JSON.stringify(titles.value, null, 2) : '')
       const campaignId = res.data.find(p => p.key === 'heyreach_campaign_id')
       setHeyreachCampaignId(campaignId ? String(campaignId.value.campaign_id) : '')
+      const srCampaign = res.data.find(p => p.key === 'salesrobot_campaign_uuid')
+      setSalesrobotCampaignUuid(srCampaign ? String(srCampaign.value.value) : '')
+      const srAccount = res.data.find(p => p.key === 'salesrobot_linkedin_account_uuid')
+      setSalesrobotLinkedinAccountUuid(srAccount ? String(srAccount.value.value) : '')
     }).catch(err => setError(err.message))
   }
 
@@ -58,6 +72,56 @@ export default function Settings() {
       await client.post('/parameters', { campaign_id: campaignId }, {
         params: { key: 'heyreach_campaign_id', description: 'HeyReach campaign that autonomous/manual pushes send leads into' },
       })
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveSalesrobotApiKey = async (e) => {
+    e.preventDefault()
+    if (!salesrobotApiKey.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'salesrobot_api_key', value: salesrobotApiKey } })
+      setSalesrobotApiKey('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveSalesrobotCampaignUuid = async (e) => {
+    e.preventDefault()
+    if (!salesrobotCampaignUuid.trim()) return
+    try {
+      await client.post('/parameters', { value: salesrobotCampaignUuid.trim() }, {
+        params: { key: 'salesrobot_campaign_uuid', description: 'SalesRobot campaign that autonomous/manual pushes send leads into' },
+      })
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveSalesrobotLinkedinAccountUuid = async (e) => {
+    e.preventDefault()
+    if (!salesrobotLinkedinAccountUuid.trim()) return
+    try {
+      await client.post('/parameters', { value: salesrobotLinkedinAccountUuid.trim() }, {
+        params: { key: 'salesrobot_linkedin_account_uuid', description: 'SalesRobot-connected LinkedIn seat used to send from' },
+      })
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveJoboApiKey = async (e) => {
+    e.preventDefault()
+    if (!joboApiKey.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'jobo_api_key', value: joboApiKey } })
+      setJoboApiKey('')
       load()
     } catch (err) {
       setError(err.message)
@@ -186,6 +250,64 @@ export default function Settings() {
             style={{ minWidth: '20rem' }}
           />
           <button type="submit">Save campaign ID</button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>SalesRobot</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>The active outreach channel -- all three fields below are required before pushing a batch or running the autonomous system.</p>
+
+        <form onSubmit={saveSalesrobotApiKey} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>API key</label>
+          <input
+            type="password"
+            placeholder={salesrobotApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your SalesRobot API key'}
+            value={salesrobotApiKey}
+            onChange={e => setSalesrobotApiKey(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save API key</button>
+          {salesrobotApiKeySet && <span className="status-pill on">Set</span>}
+        </form>
+
+        <form onSubmit={saveSalesrobotCampaignUuid} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>Campaign UUID</label>
+          <input
+            placeholder="e.g. 6561fd88-a82f-4eab-baea-8f0b315eccde"
+            value={salesrobotCampaignUuid}
+            onChange={e => setSalesrobotCampaignUuid(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save campaign UUID</button>
+        </form>
+
+        <form onSubmit={saveSalesrobotLinkedinAccountUuid} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>LinkedIn account UUID</label>
+          <input
+            placeholder="e.g. ae7bc868-da58-425d-881b-5cd4de3a97f6"
+            value={salesrobotLinkedinAccountUuid}
+            onChange={e => setSalesrobotLinkedinAccountUuid(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save LinkedIn account UUID</button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>Jobo</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>Required for the Jobo discovery pipeline (bulk job search + firmographic + team-gap filtering).</p>
+
+        <form onSubmit={saveJoboApiKey} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>API key</label>
+          <input
+            type="password"
+            placeholder={joboApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your Jobo API key'}
+            value={joboApiKey}
+            onChange={e => setJoboApiKey(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save API key</button>
+          {joboApiKeySet && <span className="status-pill on">Set</span>}
         </form>
       </div>
 
