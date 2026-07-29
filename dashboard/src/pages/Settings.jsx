@@ -21,6 +21,9 @@ export default function Settings() {
   const [salesrobotLinkedinAccountUuid, setSalesrobotLinkedinAccountUuid] = useState('')
   const [joboApiKey, setJoboApiKey] = useState('')
   const [joboApiKeySet, setJoboApiKeySet] = useState(false)
+  const [anthropicApiKey, setAnthropicApiKey] = useState('')
+  const [anthropicApiKeySet, setAnthropicApiKeySet] = useState(false)
+  const [valueProposition, setValueProposition] = useState('')
   const [error, setError] = useState(null)
 
   const load = () => {
@@ -32,6 +35,8 @@ export default function Settings() {
       setSalesrobotApiKeySet(!!srKey?.is_set)
       const joboKey = res.data.find(c => c.name === 'jobo_api_key')
       setJoboApiKeySet(!!joboKey?.is_set)
+      const anthropicKey = res.data.find(c => c.name === 'anthropic_api_key')
+      setAnthropicApiKeySet(!!anthropicKey?.is_set)
     }).catch(err => setError(err.message))
     client.get('/parameters').then(res => {
       setParameters(res.data)
@@ -47,6 +52,8 @@ export default function Settings() {
       setSalesrobotCampaignUuid(srCampaign ? String(srCampaign.value.value) : '')
       const srAccount = res.data.find(p => p.key === 'salesrobot_linkedin_account_uuid')
       setSalesrobotLinkedinAccountUuid(srAccount ? String(srAccount.value.value) : '')
+      const valueProp = res.data.find(p => p.key === 'core_value_proposition')
+      setValueProposition(valueProp ? JSON.stringify(valueProp.value, null, 2) : '')
     }).catch(err => setError(err.message))
   }
 
@@ -122,6 +129,37 @@ export default function Settings() {
     try {
       await client.post('/credentials', null, { params: { name: 'jobo_api_key', value: joboApiKey } })
       setJoboApiKey('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveAnthropicApiKey = async (e) => {
+    e.preventDefault()
+    if (!anthropicApiKey.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'anthropic_api_key', value: anthropicApiKey } })
+      setAnthropicApiKey('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveValueProposition = async (e) => {
+    e.preventDefault()
+    let value
+    try {
+      value = JSON.parse(valueProposition)
+    } catch {
+      setError('Value proposition must be valid JSON')
+      return
+    }
+    try {
+      await client.post('/parameters', value, {
+        params: { key: 'core_value_proposition', description: 'Our own value prop, used by Phase 13 fit analysis + message synthesis' },
+      })
       load()
     } catch (err) {
       setError(err.message)
@@ -308,6 +346,37 @@ export default function Settings() {
           />
           <button type="submit">Save API key</button>
           {joboApiKeySet && <span className="status-pill on">Set</span>}
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>Claude (Phase 13: Personalized Outreach)</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>Powers company/contact research and message writing. Direct Anthropic API, not routed through Deepline.</p>
+
+        <form onSubmit={saveAnthropicApiKey} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>API key</label>
+          <input
+            type="password"
+            placeholder={anthropicApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your Anthropic API key'}
+            value={anthropicApiKey}
+            onChange={e => setAnthropicApiKey(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save API key</button>
+          {anthropicApiKeySet && <span className="status-pill on">Set</span>}
+        </form>
+
+        <label style={{ display: 'block', margin: '1rem 0 0.5rem' }}>Our value proposition (JSON)</label>
+        <form onSubmit={saveValueProposition}>
+          <textarea
+            rows={8}
+            value={valueProposition}
+            onChange={e => setValueProposition(e.target.value)}
+            placeholder='{"service": "...", "strengths": ["..."], "constraints": ["..."]}'
+          />
+          <div className="inline-form">
+            <button type="submit">Save value proposition</button>
+          </div>
         </form>
       </div>
 

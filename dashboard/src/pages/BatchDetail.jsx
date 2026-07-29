@@ -252,6 +252,55 @@ function ElephantEdgeBatchDetail() {
   const [importText, setImportText] = useState('')
   const [discoveryTarget, setDiscoveryTarget] = useState(10)
   const [expandedCompanyId, setExpandedCompanyId] = useState(null)
+  const [messageContactId, setMessageContactId] = useState(null)
+  const [messageData, setMessageData] = useState({})
+  const [generatingContactId, setGeneratingContactId] = useState(null)
+  const [editedMessage, setEditedMessage] = useState('')
+
+  const toggleMessagePanel = async (contactId) => {
+    if (messageContactId === contactId) {
+      setMessageContactId(null)
+      return
+    }
+    setMessageContactId(contactId)
+    if (!messageData[contactId]) {
+      try {
+        const res = await client.get(`/contacts/${contactId}/message`)
+        setMessageData(prev => ({ ...prev, [contactId]: res.data }))
+        setEditedMessage(res.data.generated_message || '')
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message)
+      }
+    } else {
+      setEditedMessage(messageData[contactId].generated_message || '')
+    }
+  }
+
+  const generateMessage = async (contactId) => {
+    setGeneratingContactId(contactId)
+    setError(null)
+    try {
+      const res = await client.post(`/contacts/${contactId}/generate-message`)
+      setMessageData(prev => ({ ...prev, [contactId]: res.data }))
+      setEditedMessage(res.data.generated_message || '')
+      setMessageContactId(contactId)
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    } finally {
+      setGeneratingContactId(null)
+    }
+  }
+
+  const saveMessageEdit = async (contactId, status) => {
+    try {
+      const res = await client.post(`/contacts/${contactId}/message/edit`, { generated_message: editedMessage, status })
+      setMessageData(prev => ({ ...prev, [contactId]: { ...prev[contactId], generated_message: res.data.generated_message, status: res.data.status } }))
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    }
+  }
 
   const load = () => {
     client.get(`/batches/${batchId}`)
@@ -584,7 +633,16 @@ function ElephantEdgeBatchDetail() {
                     {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
                   </td>
                   <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
-                  <td>{c.contact_count}</td>
+                  <td>
+                    {(c.contacts || []).map(ct => (
+                      <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
+                        <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>
+                          {ct.first_name} {ct.last_name}
+                        </button>
+                        {ct.message_status && <span className={`status-pill ${ct.message_status === 'approved' ? 'on' : 'warn'}`} style={{ marginLeft: '0.3rem', fontSize: '0.7rem' }}>{ct.message_status}</span>}
+                      </div>
+                    ))}
+                  </td>
                   <td>
                     {c.contact_count === 0 && c.decision_maker_searched && (
                       <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
@@ -593,6 +651,49 @@ function ElephantEdgeBatchDetail() {
                     )}
                   </td>
                 </tr>
+                {(c.contacts || []).map(ct => messageContactId === ct.id && (
+                  <tr key={`${ct.id}-message`}>
+                    <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.9rem 1rem' }}>
+                      {!messageData[ct.id] ? (
+                        <p className="hint">Loading...</p>
+                      ) : messageData[ct.id].status === 'not_generated' ? (
+                        <button type="button" disabled={generatingContactId === ct.id} onClick={() => generateMessage(ct.id)}>
+                          {generatingContactId === ct.id ? 'Generating...' : 'Generate personalized message'}
+                        </button>
+                      ) : (
+                        <div>
+                          {messageData[ct.id].error_message && (
+                            <p className="error">Generation error: {messageData[ct.id].error_message}</p>
+                          )}
+                          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                            <div style={{ flex: '1 1 300px' }}>
+                              <strong>Company research</strong>
+                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].company_research, null, 2)}</pre>
+                            </div>
+                            <div style={{ flex: '1 1 300px' }}>
+                              <strong>Contact research</strong>
+                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].contact_research, null, 2)}</pre>
+                            </div>
+                            <div style={{ flex: '1 1 300px' }}>
+                              <strong>Fit analysis</strong>
+                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].fit_analysis, null, 2)}</pre>
+                            </div>
+                          </div>
+                          <label style={{ display: 'block', marginBottom: '0.3rem' }}>Generated message (editable)</label>
+                          <textarea rows={6} value={editedMessage} onChange={e => setEditedMessage(e.target.value)} style={{ width: '100%' }} />
+                          <div className="inline-form" style={{ marginTop: '0.5rem' }}>
+                            <button type="button" onClick={() => saveMessageEdit(ct.id, messageData[ct.id].status)}>Save edit</button>
+                            <button type="button" onClick={() => saveMessageEdit(ct.id, 'approved')}>Approve</button>
+                            <button type="button" className="secondary" onClick={() => saveMessageEdit(ct.id, 'rejected')}>Reject</button>
+                            <button type="button" className="secondary" disabled={generatingContactId === ct.id} onClick={() => generateMessage(ct.id)}>
+                              {generatingContactId === ct.id ? 'Regenerating...' : 'Regenerate'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
                 {expandedCompanyId === c.id && c.score_breakdown && (
                   <tr key={`${c.id}-breakdown`}>
                     <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
