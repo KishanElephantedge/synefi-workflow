@@ -21,7 +21,7 @@ export default function Outcomes() {
   if (tenantSlug !== 'elephant-edge') {
     return (
       <div className="page">
-        <div className="page-header"><h1>Outcomes</h1></div>
+        <div className="page-header"><h1>Campaign</h1></div>
         <p className="hint">Not available for this workspace.</p>
       </div>
     )
@@ -30,7 +30,7 @@ export default function Outcomes() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Outcomes</h1>
+        <h1>Campaign</h1>
         <p className="meta">Connection accepts, replies, and other campaign events received live from SalesRobot -- this list updates automatically as new events arrive, no manual fetch needed.</p>
       </div>
       {error && <p className="error">{error}</p>}
