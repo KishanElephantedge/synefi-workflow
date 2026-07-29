@@ -23,6 +23,8 @@ export default function Settings() {
   const [joboApiKeySet, setJoboApiKeySet] = useState(false)
   const [anthropicApiKey, setAnthropicApiKey] = useState('')
   const [anthropicApiKeySet, setAnthropicApiKeySet] = useState(false)
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState('')
+  const [slackWebhookUrlSet, setSlackWebhookUrlSet] = useState(false)
   const [valueProposition, setValueProposition] = useState('')
   const [error, setError] = useState(null)
 
@@ -37,6 +39,8 @@ export default function Settings() {
       setJoboApiKeySet(!!joboKey?.is_set)
       const anthropicKey = res.data.find(c => c.name === 'anthropic_api_key')
       setAnthropicApiKeySet(!!anthropicKey?.is_set)
+      const slackKey = res.data.find(c => c.name === 'slack_webhook_url')
+      setSlackWebhookUrlSet(!!slackKey?.is_set)
     }).catch(err => setError(err.message))
     client.get('/parameters').then(res => {
       setParameters(res.data)
@@ -160,6 +164,18 @@ export default function Settings() {
       await client.post('/parameters', value, {
         params: { key: 'core_value_proposition', description: 'Our own value prop, used by Phase 13 fit analysis + message synthesis' },
       })
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveSlackWebhookUrl = async (e) => {
+    e.preventDefault()
+    if (!slackWebhookUrl.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'slack_webhook_url', value: slackWebhookUrl } })
+      setSlackWebhookUrl('')
       load()
     } catch (err) {
       setError(err.message)
@@ -377,6 +393,23 @@ export default function Settings() {
           <div className="inline-form">
             <button type="submit">Save value proposition</button>
           </div>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>Slack</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>Incoming webhook -- sent alongside email whenever the autonomous system finds decision-makers ready for review.</p>
+        <form onSubmit={saveSlackWebhookUrl} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>Webhook URL</label>
+          <input
+            type="password"
+            placeholder={slackWebhookUrlSet ? 'Currently set (enter a new value to replace)' : 'https://hooks.slack.com/services/...'}
+            value={slackWebhookUrl}
+            onChange={e => setSlackWebhookUrl(e.target.value)}
+            style={{ minWidth: '24rem' }}
+          />
+          <button type="submit">Save webhook URL</button>
+          {slackWebhookUrlSet && <span className="status-pill on">Set</span>}
         </form>
       </div>
 
