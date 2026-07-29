@@ -76,7 +76,9 @@ function TenantScope({ children }) {
   if (match) {
     setActiveTenant(match.slug)
   } else if (tenants.length > 0) {
-    return <Navigate to={`/${tenants[0].slug}`} replace />
+    const elephant = tenants.find(t => t.slug === 'elephant-edge')
+    const defaultTenant = elephant || tenants[0]
+    return <Navigate to={`/${defaultTenant.slug}`} replace />
   }
 
   return children
@@ -85,7 +87,9 @@ function TenantScope({ children }) {
 function RootRedirect() {
   const { tenants } = useTenant()
   if (tenants.length === 0) return null
-  return <Navigate to={`/${tenants[0].slug}`} replace />
+  const elephant = tenants.find(t => t.slug === 'elephant-edge')
+  const defaultTenant = elephant || tenants[0]
+  return <Navigate to={`/${defaultTenant.slug}`} replace />
 }
 
 function AppShell() {
@@ -96,16 +100,13 @@ function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <Link to={tenantSlug ? `/${tenantSlug}` : '/'} className="brand">
-          <span className="brand-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          </span>
-          Outreach Pipeline
+          Sales Operating System
         </Link>
         <TenantSwitcher />
         <nav className="nav-links">
           <NavLink to={`/${tenantSlug}`} end>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
-            Batches
+            Hot Accounts
           </NavLink>
           <NavLink to={`/${tenantSlug}/autonomous`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>

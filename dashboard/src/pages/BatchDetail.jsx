@@ -5,6 +5,23 @@ import client from '../api/client'
 
 const TIER_COLORS = { hot: '#e63946', warm: '#f4a261', cool: '#457b9d', excluded: '#adb5bd' }
 
+// Cost/credit figures are for DB auditing only, never shown in the frontend -- strips any
+// key that looks like a dollar or credit figure before a result gets rendered, recursively
+// so it also catches nested objects (e.g. decision_maker_result.credits_spent_usd).
+const COST_FIELD_PATTERN = /usd|credit|budget/i
+function stripCostFields(value) {
+  if (Array.isArray(value)) return value.map(stripCostFields)
+  if (value && typeof value === 'object') {
+    const out = {}
+    for (const [key, val] of Object.entries(value)) {
+      if (COST_FIELD_PATTERN.test(key)) continue
+      out[key] = stripCostFields(val)
+    }
+    return out
+  }
+  return value
+}
+
 const PHASES = [
   {
     key: 'signal-discovery',
@@ -26,8 +43,8 @@ const PHASES = [
   },
   {
     key: 'outreach',
-    label: 'Phase 5: Push to HeyReach',
-    warning: 'Sends REAL LinkedIn connection requests via HeyReach. This cannot be undone.',
+    label: 'Phase 5: Push to LinkedIn Automation',
+    warning: 'Sends REAL LinkedIn connection requests via LinkedIn Automation. This cannot be undone.',
     hasLimit: false,
   },
 ]
@@ -89,7 +106,7 @@ function SynefiBatchDetail() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to batches</Link>
+        <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to Hot Accounts</Link>
         <h1>{batch.name}</h1>
         <p className="meta">Phase: <strong>{batch.current_phase}</strong> &middot; Status: {batch.status}</p>
       </div>
@@ -126,7 +143,7 @@ function SynefiBatchDetail() {
       {lastResult && (
         <div className="card">
           <h2>Last result: {lastResult.phase}</h2>
-          <pre>{JSON.stringify(lastResult.data, null, 2)}</pre>
+          <pre>{JSON.stringify(stripCostFields(lastResult.data), null, 2)}</pre>
         </div>
       )}
 
@@ -220,7 +237,7 @@ const EE_STEPS = [
   },
   {
     key: 'outreach',
-    label: 'Push to HeyReach',
+    label: 'Push to LinkedIn Automation',
     isDone: (batch) => batch.current_phase === 'outreach_done',
   },
 ]
@@ -317,7 +334,7 @@ function ElephantEdgeBatchDetail() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to batches</Link>
+        <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to Hot Accounts</Link>
         <h1>{batch.name}</h1>
         <p className="meta">Phase: <strong>{batch.current_phase || 'created'}</strong> &middot; Status: {batch.status}</p>
       </div>
@@ -500,14 +517,14 @@ function ElephantEdgeBatchDetail() {
         {activeStep === 'outreach' && (
           <div className="step-panel">
             <p className="hint">
-              Pushes every contact found so far to the HeyReach campaign configured in Settings.
+              Pushes every contact found so far to the LinkedIn Automation campaign configured in Settings.
               Sends a LinkedIn connection request to each contact. This cannot be undone.
             </p>
             <div className="inline-form">
               <button
                 type="button"
                 disabled={running}
-                onClick={() => runPhase('outreach', 'Push to HeyReach', 'Push all found contacts in this batch to HeyReach?\n\nThis sends LinkedIn connection requests and cannot be undone.\n\nProceed?')}
+                onClick={() => runPhase('outreach', 'Push to LinkedIn Automation', 'Push all found contacts in this batch to LinkedIn Automation?\n\nThis sends LinkedIn connection requests and cannot be undone.\n\nProceed?')}
               >
                 {running ? 'Pushing...' : 'Execute'}
               </button>
@@ -519,7 +536,7 @@ function ElephantEdgeBatchDetail() {
       {lastResult && (
         <div className="card">
           <h2>Last result: {lastResult.step}</h2>
-          <pre>{JSON.stringify(lastResult.data, null, 2)}</pre>
+          <pre>{JSON.stringify(stripCostFields(lastResult.data), null, 2)}</pre>
         </div>
       )}
 

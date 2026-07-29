@@ -147,6 +147,7 @@ export default function Autonomous() {
   const [report, setReport] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [expandedRuns, setExpandedRuns] = useState({})
 
   const load = () => {
     client.get('/autonomous/status').then(res => setStatus(res.data)).catch(err => setError(err.message))
@@ -199,6 +200,22 @@ export default function Autonomous() {
     }
   }
 
+  const setDiscoverySource = async (source) => {
+    if (status?.enabled) {
+      window.alert('Pause the autonomous system first before changing the discovery source -- switching it mid-cycle risks the wrong pipeline running.')
+      return
+    }
+    setBusy(true)
+    try {
+      await client.post('/autonomous/discovery-source', null, { params: { source } })
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const cancelRun = async (runId) => {
     if (!window.confirm('Cancel this run? Nothing will be pushed to the outreach channel for it.')) return
     setBusy(true)
@@ -216,7 +233,7 @@ export default function Autonomous() {
     <div className="page">
       <div className="page-header">
         <h1>Autonomous System</h1>
-        <p className="meta">Self-triggered daily discovery, scoring, decision-maker search, and HeyReach push.</p>
+        <p className="meta">Self-triggered daily discovery, scoring, decision-maker search, and LinkedIn Automation.</p>
       </div>
       {error && <p className="error">{error}</p>}
 
@@ -243,6 +260,23 @@ export default function Autonomous() {
             <p className="hint">
               Scheduler ticks every 24h automatically; this cycle no-ops whenever the toggle is off,
               so "Pause" is a safe kill switch without restarting the server.
+            </p>
+
+            <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+              <label style={{ minWidth: 'auto' }}>Discovery source:</label>
+              <select
+                value={status.discovery_source}
+                disabled={busy || status.enabled}
+                onChange={e => setDiscoverySource(e.target.value)}
+              >
+                <option value="deepline">Deepline</option>
+                <option value="jobo">Jobo</option>
+              </select>
+            </div>
+            <p className="hint">
+              Deepline and Jobo are fully independent pipelines with separate credit systems --
+              each daily run uses only the one selected here, never both. Pause the system before
+              switching.
             </p>
 
             {status.last_run ? (
@@ -330,7 +364,7 @@ export default function Autonomous() {
               <th>Selected</th>
               <th>Contacts found</th>
               <th>Contacts pushed</th>
-              <th>Credits spent</th>
+              <th>Budget</th>
               <th>Error</th>
             </tr>
           </thead>
@@ -345,14 +379,46 @@ export default function Autonomous() {
                 <td>{r.contacts_found}</td>
                 <td>{r.contacts_pushed}</td>
                 <td>
-                  {r.credits_spent_usd != null ? `$${r.credits_spent_usd.toFixed(2)}` : '-'}
-                  {r.budget_stopped_early && (
-                    <span className="status-pill warn" style={{ marginLeft: '0.4rem' }} title="Budget cap hit -- decision-maker/outreach skipped">
-                      cap hit
-                    </span>
-                  )}
+                  {r.budget_stopped_early ? (
+                    <span className="status-pill warn" title="Budget cap hit -- decision-maker/outreach skipped">cap hit</span>
+                  ) : '-'}
                 </td>
-                <td>{r.error_message || '-'}</td>
+                <td style={{ maxWidth: '320px' }}>
+                  {r.error_message ? (
+                    <div>
+                      <div 
+                        style={{ 
+                          whiteSpace: 'nowrap', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          cursor: 'pointer',
+                          color: 'var(--danger)',
+                          fontSize: '0.82rem',
+                          fontWeight: '500'
+                        }}
+                        onClick={() => setExpandedRuns(prev => ({ ...prev, [r.id]: !prev[r.id] }))}
+                        title="Click to toggle full error message"
+                      >
+                        {r.error_message}
+                      </div>
+                      {expandedRuns[r.id] && (
+                        <pre style={{ 
+                          whiteSpace: 'pre-wrap', 
+                          marginTop: '0.5rem', 
+                          fontSize: '0.78rem',
+                          maxHeight: '160px',
+                          overflowY: 'auto',
+                          background: 'var(--danger-soft)',
+                          border: '1px solid rgba(239, 68, 68, 0.2)',
+                          color: 'var(--danger)',
+                          padding: '0.6rem 0.8rem'
+                        }}>
+                          {r.error_message}
+                        </pre>
+                      )}
+                    </div>
+                  ) : '-'}
+                </td>
               </tr>
             ))}
             {runs.length === 0 && (
