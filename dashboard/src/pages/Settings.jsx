@@ -27,6 +27,8 @@ export default function Settings() {
   const [geminiApiKeySet, setGeminiApiKeySet] = useState(false)
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('')
   const [slackWebhookUrlSet, setSlackWebhookUrlSet] = useState(false)
+  const [slackWebhookUrl2, setSlackWebhookUrl2] = useState('')
+  const [slackWebhookUrl2Set, setSlackWebhookUrl2Set] = useState(false)
   const [valueProposition, setValueProposition] = useState('')
   const [error, setError] = useState(null)
 
@@ -45,6 +47,8 @@ export default function Settings() {
       setGeminiApiKeySet(!!geminiKey?.is_set)
       const slackKey = res.data.find(c => c.name === 'slack_webhook_url')
       setSlackWebhookUrlSet(!!slackKey?.is_set)
+      const slackKey2 = res.data.find(c => c.name === 'slack_webhook_url_2')
+      setSlackWebhookUrl2Set(!!slackKey2?.is_set)
     }).catch(err => setError(err.message))
     client.get('/parameters').then(res => {
       setParameters(res.data)
@@ -192,6 +196,18 @@ export default function Settings() {
     try {
       await client.post('/credentials', null, { params: { name: 'slack_webhook_url', value: slackWebhookUrl } })
       setSlackWebhookUrl('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveSlackWebhookUrl2 = async (e) => {
+    e.preventDefault()
+    if (!slackWebhookUrl2.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'slack_webhook_url_2', value: slackWebhookUrl2 } })
+      setSlackWebhookUrl2('')
       load()
     } catch (err) {
       setError(err.message)
@@ -427,9 +443,12 @@ export default function Settings() {
 
       <div className="card">
         <h2>Slack</h2>
-        <p className="hint" style={{ marginBottom: '1rem' }}>Incoming webhook -- sent alongside email whenever the autonomous system finds decision-makers ready for review.</p>
+        <p className="hint" style={{ marginBottom: '1rem' }}>
+          Incoming webhooks -- sent whenever the autonomous system finds decision-makers ready for review. A webhook is tied to one channel;
+          add a second webhook URL below to also notify a different channel (create it in Slack via Apps &rarr; Incoming Webhooks &rarr; Add New Webhook, choosing the other channel).
+        </p>
         <form onSubmit={saveSlackWebhookUrl} className="inline-form">
-          <label style={{ minWidth: '12rem' }}>Webhook URL</label>
+          <label style={{ minWidth: '12rem' }}>Webhook URL (channel 1)</label>
           <input
             type="password"
             placeholder={slackWebhookUrlSet ? 'Currently set (enter a new value to replace)' : 'https://hooks.slack.com/services/...'}
@@ -439,6 +458,18 @@ export default function Settings() {
           />
           <button type="submit">Save webhook URL</button>
           {slackWebhookUrlSet && <span className="status-pill on">Set</span>}
+        </form>
+        <form onSubmit={saveSlackWebhookUrl2} className="inline-form" style={{ marginTop: '0.5rem' }}>
+          <label style={{ minWidth: '12rem' }}>Webhook URL (channel 2)</label>
+          <input
+            type="password"
+            placeholder={slackWebhookUrl2Set ? 'Currently set (enter a new value to replace)' : 'https://hooks.slack.com/services/...'}
+            value={slackWebhookUrl2}
+            onChange={e => setSlackWebhookUrl2(e.target.value)}
+            style={{ minWidth: '24rem' }}
+          />
+          <button type="submit">Save webhook URL</button>
+          {slackWebhookUrl2Set && <span className="status-pill on">Set</span>}
         </form>
       </div>
 
