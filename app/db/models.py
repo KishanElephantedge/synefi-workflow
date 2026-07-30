@@ -75,6 +75,7 @@ class Company(Base):
     crunchbase_total_investment_usd = Column(Float, nullable=True)
     headcount_growth_12m_percent = Column(Float, nullable=True)
     source = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
     active_head_of_sales_posting = Column(Boolean, nullable=True)
     buying_signal_checked_at = Column(DateTime, nullable=True)
     # Elephant Edge only (Signal Framework v2) -- unused by Synefi, shared physical table.

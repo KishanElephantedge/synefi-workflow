@@ -38,6 +38,7 @@ def ensure_indexes():
         # Same reasoning as the indexes above -- create_all() never alters a table that
         # already exists, so a new column needs its own idempotent statement here too.
         "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS excluded_from_push BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR",
     ]
     with engine.begin() as conn:
         for statement in statements:

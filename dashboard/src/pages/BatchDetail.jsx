@@ -699,6 +699,7 @@ function ElephantEdgeBatchDetail() {
                 <tr>
                   <th>Name</th>
                   <th>Domain</th>
+                  <th>LinkedIn</th>
                   <th>Contact</th>
                   <th>Message</th>
                   <th>Tier</th>
@@ -717,6 +718,11 @@ function ElephantEdgeBatchDetail() {
                     <tr>
                       <td>{c.name}</td>
                       <td>{c.domain}</td>
+                      <td>
+                        {c.linkedin_url ? (
+                          <a href={c.linkedin_url} target="_blank" rel="noopener noreferrer">View</a>
+                        ) : '-'}
+                      </td>
                       <td>
                         {(c.contacts || []).map(ct => (
                           <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
@@ -771,7 +777,7 @@ function ElephantEdgeBatchDetail() {
                     </tr>
                     {expandedCompanyId === c.id && c.score_breakdown && (
                       <tr>
-                        <td colSpan={12} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
+                        <td colSpan={13} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
                           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                             <div><strong>Need:</strong> {c.score_breakdown.need}/30 <span className="hint">(hiring signal: {c.hiring_signal_role ? `${c.hiring_signal_strength} match on "${c.hiring_signal_role}"` : 'none found'})</span></div>
                             <div><strong>Ability to Pay:</strong> {c.score_breakdown.ability_to_pay}/20 <span className="hint">(revenue band + funding on record)</span></div>
@@ -788,7 +794,7 @@ function ElephantEdgeBatchDetail() {
                   </Fragment>
                 ))}
                 {(batch.companies || []).length === 0 && (
-                  <tr><td colSpan={12} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
+                  <tr><td colSpan={13} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
                 )}
               </tbody>
             </table>
