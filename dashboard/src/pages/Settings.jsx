@@ -23,6 +23,8 @@ export default function Settings() {
   const [joboApiKeySet, setJoboApiKeySet] = useState(false)
   const [anthropicApiKey, setAnthropicApiKey] = useState('')
   const [anthropicApiKeySet, setAnthropicApiKeySet] = useState(false)
+  const [geminiApiKey, setGeminiApiKey] = useState('')
+  const [geminiApiKeySet, setGeminiApiKeySet] = useState(false)
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('')
   const [slackWebhookUrlSet, setSlackWebhookUrlSet] = useState(false)
   const [valueProposition, setValueProposition] = useState('')
@@ -39,6 +41,8 @@ export default function Settings() {
       setJoboApiKeySet(!!joboKey?.is_set)
       const anthropicKey = res.data.find(c => c.name === 'anthropic_api_key')
       setAnthropicApiKeySet(!!anthropicKey?.is_set)
+      const geminiKey = res.data.find(c => c.name === 'gemini_api_key')
+      setGeminiApiKeySet(!!geminiKey?.is_set)
       const slackKey = res.data.find(c => c.name === 'slack_webhook_url')
       setSlackWebhookUrlSet(!!slackKey?.is_set)
     }).catch(err => setError(err.message))
@@ -145,6 +149,18 @@ export default function Settings() {
     try {
       await client.post('/credentials', null, { params: { name: 'anthropic_api_key', value: anthropicApiKey } })
       setAnthropicApiKey('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveGeminiApiKey = async (e) => {
+    e.preventDefault()
+    if (!geminiApiKey.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'gemini_api_key', value: geminiApiKey } })
+      setGeminiApiKey('')
       load()
     } catch (err) {
       setError(err.message)
@@ -366,11 +382,24 @@ export default function Settings() {
       </div>
 
       <div className="card">
-        <h2>Claude (Phase 13: Personalized Outreach)</h2>
-        <p className="hint" style={{ marginBottom: '1rem' }}>Powers company/contact research and message writing. Direct Anthropic API, not routed through Deepline.</p>
+        <h2>Phase 13: Personalized Outreach (Gemini + Claude fallback)</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>Powers company/contact research and message writing. Tries Gemini first (cheaper, same quality) and automatically falls back to Claude Haiku if Gemini is unavailable. Direct APIs, not routed through Deepline.</p>
 
-        <form onSubmit={saveAnthropicApiKey} className="inline-form">
-          <label style={{ minWidth: '12rem' }}>API key</label>
+        <form onSubmit={saveGeminiApiKey} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>Gemini API key (primary)</label>
+          <input
+            type="password"
+            placeholder={geminiApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your Gemini API key'}
+            value={geminiApiKey}
+            onChange={e => setGeminiApiKey(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save API key</button>
+          {geminiApiKeySet && <span className="status-pill on">Set</span>}
+        </form>
+
+        <form onSubmit={saveAnthropicApiKey} className="inline-form" style={{ marginTop: '0.5rem' }}>
+          <label style={{ minWidth: '12rem' }}>Claude API key (fallback)</label>
           <input
             type="password"
             placeholder={anthropicApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your Anthropic API key'}
