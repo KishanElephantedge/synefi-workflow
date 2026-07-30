@@ -28,6 +28,15 @@ export default function Settings() {
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('')
   const [slackWebhookUrlSet, setSlackWebhookUrlSet] = useState(false)
   const [slackWebhookUrl2, setSlackWebhookUrl2] = useState('')
+  const GOOGLE_CAL_FIELDS = [
+    { key: 'google_calendar_client_id', label: 'OAuth Client ID' },
+    { key: 'google_calendar_client_secret', label: 'OAuth Client Secret' },
+    { key: 'google_calendar_refresh_token', label: 'Refresh Token' },
+    { key: 'google_calendar_id', label: 'Calendar ID', placeholderExample: 'primary, or the appointment schedule\'s calendar ID' },
+  ]
+  const [googleCalValues, setGoogleCalValues] = useState({})
+  const [googleCalSet, setGoogleCalSet] = useState({})
+  const [calendarSyncResult, setCalendarSyncResult] = useState(null)
   const [slackWebhookUrl2Set, setSlackWebhookUrl2Set] = useState(false)
   const [valueProposition, setValueProposition] = useState('')
   const [error, setError] = useState(null)
@@ -49,6 +58,11 @@ export default function Settings() {
       setSlackWebhookUrlSet(!!slackKey?.is_set)
       const slackKey2 = res.data.find(c => c.name === 'slack_webhook_url_2')
       setSlackWebhookUrl2Set(!!slackKey2?.is_set)
+      const nextGoogleCalSet = {}
+      for (const f of GOOGLE_CAL_FIELDS) {
+        nextGoogleCalSet[f.key] = !!res.data.find(c => c.name === f.key)?.is_set
+      }
+      setGoogleCalSet(nextGoogleCalSet)
     }).catch(err => setError(err.message))
     client.get('/parameters').then(res => {
       setParameters(res.data)
@@ -211,6 +225,29 @@ export default function Settings() {
       load()
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  const saveGoogleCalField = async (e, key) => {
+    e.preventDefault()
+    const value = googleCalValues[key]
+    if (!value || !value.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: key, value } })
+      setGoogleCalValues(prev => ({ ...prev, [key]: '' }))
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const syncCalendarNow = async () => {
+    setCalendarSyncResult(null)
+    try {
+      const res = await client.post('/calendar-bookings/sync')
+      setCalendarSyncResult(res.data)
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
     }
   }
 
@@ -471,6 +508,37 @@ export default function Settings() {
           <button type="submit">Save webhook URL</button>
           {slackWebhookUrl2Set && <span className="status-pill on">Set</span>}
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Google Calendar (appointment bookings)</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>
+          Pulls calls booked through the Google Calendar Appointment Schedule on the website, every 15 minutes automatically.
+          Needs a one-time OAuth setup (Google Cloud Console project + OAuth client + a refresh token from Google's own consent flow) done outside this dashboard --
+          paste the resulting values below once that's done.
+        </p>
+        {GOOGLE_CAL_FIELDS.map(f => (
+          <form key={f.key} onSubmit={e => saveGoogleCalField(e, f.key)} className="inline-form" style={{ marginTop: '0.5rem' }}>
+            <label style={{ minWidth: '12rem' }}>{f.label}</label>
+            <input
+              type="password"
+              placeholder={googleCalSet[f.key] ? 'Currently set (enter a new value to replace)' : (f.placeholderExample || `Paste ${f.label}`)}
+              value={googleCalValues[f.key] || ''}
+              onChange={e => setGoogleCalValues(prev => ({ ...prev, [f.key]: e.target.value }))}
+              style={{ minWidth: '24rem' }}
+            />
+            <button type="submit">Save</button>
+            {googleCalSet[f.key] && <span className="status-pill on">Set</span>}
+          </form>
+        ))}
+        <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+          <button type="button" className="secondary" onClick={syncCalendarNow}>Sync now</button>
+          {calendarSyncResult && (
+            <span className="hint">
+              Fetched {calendarSyncResult.fetched}, created {calendarSyncResult.created}, updated {calendarSyncResult.updated}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="card">
