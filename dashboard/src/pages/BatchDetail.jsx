@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import client from '../api/client'
@@ -55,6 +55,8 @@ export default function BatchDetail() {
   return <SynefiBatchDetail />
 }
 
+const PAGE_SIZE = 50
+
 function SynefiBatchDetail() {
   const { batchId, tenantSlug } = useParams()
   const [batch, setBatch] = useState(null)
@@ -62,14 +64,27 @@ function SynefiBatchDetail() {
   const [runningPhase, setRunningPhase] = useState(null)
   const [lastResult, setLastResult] = useState(null)
   const [target, setTarget] = useState(5)
+  const [page, setPage] = useState(1)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const load = () => {
-    client.get(`/batches/${batchId}`)
+  const load = (targetPage = page, fresh = false) => {
+    client.get(`/batches/${batchId}`, { params: { page: targetPage, page_size: PAGE_SIZE, fresh } })
       .then(res => setBatch(res.data))
       .catch(err => setError(err.message))
   }
 
-  useEffect(load, [batchId])
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await client.get(`/batches/${batchId}`, { params: { page, page_size: PAGE_SIZE, fresh: true } }).then(res => setBatch(res.data))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => load(page), [batchId, page])
 
   const runPhase = async (phase) => {
     const confirmed = window.confirm(
@@ -95,13 +110,12 @@ function SynefiBatchDetail() {
   if (error && !batch) return <div className="page"><p className="error">{error}</p></div>
   if (!batch) return <div className="page"><p className="hint">Loading...</p></div>
 
-  const tierCounts = { hot: 0, warm: 0, cool: 0, excluded: 0 }
-  ;(batch.companies || []).forEach(c => {
-    if (c.tier) tierCounts[c.tier] = (tierCounts[c.tier] || 0) + 1
-  })
+  const tierCounts = batch.summary?.tier_counts || {}
   const chartData = Object.entries(tierCounts)
     .filter(([, count]) => count > 0)
     .map(([tier, count]) => ({ name: tier, value: count }))
+  const totalCompanies = batch.total_companies ?? (batch.companies || []).length
+  const totalPages = Math.max(1, Math.ceil(totalCompanies / PAGE_SIZE))
 
   return (
     <div className="page">
@@ -109,6 +123,9 @@ function SynefiBatchDetail() {
         <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to Hot Accounts</Link>
         <h1>{batch.name}</h1>
         <p className="meta">Phase: <strong>{batch.current_phase}</strong> &middot; Status: {batch.status}</p>
+        <button type="button" className="secondary" disabled={refreshing} onClick={refresh}>
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -164,7 +181,7 @@ function SynefiBatchDetail() {
         </div>
       )}
 
-      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({(batch.companies || []).length})</h2>
+      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({totalCompanies})</h2>
       <div className="table-wrap">
         <table>
           <thead>
@@ -196,6 +213,17 @@ function SynefiBatchDetail() {
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+          <button type="button" className="secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+            Previous
+          </button>
+          <span className="hint">Page {page} of {totalPages}</span>
+          <button type="button" className="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -208,12 +236,12 @@ const EE_STEPS = [
   {
     key: 'discovery',
     label: 'Discovery',
-    isDone: (batch) => (batch.companies || []).length > 0,
+    isDone: (batch) => (batch.total_companies ?? (batch.companies || []).length) > 0,
   },
   {
     key: 'import',
     label: 'Import Companies',
-    isDone: (batch) => (batch.companies || []).length > 0,
+    isDone: (batch) => (batch.total_companies ?? (batch.companies || []).length) > 0,
   },
   {
     key: 'buying-signal',
@@ -228,12 +256,12 @@ const EE_STEPS = [
   {
     key: 'scoring',
     label: 'Scoring',
-    isDone: (batch) => (batch.companies || []).some(c => c.tier != null),
+    isDone: (batch) => (batch.summary?.scored_count ?? 0) > 0,
   },
   {
     key: 'decision-maker',
     label: 'Decision Maker',
-    isDone: (batch) => (batch.companies || []).some(c => c.contact_count > 0) || batch.current_phase === 'decision_maker_done' || batch.current_phase === 'outreach_done',
+    isDone: (batch) => (batch.summary?.contacts_count ?? 0) > 0 || batch.current_phase === 'decision_maker_done' || batch.current_phase === 'outreach_done',
   },
   {
     key: 'outreach',
@@ -241,6 +269,8 @@ const EE_STEPS = [
     isDone: (batch) => batch.current_phase === 'outreach_done',
   },
 ]
+
+const EE_PAGE_SIZE = 50
 
 function ElephantEdgeBatchDetail() {
   const { batchId, tenantSlug } = useParams()
@@ -256,6 +286,8 @@ function ElephantEdgeBatchDetail() {
   const [messageData, setMessageData] = useState({})
   const [generatingContactId, setGeneratingContactId] = useState(null)
   const [editedMessage, setEditedMessage] = useState('')
+  const [page, setPage] = useState(1)
+  const [refreshing, setRefreshing] = useState(false)
 
   const toggleMessagePanel = async (contactId) => {
     if (messageContactId === contactId) {
@@ -302,16 +334,30 @@ function ElephantEdgeBatchDetail() {
     }
   }
 
-  const load = () => {
-    client.get(`/batches/${batchId}`)
+  const load = (targetPage = page, fresh = false) => {
+    client.get(`/batches/${batchId}`, { params: { page: targetPage, page_size: EE_PAGE_SIZE, fresh } })
       .then(res => setBatch(res.data))
       .catch(err => setError(err.message))
   }
 
-  useEffect(load, [batchId])
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await client.get(`/batches/${batchId}`, { params: { page, page_size: EE_PAGE_SIZE, fresh: true } }).then(res => setBatch(res.data))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => load(page), [batchId, page])
 
   if (error && !batch) return <div className="page"><p className="error">{error}</p></div>
   if (!batch) return <div className="page"><p className="hint">Loading...</p></div>
+
+  const totalCompanies = batch.total_companies ?? (batch.companies || []).length
+  const totalPages = Math.max(1, Math.ceil(totalCompanies / EE_PAGE_SIZE))
 
   const toggleStep = (key) => setActiveStep(activeStep === key ? null : key)
 
@@ -386,6 +432,9 @@ function ElephantEdgeBatchDetail() {
         <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to Hot Accounts</Link>
         <h1>{batch.name}</h1>
         <p className="meta">Phase: <strong>{batch.current_phase || 'created'}</strong> &middot; Status: {batch.status}</p>
+        <button type="button" className="secondary" disabled={refreshing} onClick={refresh}>
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -455,12 +504,12 @@ function ElephantEdgeBatchDetail() {
             <div className="inline-form">
               <button
                 type="button"
-                disabled={running || (batch.companies || []).length === 0}
+                disabled={running || totalCompanies === 0}
                 onClick={() => runPhase('buying-signal', 'Buying Signal', 'Check buying signals for all companies in this batch?')}
               >
                 {running ? 'Checking...' : 'Execute'}
               </button>
-              {(batch.companies || []).length === 0 && <span className="hint">Add companies first.</span>}
+              {totalCompanies === 0 && <span className="hint">Add companies first.</span>}
             </div>
           </div>
         )}
@@ -473,12 +522,12 @@ function ElephantEdgeBatchDetail() {
             <div className="inline-form">
               <button
                 type="button"
-                disabled={running || (batch.companies || []).length === 0}
+                disabled={running || totalCompanies === 0}
                 onClick={() => runPhase('tech-stack', 'Tech Stack', 'Check tech stack for all companies in this batch?')}
               >
                 {running ? 'Checking...' : 'Execute'}
               </button>
-              {(batch.companies || []).length === 0 && <span className="hint">Add companies first.</span>}
+              {totalCompanies === 0 && <span className="hint">Add companies first.</span>}
             </div>
           </div>
         )}
@@ -492,7 +541,7 @@ function ElephantEdgeBatchDetail() {
             <div className="inline-form">
               <button
                 type="button"
-                disabled={running || (batch.companies || []).length === 0}
+                disabled={running || totalCompanies === 0}
                 onClick={() => runPhase('scoring', 'Scoring', null)}
               >
                 {running ? 'Scoring...' : 'Execute'}
@@ -553,12 +602,12 @@ function ElephantEdgeBatchDetail() {
             <div className="inline-form">
               <button
                 type="button"
-                disabled={running || (batch.companies || []).length === 0}
+                disabled={running || totalCompanies === 0}
                 onClick={() => runPhase('decision-maker', 'Decision Maker', 'Run decision-maker search for all companies in this batch?')}
               >
                 {running ? 'Running...' : 'Execute'}
               </button>
-              {(batch.companies || []).length === 0 && <span className="hint">Import companies first.</span>}
+              {totalCompanies === 0 && <span className="hint">Import companies first.</span>}
             </div>
           </div>
         )}
@@ -589,7 +638,7 @@ function ElephantEdgeBatchDetail() {
         </div>
       )}
 
-      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({(batch.companies || []).length})</h2>
+      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({totalCompanies})</h2>
       <div className="table-wrap">
         <table>
           <thead>
@@ -609,8 +658,8 @@ function ElephantEdgeBatchDetail() {
           </thead>
           <tbody>
             {(batch.companies || []).map(c => (
-              <>
-                <tr key={c.id}>
+              <Fragment key={c.id}>
+                <tr>
                   <td>{c.name}</td>
                   <td>{c.domain}</td>
                   <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
@@ -652,7 +701,7 @@ function ElephantEdgeBatchDetail() {
                   </td>
                 </tr>
                 {(c.contacts || []).map(ct => messageContactId === ct.id && (
-                  <tr key={`${ct.id}-message`}>
+                  <tr key={ct.id}>
                     <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.9rem 1rem' }}>
                       {!messageData[ct.id] ? (
                         <p className="hint">Loading...</p>
@@ -695,7 +744,7 @@ function ElephantEdgeBatchDetail() {
                   </tr>
                 ))}
                 {expandedCompanyId === c.id && c.score_breakdown && (
-                  <tr key={`${c.id}-breakdown`}>
+                  <tr>
                     <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
                       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                         <div><strong>Need:</strong> {c.score_breakdown.need}/30 <span className="hint">(hiring signal: {c.hiring_signal_role ? `${c.hiring_signal_strength} match on "${c.hiring_signal_role}"` : 'none found'})</span></div>
@@ -710,7 +759,7 @@ function ElephantEdgeBatchDetail() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {(batch.companies || []).length === 0 && (
               <tr><td colSpan={11} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
@@ -718,6 +767,17 @@ function ElephantEdgeBatchDetail() {
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+          <button type="button" className="secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+            Previous
+          </button>
+          <span className="hint">Page {page} of {totalPages}</span>
+          <button type="button" className="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -43,7 +43,7 @@ class Batch(Base):
     __tablename__ = "batches"
 
     id = Column(Integer, primary_key=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     current_phase = Column(String, default="signal_discovery")
@@ -57,7 +57,7 @@ class Company(Base):
     __tablename__ = "companies"
 
     id = Column(Integer, primary_key=True)
-    batch_id = Column(Integer, ForeignKey("batches.id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("batches.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     domain = Column(String, nullable=True)
     industry = Column(String, nullable=True)
@@ -105,7 +105,7 @@ class Signal(Base):
     __tablename__ = "signals"
 
     id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     category = Column(String, nullable=False)  # e.g. "job_posting", "tech_stack", etc.
     signal_type = Column(String, nullable=False)  # e.g. "AI Leadership job post"
     detail = Column(Text, nullable=True)  # raw evidence text
@@ -145,7 +145,7 @@ class Contact(Base):
     __tablename__ = "contacts"
 
     id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     title = Column(String, nullable=True)
@@ -191,7 +191,7 @@ class CampaignPush(Base):
     __tablename__ = "campaign_pushes"
 
     id = Column(Integer, primary_key=True)
-    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     heyreach_campaign_id = Column(String, nullable=True)
     status = Column(String, default="pending")  # pending | pushed | failed
     error_message = Column(Text, nullable=True)
@@ -208,7 +208,7 @@ class AutonomousRun(Base):
 
     id = Column(Integer, primary_key=True)
     run_date = Column(DateTime, default=datetime.utcnow)
-    batch_id = Column(Integer, ForeignKey("batches.id"), nullable=True)
+    batch_id = Column(Integer, ForeignKey("batches.id"), nullable=True, index=True)
     status = Column(String, default="running")  # running | completed | failed
     companies_discovered = Column(Integer, default=0)
     companies_selected = Column(Integer, default=0)  # the top-5 cap for the day

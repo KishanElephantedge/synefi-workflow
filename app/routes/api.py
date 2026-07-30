@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from app.db.models import AutonomousRun, Batch, Company, Credential, Parameter
+from app.cache import active_keys, bump_batch_version, cache_get, cache_set, get_batch_version, mark_active
+from app.db.models import AutonomousRun, Batch, Company, Contact, Credential, Parameter, Score
 from app.db.session import get_db
 from app.phases.autonomous_orchestrator import is_autonomous_enabled, run_daily_autonomous_cycle
 from app.phases.decision_maker import run_decision_maker_id
@@ -77,6 +78,7 @@ def execute_signal_discovery(batch_id: int, target: int = 5, db: Session = Depen
     result = run_signal_discovery(batch.id, db, tenant_id=SYNEFI_TENANT_ID, target=target)
     batch.current_phase = "signal_discovery_done"
     db.commit()
+    bump_batch_version(batch_id)
     return result
 
 
@@ -86,6 +88,7 @@ def execute_scoring(batch_id: int, db: Session = Depends(get_db)):
     result = run_scoring(batch.id, db)
     batch.current_phase = "scoring_done"
     db.commit()
+    bump_batch_version(batch_id)
     return result
 
 
@@ -95,6 +98,7 @@ def execute_decision_maker_id(batch_id: int, db: Session = Depends(get_db)):
     result = run_decision_maker_id(batch.id, db, tenant_id=SYNEFI_TENANT_ID)
     batch.current_phase = "decision_maker_done"
     db.commit()
+    bump_batch_version(batch_id)
     return result
 
 
@@ -107,12 +111,47 @@ def execute_outreach_push(batch_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
     batch.current_phase = "outreach_done"
     db.commit()
+    bump_batch_version(batch_id)
     return result
 
 
-@router.get("/batches/{batch_id}")
-def get_batch(batch_id: int, db: Session = Depends(get_db)):
-    batch = _get_tenant_batch(batch_id, db)
+CACHE_TTL_SECONDS = 600  # generous -- the background refresher (main.py) keeps active
+# batches' cache fresh well before this expires; it's just a ceiling for abandoned pages.
+
+
+def _build_batch_payload(batch_id: int, page: int, page_size: int, db: Session) -> dict | None:
+    """The actual DB work behind GET /batches/{id} -- factored out so both the request
+    handler (cache miss / ?fresh=true) and the background refresher can produce the exact
+    same shape without duplicating the query logic."""
+    batch = (
+        db.query(Batch)
+        .filter(Batch.id == batch_id)
+        .filter(Batch.tenant_id == SYNEFI_TENANT_ID)
+        .first()
+    )
+    if not batch:
+        return None
+
+    # Summary counts are computed with SQL aggregates over the WHOLE batch, independent of
+    # which page is loaded -- phase-progress logic (has scoring run? has a decision maker been
+    # found for anyone?) needs to see the whole batch, not just whatever page happens to be
+    # showing, so it can't be derived by scanning the (now paginated) companies list.
+    total_companies = db.query(func.count(Company.id)).filter(Company.batch_id == batch.id).scalar()
+    tier_rows = (
+        db.query(Score.tier, func.count(Score.id))
+        .join(Company, Company.id == Score.company_id)
+        .filter(Company.batch_id == batch.id)
+        .group_by(Score.tier)
+        .all()
+    )
+    tier_counts = {tier: count for tier, count in tier_rows if tier}
+    contacts_count = (
+        db.query(func.count(Contact.id))
+        .join(Company, Company.id == Contact.company_id)
+        .filter(Company.batch_id == batch.id)
+        .scalar()
+    )
+
     companies = (
         db.query(Company)
         .filter(Company.batch_id == batch.id)
@@ -121,6 +160,9 @@ def get_batch(batch_id: int, db: Session = Depends(get_db)):
             selectinload(Company.score),
             selectinload(Company.contacts),
         )
+        .order_by(Company.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
         .all()
     )
     return {
@@ -128,6 +170,14 @@ def get_batch(batch_id: int, db: Session = Depends(get_db)):
         "name": batch.name,
         "current_phase": batch.current_phase,
         "status": batch.status,
+        "page": page,
+        "page_size": page_size,
+        "total_companies": total_companies,
+        "summary": {
+            "tier_counts": tier_counts,
+            "scored_count": sum(tier_counts.values()),
+            "contacts_count": contacts_count,
+        },
         "companies": [
             {
                 "id": c.id,
@@ -141,6 +191,46 @@ def get_batch(batch_id: int, db: Session = Depends(get_db)):
             for c in companies
         ],
     }
+
+
+def _batch_cache_key(batch_id: int, page: int, page_size: int) -> str:
+    version = get_batch_version(batch_id)
+    return f"batch:{batch_id}:v{version}:p{page}:s{page_size}"
+
+
+def refresh_active_batch_caches(db: Session):
+    """Runs every few minutes (see main.py's scheduler) -- re-fetches and re-caches every
+    batch page anyone actually loaded recently, so a real user's next click almost always
+    hits a warm cache instead of racing a cold DB query. Cheap: only touches pages someone
+    looked at in the last 30 minutes (see app/cache.py's active_keys)."""
+    for logical_key in active_keys():
+        try:
+            batch_id_str, page_str, page_size_str = logical_key.split(":")
+            batch_id, page, page_size = int(batch_id_str), int(page_str), int(page_size_str)
+        except ValueError:
+            continue
+        payload = _build_batch_payload(batch_id, page, page_size, db)
+        if payload is None:
+            continue
+        cache_set(_batch_cache_key(batch_id, page, page_size), payload, CACHE_TTL_SECONDS)
+
+
+@router.get("/batches/{batch_id}")
+def get_batch(batch_id: int, page: int = 1, page_size: int = 50, fresh: bool = False, db: Session = Depends(get_db)):
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), 200)
+    mark_active(f"{batch_id}:{page}:{page_size}")
+
+    if not fresh:
+        cached = cache_get(_batch_cache_key(batch_id, page, page_size))
+        if cached is not None:
+            return cached
+
+    payload = _build_batch_payload(batch_id, page, page_size, db)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    cache_set(_batch_cache_key(batch_id, page, page_size), payload, CACHE_TTL_SECONDS)
+    return payload
 
 
 # ---- Credentials (Settings page) ----

@@ -4,7 +4,11 @@ FROM python:3.11-slim
 # as a subprocess (see app/deepline_client.py). Everything else here is a normal Python app --
 # Docker is used specifically to bundle this one cross-runtime dependency, the standard way
 # to handle "Python app needs a CLI written in another runtime" in production.
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
+#
+# redis-server runs IN this same container (started by the CMD below, before uvicorn) --
+# a pure cache for GET /batches/{id}, not a separate Render service, so it never adds its
+# own cold-start surface. See app/cache.py for the cache-aside logic.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates redis-server && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     npm install -g deepline@0.1.254 && \
@@ -26,4 +30,4 @@ COPY app/ ./app/
 # elephantedge-workflow's fresh image, which pulled it since its build had no pin.
 
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "redis-server --daemonize yes --save '' && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
