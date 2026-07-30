@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import AutonomousRun, Batch, Company, Credential, Parameter
 from app.db.session import get_db
@@ -51,6 +52,12 @@ def list_batches(db: Session = Depends(get_db)):
         .order_by(Batch.created_at.desc())
         .all()
     )
+    counts = dict(
+        db.query(Company.batch_id, func.count(Company.id))
+        .filter(Company.batch_id.in_([b.id for b in batches]))
+        .group_by(Company.batch_id)
+        .all()
+    )
     return [
         {
             "id": b.id,
@@ -58,7 +65,7 @@ def list_batches(db: Session = Depends(get_db)):
             "created_at": b.created_at,
             "current_phase": b.current_phase,
             "status": b.status,
-            "company_count": len(b.companies),
+            "company_count": counts.get(b.id, 0),
         }
         for b in batches
     ]
@@ -106,7 +113,16 @@ def execute_outreach_push(batch_id: int, db: Session = Depends(get_db)):
 @router.get("/batches/{batch_id}")
 def get_batch(batch_id: int, db: Session = Depends(get_db)):
     batch = _get_tenant_batch(batch_id, db)
-    companies = db.query(Company).filter(Company.batch_id == batch.id).all()
+    companies = (
+        db.query(Company)
+        .filter(Company.batch_id == batch.id)
+        .options(
+            selectinload(Company.signals),
+            selectinload(Company.score),
+            selectinload(Company.contacts),
+        )
+        .all()
+    )
     return {
         "id": batch.id,
         "name": batch.name,
