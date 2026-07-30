@@ -370,6 +370,17 @@ function ElephantEdgeBatchDetail() {
     }
   }
 
+  // Separate from message approve/reject -- this controls whether the contact gets pushed to
+  // the outreach campaign at all when the approval window resumes.
+  const toggleExcludedFromPush = async (contactId, excluded) => {
+    try {
+      await client.post(`/contacts/${contactId}/exclude-from-push`, null, { params: { excluded } })
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    }
+  }
+
   const load = (targetPage = page, fresh = false) => {
     client.get(`/batches/${batchId}`, { params: { page: targetPage, page_size: EE_PAGE_SIZE, fresh } })
       .then(res => setBatch(res.data))
@@ -710,6 +721,14 @@ function ElephantEdgeBatchDetail() {
                         {(c.contacts || []).map(ct => (
                           <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
                             {ct.first_name} {ct.last_name}
+                            {ct.excluded_from_push ? (
+                              <>
+                                <span className="status-pill warn" style={{ fontSize: '0.65rem', marginLeft: '0.35rem' }}>excluded from push</span>{' '}
+                                <button type="button" className="link-button" style={{ fontSize: '0.72rem' }} onClick={() => toggleExcludedFromPush(ct.id, false)}>Undo</button>
+                              </>
+                            ) : (
+                              <button type="button" className="link-button" style={{ fontSize: '0.72rem', display: 'block' }} onClick={() => toggleExcludedFromPush(ct.id, true)}>Don't push to campaign</button>
+                            )}
                           </div>
                         ))}
                       </td>

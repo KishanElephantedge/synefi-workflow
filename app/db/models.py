@@ -156,6 +156,7 @@ class Contact(Base):
     # Elephant Edge only -- unused by Synefi, shared physical table.
     hubspot_synced_at = Column(DateTime, nullable=True)
     personalization_hook = Column(Text, nullable=True)
+    excluded_from_push = Column(Boolean, default=False)
 
     company = relationship("Company", back_populates="contacts")
     enrichment = relationship("Enrichment", back_populates="contact", uselist=False, cascade="all, delete-orphan")
