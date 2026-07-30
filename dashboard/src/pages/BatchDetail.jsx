@@ -361,6 +361,11 @@ function ElephantEdgeBatchDetail() {
 
   const toggleStep = (key) => setActiveStep(activeStep === key ? null : key)
 
+  const activeDrawerContact = messageContactId
+    ? (batch.companies || []).flatMap(c => (c.contacts || []).map(ct => ({ ...ct, companyName: c.name })))
+        .find(ct => ct.id === messageContactId)
+    : null
+
   const runImport = async () => {
     const companies = importText
       .split('\n')
@@ -427,7 +432,7 @@ function ElephantEdgeBatchDetail() {
   }
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       <div className="page-header">
         <Link to={`/${tenantSlug}`} className="breadcrumb">&larr; Back to Hot Accounts</Link>
         <h1>{batch.name}</h1>
@@ -638,146 +643,165 @@ function ElephantEdgeBatchDetail() {
         </div>
       )}
 
-      <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({totalCompanies})</h2>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Domain</th>
-              <th>Tier</th>
-              <th>Score</th>
-              <th>Sales HC%</th>
-              <th>Geo</th>
-              <th>Industry</th>
-              <th>Hiring Signal</th>
-              <th>Outbound Tools</th>
-              <th>Contacts</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {(batch.companies || []).map(c => (
-              <Fragment key={c.id}>
+      <div className="batch-layout">
+        <div className="batch-layout-main">
+          <h2 style={{ margin: '0 0 0.75rem' }}>Companies ({totalCompanies})</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
                 <tr>
-                  <td>{c.name}</td>
-                  <td>{c.domain}</td>
-                  <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
-                  <td>
-                    {c.score_breakdown ? (
-                      <button
-                        type="button"
-                        className="link-button"
-                        onClick={() => setExpandedCompanyId(expandedCompanyId === c.id ? null : c.id)}
-                        title="Click to see the full 5-category breakdown"
-                      >
-                        {c.score ?? '-'} {expandedCompanyId === c.id ? '▾' : '▸'}
-                      </button>
-                    ) : (c.score ?? '-')}
-                  </td>
-                  <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
-                  <td>{c.geography_tier === 'tier_1' ? 'T1' : (c.geography_tier === 'tier_2' ? 'T2' : '-')}</td>
-                  <td>{c.industry_classification || '-'}</td>
-                  <td title={c.hiring_signal_reasoning || ''}>
-                    {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
-                  </td>
-                  <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
-                  <td>
-                    {(c.contacts || []).map(ct => (
-                      <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
-                        <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>
-                          {ct.first_name} {ct.last_name}
-                        </button>
-                        {ct.message_status && <span className={`status-pill ${ct.message_status === 'approved' ? 'on' : 'warn'}`} style={{ marginLeft: '0.3rem', fontSize: '0.7rem' }}>{ct.message_status}</span>}
-                      </div>
-                    ))}
-                  </td>
-                  <td>
-                    {c.contact_count === 0 && c.decision_maker_searched && (
-                      <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
-                        Retry
-                      </button>
-                    )}
-                  </td>
+                  <th>Name</th>
+                  <th>Domain</th>
+                  <th>Contact</th>
+                  <th>Message</th>
+                  <th>Tier</th>
+                  <th>Score</th>
+                  <th>Sales HC%</th>
+                  <th>Geo</th>
+                  <th>Industry</th>
+                  <th>Hiring Signal</th>
+                  <th>Outbound Tools</th>
+                  <th></th>
                 </tr>
-                {(c.contacts || []).map(ct => messageContactId === ct.id && (
-                  <tr key={ct.id}>
-                    <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.9rem 1rem' }}>
-                      {!messageData[ct.id] ? (
-                        <p className="hint">Loading...</p>
-                      ) : messageData[ct.id].status === 'not_generated' ? (
-                        <button type="button" disabled={generatingContactId === ct.id} onClick={() => generateMessage(ct.id)}>
-                          {generatingContactId === ct.id ? 'Generating...' : 'Generate personalized message'}
-                        </button>
-                      ) : (
-                        <div>
-                          {messageData[ct.id].error_message && (
-                            <p className="error">Generation error: {messageData[ct.id].error_message}</p>
-                          )}
-                          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                            <div style={{ flex: '1 1 300px' }}>
-                              <strong>Company research</strong>
-                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].company_research, null, 2)}</pre>
-                            </div>
-                            <div style={{ flex: '1 1 300px' }}>
-                              <strong>Contact research</strong>
-                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].contact_research, null, 2)}</pre>
-                            </div>
-                            <div style={{ flex: '1 1 300px' }}>
-                              <strong>Fit analysis</strong>
-                              <pre style={{ fontSize: '0.78rem', maxHeight: '200px', overflow: 'auto' }}>{JSON.stringify(messageData[ct.id].fit_analysis, null, 2)}</pre>
-                            </div>
+              </thead>
+              <tbody>
+                {(batch.companies || []).map(c => (
+                  <Fragment key={c.id}>
+                    <tr>
+                      <td>{c.name}</td>
+                      <td>{c.domain}</td>
+                      <td>
+                        {(c.contacts || []).map(ct => (
+                          <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
+                            {ct.first_name} {ct.last_name}
                           </div>
-                          <label style={{ display: 'block', marginBottom: '0.3rem' }}>Generated message (editable)</label>
-                          <textarea rows={6} value={editedMessage} onChange={e => setEditedMessage(e.target.value)} style={{ width: '100%' }} />
-                          <div className="inline-form" style={{ marginTop: '0.5rem' }}>
-                            <button type="button" onClick={() => saveMessageEdit(ct.id, messageData[ct.id].status)}>Save edit</button>
-                            <button type="button" onClick={() => saveMessageEdit(ct.id, 'approved')}>Approve</button>
-                            <button type="button" className="secondary" onClick={() => saveMessageEdit(ct.id, 'rejected')}>Reject</button>
-                            <button type="button" className="secondary" disabled={generatingContactId === ct.id} onClick={() => generateMessage(ct.id)}>
-                              {generatingContactId === ct.id ? 'Regenerating...' : 'Regenerate'}
-                            </button>
+                        ))}
+                      </td>
+                      <td>
+                        {(c.contacts || []).map(ct => (
+                          <div key={ct.id} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            {ct.message_status && <span className={`status-pill ${ct.message_status === 'approved' ? 'on' : 'warn'}`} style={{ fontSize: '0.7rem' }}>{ct.message_status}</span>}
+                            <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>Approve</button>
+                            <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>Reject</button>
                           </div>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                        ))}
+                      </td>
+                      <td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td>
+                      <td>
+                        {c.score_breakdown ? (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => setExpandedCompanyId(expandedCompanyId === c.id ? null : c.id)}
+                            title="Click to see the full 5-category breakdown"
+                          >
+                            {c.score ?? '-'} {expandedCompanyId === c.id ? '▾' : '▸'}
+                          </button>
+                        ) : (c.score ?? '-')}
+                      </td>
+                      <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
+                      <td>{c.geography_tier === 'tier_1' ? 'T1' : (c.geography_tier === 'tier_2' ? 'T2' : '-')}</td>
+                      <td>{c.industry_classification || '-'}</td>
+                      <td title={c.hiring_signal_reasoning || ''}>
+                        {c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : '-'}
+                      </td>
+                      <td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}{c.has_ai_sdr_tool ? ' + AI SDR' : ''}</td>
+                      <td>
+                        {c.contact_count === 0 && c.decision_maker_searched && (
+                          <button type="button" disabled={running} onClick={() => retryCompany(c.name, c.id)}>
+                            Retry
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {expandedCompanyId === c.id && c.score_breakdown && (
+                      <tr>
+                        <td colSpan={12} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
+                          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                            <div><strong>Need:</strong> {c.score_breakdown.need}/30 <span className="hint">(hiring signal: {c.hiring_signal_role ? `${c.hiring_signal_strength} match on "${c.hiring_signal_role}"` : 'none found'})</span></div>
+                            <div><strong>Ability to Pay:</strong> {c.score_breakdown.ability_to_pay}/20 <span className="hint">(revenue band + funding on record)</span></div>
+                            <div><strong>Outbound Maturity:</strong> {c.score_breakdown.outbound_maturity}/20 <span className="hint">(existing tooling: {c.has_outbound_tooling ? 'yes' : 'no'}{c.has_ai_sdr_tool ? ', AI SDR tool detected' : ''})</span></div>
+                            <div><strong>Product Fit:</strong> {c.score_breakdown.product_fit}/20 <span className="hint">(industry: {c.industry_classification || '-'}, geo: {c.geography_tier || '-'})</span></div>
+                            <div><strong>Buying Intent:</strong> {c.score_breakdown.buying_intent}/10 <span className="hint">(JD product-fit matches: {(c.product_fit_jd_categories || []).length > 0 ? c.product_fit_jd_categories.join(', ') : 'none'})</span></div>
+                          </div>
+                          <div style={{ marginTop: '0.5rem' }}>
+                            <strong>Total: {c.score_breakdown.total}/100 — {c.score_breakdown.tier_label}</strong>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
-                {expandedCompanyId === c.id && c.score_breakdown && (
-                  <tr>
-                    <td colSpan={11} style={{ background: '#f8f9fa', padding: '0.75rem 1rem' }}>
-                      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                        <div><strong>Need:</strong> {c.score_breakdown.need}/30 <span className="hint">(hiring signal: {c.hiring_signal_role ? `${c.hiring_signal_strength} match on "${c.hiring_signal_role}"` : 'none found'})</span></div>
-                        <div><strong>Ability to Pay:</strong> {c.score_breakdown.ability_to_pay}/20 <span className="hint">(revenue band + funding on record)</span></div>
-                        <div><strong>Outbound Maturity:</strong> {c.score_breakdown.outbound_maturity}/20 <span className="hint">(existing tooling: {c.has_outbound_tooling ? 'yes' : 'no'}{c.has_ai_sdr_tool ? ', AI SDR tool detected' : ''})</span></div>
-                        <div><strong>Product Fit:</strong> {c.score_breakdown.product_fit}/20 <span className="hint">(industry: {c.industry_classification || '-'}, geo: {c.geography_tier || '-'})</span></div>
-                        <div><strong>Buying Intent:</strong> {c.score_breakdown.buying_intent}/10 <span className="hint">(JD product-fit matches: {(c.product_fit_jd_categories || []).length > 0 ? c.product_fit_jd_categories.join(', ') : 'none'})</span></div>
-                      </div>
-                      <div style={{ marginTop: '0.5rem' }}>
-                        <strong>Total: {c.score_breakdown.total}/100 — {c.score_breakdown.tier_label}</strong>
-                      </div>
-                    </td>
-                  </tr>
+                {(batch.companies || []).length === 0 && (
+                  <tr><td colSpan={12} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
                 )}
-              </Fragment>
-            ))}
-            {(batch.companies || []).length === 0 && (
-              <tr><td colSpan={11} className="empty-state">No companies yet - use Discovery or Import Companies above.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {totalPages > 1 && (
-        <div className="inline-form" style={{ marginTop: '0.75rem' }}>
-          <button type="button" className="secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-            Previous
-          </button>
-          <span className="hint">Page {page} of {totalPages}</span>
-          <button type="button" className="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-            Next
-          </button>
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+              <button type="button" className="secondary" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                Previous
+              </button>
+              <span className="hint">Page {page} of {totalPages}</span>
+              <button type="button" className="secondary" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                Next
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {messageContactId && (
+          <div className="message-drawer">
+            <div className="message-drawer-header">
+              <div>
+                <h3>{activeDrawerContact ? `${activeDrawerContact.first_name} ${activeDrawerContact.last_name}` : 'Message'}</h3>
+                {activeDrawerContact && <p className="meta">{activeDrawerContact.title} {activeDrawerContact.companyName ? `@ ${activeDrawerContact.companyName}` : ''}</p>}
+              </div>
+              <button type="button" className="message-drawer-close" onClick={() => setMessageContactId(null)} aria-label="Close">&times;</button>
+            </div>
+            <div className="message-drawer-body">
+              {!messageData[messageContactId] ? (
+                <p className="hint">Loading...</p>
+              ) : messageData[messageContactId].status === 'not_generated' ? (
+                <button type="button" disabled={generatingContactId === messageContactId} onClick={() => generateMessage(messageContactId)}>
+                  {generatingContactId === messageContactId ? 'Generating...' : 'Generate personalized message'}
+                </button>
+              ) : (
+                <>
+                  {messageData[messageContactId].error_message && (
+                    <p className="error">Generation error: {messageData[messageContactId].error_message}</p>
+                  )}
+                  <div className="message-drawer-section">
+                    <strong>Company research</strong>
+                    <pre>{JSON.stringify(messageData[messageContactId].company_research, null, 2)}</pre>
+                  </div>
+                  <div className="message-drawer-section">
+                    <strong>Contact research</strong>
+                    <pre>{JSON.stringify(messageData[messageContactId].contact_research, null, 2)}</pre>
+                  </div>
+                  <div className="message-drawer-section">
+                    <strong>Fit analysis</strong>
+                    <pre>{JSON.stringify(messageData[messageContactId].fit_analysis, null, 2)}</pre>
+                  </div>
+                  <label style={{ display: 'block', marginBottom: '0.3rem' }}>Generated message (editable)</label>
+                  <textarea rows={8} value={editedMessage} onChange={e => setEditedMessage(e.target.value)} style={{ width: '100%' }} />
+                </>
+              )}
+            </div>
+            {messageData[messageContactId] && messageData[messageContactId].status !== 'not_generated' && (
+              <div className="message-drawer-footer">
+                <button type="button" onClick={() => saveMessageEdit(messageContactId, messageData[messageContactId].status)}>Save edit</button>
+                <button type="button" onClick={() => saveMessageEdit(messageContactId, 'approved')}>Approve</button>
+                <button type="button" className="secondary" onClick={() => saveMessageEdit(messageContactId, 'rejected')}>Reject</button>
+                <button type="button" className="secondary" disabled={generatingContactId === messageContactId} onClick={() => generateMessage(messageContactId)}>
+                  {generatingContactId === messageContactId ? 'Regenerating...' : 'Regenerate'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -740,6 +740,108 @@ pre {
   }
 }
 
+/* ---------- Wide page (no card constraint) + side drawer ---------- */
+/* Used by pages with wide tables (e.g. Elephant Edge's BatchDetail) where the boxed
+   max-width card look leaves awkward empty space and makes the side drawer feel cramped. */
+
+.page-wide {
+  max-width: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.batch-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.batch-layout-main {
+  flex: 1;
+  min-width: 0; /* lets the table-wrap's own overflow-x:auto do its job inside a flex child */
+}
+
+.message-drawer {
+  flex: 0 0 460px;
+  width: 460px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.message-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.message-drawer-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.message-drawer-header .meta {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.message-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.15rem 0.4rem;
+}
+
+.message-drawer-close:hover {
+  color: var(--text);
+}
+
+.message-drawer-body {
+  padding: 1.1rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.message-drawer-section {
+  margin-bottom: 1rem;
+}
+
+.message-drawer-section strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.message-drawer-section pre {
+  font-size: 0.76rem;
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+}
+
+.message-drawer-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 /* ---------- Premium Login Page Layout ---------- */
 
 .login-container {
