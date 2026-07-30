@@ -515,6 +515,38 @@ button.danger:hover:not(:disabled) {
   border-color: var(--danger);
 }
 
+/* Small pill buttons used inline in tables (e.g. per-contact Approve/Reject) -- deliberately
+   much smaller than the standard button so a table row with several contacts stays compact. */
+button.btn-small {
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: none;
+  border-radius: 999px;
+}
+
+button.btn-approve {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid transparent;
+}
+
+button.btn-approve:hover:not(:disabled) {
+  background: var(--success);
+  color: #fff;
+}
+
+button.btn-reject {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid transparent;
+}
+
+button.btn-reject:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+
 /* ---------- Step flow (Elephant Edge batch detail) ---------- */
 
 .step-flow {

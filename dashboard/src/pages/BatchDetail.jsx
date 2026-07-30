@@ -22,6 +22,40 @@ function stripCostFields(value) {
   return value
 }
 
+// Renders a Phase 13 research object (company_research / contact_research / fit_analysis)
+// as readable labeled bullets instead of raw JSON -- e.g. { value_props: [...] } becomes a
+// "Value Props" heading with a bullet per item. Handles the shapes those three actually
+// produce: strings, arrays of strings, and one level of nested object (icp_hypothesis).
+function humanizeLabel(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function ResearchSection({ data }) {
+  if (!data || typeof data !== 'object') return <p className="hint">No data.</p>
+  const entries = Object.entries(data).filter(([, v]) => v !== null && v !== '' && !(Array.isArray(v) && v.length === 0))
+  if (entries.length === 0) return <p className="hint">No data.</p>
+  return (
+    <div>
+      {entries.map(([key, value]) => (
+        <div key={key} style={{ marginBottom: '0.6rem' }}>
+          <strong style={{ display: 'block', fontSize: '0.82rem', marginBottom: '0.2rem' }}>{humanizeLabel(key)}</strong>
+          {Array.isArray(value) ? (
+            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
+              {value.map((item, i) => <li key={i}>{typeof item === 'object' ? JSON.stringify(item) : item}</li>)}
+            </ul>
+          ) : typeof value === 'object' ? (
+            <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
+              {Object.entries(value).filter(([, v]) => v).map(([k, v]) => <li key={k}>{humanizeLabel(k)}: {v}</li>)}
+            </ul>
+          ) : (
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>{value}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const PHASES = [
   {
     key: 'signal-discovery',
@@ -288,8 +322,10 @@ function ElephantEdgeBatchDetail() {
   const [editedMessage, setEditedMessage] = useState('')
   const [page, setPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
+  const [showDrawerDetails, setShowDrawerDetails] = useState(false)
 
   const toggleMessagePanel = async (contactId) => {
+    setShowDrawerDetails(false)
     if (messageContactId === contactId) {
       setMessageContactId(null)
       return
@@ -681,8 +717,8 @@ function ElephantEdgeBatchDetail() {
                         {(c.contacts || []).map(ct => (
                           <div key={ct.id} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {ct.message_status && <span className={`status-pill ${ct.message_status === 'approved' ? 'on' : 'warn'}`} style={{ fontSize: '0.7rem' }}>{ct.message_status}</span>}
-                            <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>Approve</button>
-                            <button type="button" className="link-button" onClick={() => toggleMessagePanel(ct.id)}>Reject</button>
+                            <button type="button" className="btn-small btn-approve" onClick={() => toggleMessagePanel(ct.id)}>Approve</button>
+                            <button type="button" className="btn-small btn-reject" onClick={() => toggleMessagePanel(ct.id)}>Reject</button>
                           </div>
                         ))}
                       </td>
@@ -772,33 +808,38 @@ function ElephantEdgeBatchDetail() {
                   {messageData[messageContactId].error_message && (
                     <p className="error">Generation error: {messageData[messageContactId].error_message}</p>
                   )}
-                  <div className="message-drawer-section">
-                    <strong>Company research</strong>
-                    <pre>{JSON.stringify(messageData[messageContactId].company_research, null, 2)}</pre>
-                  </div>
-                  <div className="message-drawer-section">
-                    <strong>Contact research</strong>
-                    <pre>{JSON.stringify(messageData[messageContactId].contact_research, null, 2)}</pre>
-                  </div>
-                  <div className="message-drawer-section">
-                    <strong>Fit analysis</strong>
-                    <pre>{JSON.stringify(messageData[messageContactId].fit_analysis, null, 2)}</pre>
-                  </div>
                   <label style={{ display: 'block', marginBottom: '0.3rem' }}>Generated message (editable)</label>
                   <textarea rows={8} value={editedMessage} onChange={e => setEditedMessage(e.target.value)} style={{ width: '100%' }} />
+                  <div className="inline-form" style={{ marginTop: '0.6rem', marginBottom: '1rem' }}>
+                    <button type="button" className="btn-small" onClick={() => saveMessageEdit(messageContactId, messageData[messageContactId].status)}>Save edit</button>
+                    <button type="button" className="btn-small btn-approve" onClick={() => saveMessageEdit(messageContactId, 'approved')}>Approve</button>
+                    <button type="button" className="btn-small btn-reject" onClick={() => saveMessageEdit(messageContactId, 'rejected')}>Reject</button>
+                    <button type="button" className="btn-small secondary" disabled={generatingContactId === messageContactId} onClick={() => generateMessage(messageContactId)}>
+                      {generatingContactId === messageContactId ? 'Regenerating...' : 'Regenerate'}
+                    </button>
+                  </div>
+                  <button type="button" className="link-button" onClick={() => setShowDrawerDetails(v => !v)}>
+                    {showDrawerDetails ? 'Hide details ▾' : 'View details ▸'}
+                  </button>
+                  {showDrawerDetails && (
+                    <>
+                      <div className="message-drawer-section" style={{ marginTop: '0.75rem' }}>
+                        <strong>Company research</strong>
+                        <ResearchSection data={messageData[messageContactId].company_research} />
+                      </div>
+                      <div className="message-drawer-section">
+                        <strong>Contact research</strong>
+                        <ResearchSection data={messageData[messageContactId].contact_research} />
+                      </div>
+                      <div className="message-drawer-section">
+                        <strong>Fit analysis</strong>
+                        <ResearchSection data={messageData[messageContactId].fit_analysis} />
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
-            {messageData[messageContactId] && messageData[messageContactId].status !== 'not_generated' && (
-              <div className="message-drawer-footer">
-                <button type="button" onClick={() => saveMessageEdit(messageContactId, messageData[messageContactId].status)}>Save edit</button>
-                <button type="button" onClick={() => saveMessageEdit(messageContactId, 'approved')}>Approve</button>
-                <button type="button" className="secondary" onClick={() => saveMessageEdit(messageContactId, 'rejected')}>Reject</button>
-                <button type="button" className="secondary" disabled={generatingContactId === messageContactId} onClick={() => generateMessage(messageContactId)}>
-                  {generatingContactId === messageContactId ? 'Regenerating...' : 'Regenerate'}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
