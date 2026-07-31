@@ -157,6 +157,13 @@ export default function Autonomous() {
 
   useEffect(load, [])
 
+  useEffect(() => {
+    if (status?.schedule_utc) {
+      setScheduleHour(String(status.schedule_utc.hour))
+      setScheduleMinute(String(status.schedule_utc.minute).padStart(2, '0'))
+    }
+  }, [status?.schedule_utc?.hour, status?.schedule_utc?.minute])
+
   const toggle = async (enabled) => {
     setBusy(true)
     try {
@@ -216,6 +223,27 @@ export default function Autonomous() {
     }
   }
 
+  const [scheduleHour, setScheduleHour] = useState('')
+  const [scheduleMinute, setScheduleMinute] = useState('')
+
+  const saveSchedule = async () => {
+    const hour = parseInt(scheduleHour, 10)
+    const minute = parseInt(scheduleMinute, 10)
+    if (isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+      setError('Hour must be 0-23 and minute 0-59')
+      return
+    }
+    setBusy(true)
+    try {
+      await client.post('/autonomous/schedule', null, { params: { hour, minute } })
+      load()
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const cancelRun = async (runId) => {
     if (!window.confirm('Cancel this run? Nothing will be pushed to the outreach channel for it.')) return
     setBusy(true)
@@ -258,8 +286,38 @@ export default function Autonomous() {
               </button>
             </div>
             <p className="hint">
-              Scheduler ticks every 24h automatically; this cycle no-ops whenever the toggle is off,
-              so "Pause" is a safe kill switch without restarting the server.
+              This cycle no-ops whenever the toggle is off, so "Pause" is a safe kill switch
+              without restarting the server.
+            </p>
+
+            <div className="inline-form" style={{ marginTop: '0.75rem' }}>
+              <label style={{ minWidth: 'auto' }}>Runs daily at (UTC):</label>
+              <input
+                type="number"
+                min={0}
+                max={23}
+                value={scheduleHour}
+                onChange={e => setScheduleHour(e.target.value)}
+                style={{ width: '4rem' }}
+                disabled={busy}
+              />
+              <span>:</span>
+              <input
+                type="number"
+                min={0}
+                max={59}
+                value={scheduleMinute}
+                onChange={e => setScheduleMinute(e.target.value)}
+                style={{ width: '4rem' }}
+                disabled={busy}
+              />
+              <button type="button" className="secondary" disabled={busy} onClick={saveSchedule}>
+                Save time
+              </button>
+            </div>
+            <p className="hint">
+              A fixed daily time (UTC), not a countdown -- takes effect immediately and isn't
+              affected by deploys or restarts, unlike a simple "every 24h" timer.
             </p>
 
             <div className="inline-form" style={{ marginTop: '0.75rem' }}>
