@@ -617,6 +617,44 @@ button.btn-reject:hover:not(:disabled) {
   border-top: 1px solid var(--border);
 }
 
+/* ---------- Toggle switch (e.g. push-to-campaign on/off) ---------- */
+
+button.toggle-switch {
+  position: relative;
+  width: 2.5rem;
+  height: 1.4rem;
+  min-width: 2.5rem;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+button.toggle-switch.on {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+button.toggle-switch.on::after {
+  transform: translateX(1.1rem);
+}
+
 /* ---------- Badges / pills ---------- */
 
 .tier-badge {

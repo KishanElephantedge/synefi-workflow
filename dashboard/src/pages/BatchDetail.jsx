@@ -725,16 +725,14 @@ function ElephantEdgeBatchDetail() {
                       </td>
                       <td>
                         {(c.contacts || []).map(ct => (
-                          <div key={ct.id} style={{ marginBottom: '0.25rem' }}>
-                            {ct.first_name} {ct.last_name}
-                            {ct.excluded_from_push ? (
-                              <>
-                                <span className="status-pill warn" style={{ fontSize: '0.65rem', marginLeft: '0.35rem' }}>excluded from push</span>{' '}
-                                <button type="button" className="link-button" style={{ fontSize: '0.72rem' }} onClick={() => toggleExcludedFromPush(ct.id, false)}>Undo</button>
-                              </>
-                            ) : (
-                              <button type="button" className="link-button" style={{ fontSize: '0.72rem', display: 'block' }} onClick={() => toggleExcludedFromPush(ct.id, true)}>Don't push to campaign</button>
-                            )}
+                          <div key={ct.id} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button
+                              type="button"
+                              className={`toggle-switch ${ct.excluded_from_push ? '' : 'on'}`}
+                              title={ct.excluded_from_push ? 'Push to campaign: off' : 'Push to campaign: on'}
+                              onClick={() => toggleExcludedFromPush(ct.id, !ct.excluded_from_push)}
+                            />
+                            <span>{ct.first_name} {ct.last_name}</span>
                           </div>
                         ))}
                       </td>
