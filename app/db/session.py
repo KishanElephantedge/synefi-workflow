@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
@@ -9,18 +9,33 @@ from app.config import settings
 # free-tier services spinning down). Without this, the first query after an idle period
 # intermittently 500s instead of silently reconnecting.
 #
-# connect_timeout/statement_timeout added after a real, reproducible pattern (elephantedge-abm
-# backend, same shared Neon DB): a single request times out completely and the very next one
-# succeeds immediately -- consistent with Neon's own compute occasionally taking a while to
-# resume from auto-suspend on the first query after idle, with nothing bounding how long that
-# wait (or pool_pre_ping's own check, or any other single slow query) could hang a request
-# thread for. Doesn't fix Neon's wake-up latency itself (a Neon-side setting), just turns an
-# unbounded hang into a clean, fast, catchable error.
+# connect_timeout bounds how long opening a new connection can hang (real, reproducible
+# pattern, same shared Neon DB: a single request times out completely, the very next one
+# succeeds immediately -- consistent with Neon's compute occasionally taking a while to
+# resume from auto-suspend).
+#
+# statement_timeout is NOT passed via connect_args -- found live, the hard way: Neon's
+# pooled ("-pooler") endpoint rejects "-c statement_timeout=..." as an unsupported startup
+# parameter outright ("unsupported startup parameter in options: statement_timeout"), which
+# crashed the app on every startup ("Application startup failed. Exiting.") the moment this
+# was first added -- silently, since Render kept the last-good process alive through the
+# failed deploys rather than surfacing it immediately. Setting it via a post-connect SET
+# command instead (below) works fine through the pooler, since that's a normal query, not a
+# startup packet field.
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
-    connect_args={"connect_timeout": 10, "options": "-c statement_timeout=15000"},
+    connect_args={"connect_timeout": 10},
 )
+
+
+@event.listens_for(engine, "connect")
+def _set_statement_timeout(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("SET statement_timeout = 15000")
+    cursor.close()
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
