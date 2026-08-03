@@ -8,7 +8,19 @@ from app.config import settings
 # endpoint, which can hand back a dead connection after the app has been idle (e.g. Render's
 # free-tier services spinning down). Without this, the first query after an idle period
 # intermittently 500s instead of silently reconnecting.
-engine = create_engine(settings.database_url, pool_pre_ping=True)
+#
+# connect_timeout/statement_timeout added after a real, reproducible pattern (elephantedge-abm
+# backend, same shared Neon DB): a single request times out completely and the very next one
+# succeeds immediately -- consistent with Neon's own compute occasionally taking a while to
+# resume from auto-suspend on the first query after idle, with nothing bounding how long that
+# wait (or pool_pre_ping's own check, or any other single slow query) could hang a request
+# thread for. Doesn't fix Neon's wake-up latency itself (a Neon-side setting), just turns an
+# unbounded hang into a clean, fast, catchable error.
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+    connect_args={"connect_timeout": 10, "options": "-c statement_timeout=15000"},
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
