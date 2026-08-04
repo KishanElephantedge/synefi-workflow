@@ -182,6 +182,9 @@ export default function Autonomous() {
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const [expandedRuns, setExpandedRuns] = useState({})
+  const [scheduleTimezone, setScheduleTimezone] = useState('Asia/Kolkata')
+  const [scheduleHour, setScheduleHour] = useState('')
+  const [scheduleMinute, setScheduleMinute] = useState('')
 
   const load = () => {
     client.get('/autonomous/status').then(res => setStatus(res.data)).catch(err => setError(err.message))
@@ -257,10 +260,6 @@ export default function Autonomous() {
       setBusy(false)
     }
   }
-
-  const [scheduleTimezone, setScheduleTimezone] = useState('Asia/Kolkata')
-  const [scheduleHour, setScheduleHour] = useState('')
-  const [scheduleMinute, setScheduleMinute] = useState('')
 
   const saveSchedule = async () => {
     const hourLocal = parseInt(scheduleHour, 10)
