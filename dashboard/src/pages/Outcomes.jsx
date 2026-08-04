@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import client from '../api/client'
 
@@ -10,63 +10,100 @@ function humanizeActivity(value) {
 function activityPillClass(value) {
   if (value === 'CONNECTED' || value === 'COMPLETED') return 'on'
   if (value === 'NO_REPLY_YET') return 'warn'
-  return ''
+  return 'off'
 }
 
-// Elephant Edge only. Three-level drill-down over real SalesRobot data:
-// Campaigns (docs.salesrobot.co/reference/getcampaigns) -> Leads/current status per campaign
-// (.../getprospectsforcampaign) -> Activity (that lead's live status plus any historical
-// webhook events we've received for them, matched by LinkedIn URL).
+function messagePillClass(value) {
+  if (value === 'approved') return 'on'
+  if (value === 'rejected') return 'bad'
+  if (value === 'draft') return 'warn'
+  return 'off'
+}
+
+function pct(rate) {
+  if (rate === null || rate === undefined) return '-'
+  return `${Math.round(rate * 100)}%`
+}
+
+// Elephant Edge only. Lead dashboard: KPI cards + a searchable/filterable table of every
+// lead we've researched or messaged, driven from OUR OWN db and enriched with live
+// SalesRobot status where a match exists (see GET /leads) -- deliberately not SalesRobot-
+// first, so a lead we've generated a message for but haven't pushed yet still shows up, and
+// the page still mostly works if SalesRobot is briefly unreachable. The old flat campaign
+// list is now one view inside this page (a toggle), not the whole page.
 export default function Outcomes() {
   const { tenantSlug } = useParams()
+
+  const [view, setView] = useState('leads') // 'leads' | 'campaigns'
+
+  const [stats, setStats] = useState(null)
+  const [statsError, setStatsError] = useState(null)
+
+  const [leads, setLeads] = useState([])
+  const [leadsLoading, setLeadsLoading] = useState(true)
+  const [leadsError, setLeadsError] = useState(null)
+  const [search, setSearch] = useState('')
+  const [messageFilter, setMessageFilter] = useState('all')
+
+  const [selectedLead, setSelectedLead] = useState(null)
+  const [leadDetail, setLeadDetail] = useState(null)
+  const [leadDetailLoading, setLeadDetailLoading] = useState(false)
+  const [leadDetailError, setLeadDetailError] = useState(null)
+  const [showFullMessage, setShowFullMessage] = useState(false)
+
   const [campaigns, setCampaigns] = useState([])
   const [campaignsError, setCampaignsError] = useState(null)
   const [selectedCampaign, setSelectedCampaign] = useState(null)
-
-  const [leads, setLeads] = useState([])
-  const [leadsLoading, setLeadsLoading] = useState(false)
-  const [leadsError, setLeadsError] = useState(null)
-
-  const [activityLead, setActivityLead] = useState(null)
-  const [activityEvents, setActivityEvents] = useState(null)
-  const [activityError, setActivityError] = useState(null)
+  const [campaignLeads, setCampaignLeads] = useState([])
+  const [campaignLeadsLoading, setCampaignLeadsLoading] = useState(false)
 
   const [bookings, setBookings] = useState([])
-  const [expandedBookingId, setExpandedBookingId] = useState(null)
 
-  const loadCampaigns = () => {
-    client.get('/salesrobot/campaigns').then(res => setCampaigns(res.data)).catch(err => setCampaignsError(err.response?.data?.detail || err.message))
-  }
-
-  useEffect(() => {
-    loadCampaigns()
-    client.get('/calendar-bookings').then(res => setBookings(res.data)).catch(() => {})
-  }, [])
-
-  const openCampaign = (campaign) => {
-    setSelectedCampaign(campaign)
-    setActivityLead(null)
-    setLeads([])
-    setLeadsError(null)
+  const loadLeads = () => {
     setLeadsLoading(true)
-    const uuid = campaign.campaignUuid || campaign.uuid
-    client.get(`/salesrobot/campaigns/${uuid}/leads`)
+    client.get('/leads')
       .then(res => setLeads(res.data))
       .catch(err => setLeadsError(err.response?.data?.detail || err.message))
       .finally(() => setLeadsLoading(false))
   }
 
-  const openActivity = (lead) => {
-    setActivityLead(lead)
-    setActivityEvents(null)
-    setActivityError(null)
-    if (!lead.profileUrl) {
-      setActivityEvents([])
-      return
-    }
-    client.get('/salesrobot/leads/activity', { params: { profile_url: lead.profileUrl } })
-      .then(res => setActivityEvents(res.data))
-      .catch(err => setActivityError(err.response?.data?.detail || err.message))
+  useEffect(() => {
+    if (tenantSlug !== 'elephant-edge') return
+    client.get('/leads/stats').then(res => setStats(res.data)).catch(err => setStatsError(err.response?.data?.detail || err.message))
+    loadLeads()
+    client.get('/calendar-bookings').then(res => setBookings(res.data)).catch(() => {})
+  }, [tenantSlug])
+
+  const loadCampaigns = () => {
+    client.get('/salesrobot/campaigns').then(res => setCampaigns(res.data)).catch(err => setCampaignsError(err.response?.data?.detail || err.message))
+  }
+
+  const openCampaign = (campaign) => {
+    setSelectedCampaign(campaign)
+    setCampaignLeads([])
+    setCampaignLeadsLoading(true)
+    const uuid = campaign.campaignUuid || campaign.uuid
+    client.get(`/salesrobot/campaigns/${uuid}/leads`)
+      .then(res => setCampaignLeads(res.data))
+      .catch(() => {})
+      .finally(() => setCampaignLeadsLoading(false))
+  }
+
+  const switchToCampaigns = () => {
+    setView('campaigns')
+    if (campaigns.length === 0) loadCampaigns()
+  }
+
+  const openLead = (lead) => {
+    setSelectedLead(lead)
+    setLeadDetail(null)
+    setLeadDetailError(null)
+    setShowFullMessage(false)
+    setLeadDetailLoading(true)
+    client.get(`/leads/${lead.contact_id}`)
+      .then(res => setLeadDetail(res.data))
+      .catch(err => setLeadDetailError(err.response?.data?.detail || err.message))
+      .finally(() => setLeadDetailLoading(false))
   }
 
   if (tenantSlug !== 'elephant-edge') {
@@ -78,22 +115,190 @@ export default function Outcomes() {
     )
   }
 
+  const filteredLeads = leads.filter(l => {
+    if (messageFilter !== 'all' && l.message_status !== messageFilter) return false
+    if (!search.trim()) return true
+    const q = search.trim().toLowerCase()
+    return (
+      `${l.first_name || ''} ${l.last_name || ''}`.toLowerCase().includes(q) ||
+      (l.company_name || '').toLowerCase().includes(q) ||
+      (l.title || '').toLowerCase().includes(q)
+    )
+  })
+
   return (
     <div className="page page-wide">
       <div className="page-header">
         <h1>Campaign</h1>
-        <p className="meta">Real campaigns, leads, and activity pulled directly from SalesRobot.</p>
+        <p className="meta">Every lead we've researched or messaged, with live status where available.</p>
       </div>
-      {campaignsError && <p className="error">{campaignsError}</p>}
 
-      <div className="batch-layout">
-        <div className="batch-layout-main">
-          {!selectedCampaign ? (
+      {statsError && <p className="error">{statsError}</p>}
+      {stats && (
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="stat-label">Researched</div>
+            <div className="stat-value">{stats.researched}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Messages Approved</div>
+            <div className="stat-value">{stats.approved}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Connections Sent</div>
+            <div className="stat-value">{stats.connections_sent}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Accepted</div>
+            <div className="stat-value">{stats.connections_accepted} <span className="hint">({pct(stats.acceptance_rate)})</span></div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Replied</div>
+            <div className="stat-value">{stats.replied} <span className="hint">({pct(stats.reply_rate)})</span></div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        <button type="button" className={view === 'leads' ? '' : 'secondary'} onClick={() => setView('leads')}>Leads</button>
+        <button type="button" className={view === 'campaigns' ? '' : 'secondary'} onClick={switchToCampaigns}>Campaigns</button>
+      </div>
+
+      {view === 'leads' ? (
+        <div className="batch-layout">
+          <div className="batch-layout-main">
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="Search name, company, title..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ flex: '1 1 240px', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+              />
+              <select value={messageFilter} onChange={e => setMessageFilter(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                <option value="all">All message statuses</option>
+                <option value="draft">Draft</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {leadsError && <p className="error">{leadsError}</p>}
             <div className="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Campaign</th><th>Status</th><th></th></tr>
+                  <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Title</th>
+                    <th>Message</th>
+                    <th>Push</th>
+                    <th>Activity</th>
+                  </tr>
                 </thead>
+                <tbody>
+                  {filteredLeads.map(l => (
+                    <tr key={l.contact_id} style={{ cursor: 'pointer' }} onClick={() => openLead(l)}>
+                      <td>{l.first_name} {l.last_name}</td>
+                      <td>{l.company_name || '-'}</td>
+                      <td>{l.title || '-'}</td>
+                      <td><span className={`status-pill ${messagePillClass(l.message_status)}`}>{l.message_status || 'none'}</span></td>
+                      <td>{l.push_status || '-'}</td>
+                      <td><span className={`status-pill ${activityPillClass(l.salesrobot_last_activity)}`}>{humanizeActivity(l.salesrobot_last_activity)}</span></td>
+                    </tr>
+                  ))}
+                  {filteredLeads.length === 0 && (
+                    <tr><td colSpan={6} className="empty-state">{leadsLoading ? 'Loading leads...' : 'No leads match.'}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {selectedLead && (
+            <div className="message-drawer">
+              <div className="message-drawer-header">
+                <div>
+                  <h3>{selectedLead.first_name} {selectedLead.last_name}</h3>
+                  <p className="meta">{selectedLead.title} {selectedLead.company_name ? `@ ${selectedLead.company_name}` : ''}</p>
+                </div>
+                <button type="button" className="message-drawer-close" onClick={() => setSelectedLead(null)} aria-label="Close">&times;</button>
+              </div>
+              <div className="message-drawer-body">
+                {leadDetailLoading && <p className="hint">Loading...</p>}
+                {leadDetailError && <p className="error">{leadDetailError}</p>}
+                {leadDetail && (
+                  <>
+                    <div className="message-drawer-section">
+                      <strong>Status</strong>
+                      <p style={{ margin: '0 0 0.35rem', fontSize: '0.85rem' }}>
+                        <span className={`status-pill ${messagePillClass(leadDetail.message_status)}`}>{leadDetail.message_status || 'no message'}</span>
+                        {' '}
+                        <span className={`status-pill ${activityPillClass(leadDetail.salesrobot_last_activity)}`}>{humanizeActivity(leadDetail.salesrobot_last_activity)}</span>
+                      </p>
+                    </div>
+                    {leadDetail.linkedin_url && (
+                      <div className="message-drawer-section">
+                        <strong>Profile</strong>
+                        <p style={{ margin: 0, fontSize: '0.85rem' }}><a href={leadDetail.linkedin_url} target="_blank" rel="noopener noreferrer">{leadDetail.linkedin_url}</a></p>
+                      </div>
+                    )}
+                    {leadDetail.generated_message && (
+                      <div className="message-drawer-section">
+                        <strong>Message</strong>
+                        <p style={{ margin: 0, fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{leadDetail.generated_message}</p>
+                      </div>
+                    )}
+                    <div className="message-drawer-section">
+                      <button type="button" className="link-button" onClick={() => setShowFullMessage(!showFullMessage)}>
+                        {showFullMessage ? 'Hide research details' : 'View research details'}
+                      </button>
+                    </div>
+                    {showFullMessage && (
+                      <>
+                        {leadDetail.company_research && (
+                          <div className="message-drawer-section">
+                            <strong>Company research</strong>
+                            <pre>{JSON.stringify(leadDetail.company_research, null, 2)}</pre>
+                          </div>
+                        )}
+                        {leadDetail.contact_research && (
+                          <div className="message-drawer-section">
+                            <strong>Contact research</strong>
+                            <pre>{JSON.stringify(leadDetail.contact_research, null, 2)}</pre>
+                          </div>
+                        )}
+                        {leadDetail.fit_analysis && (
+                          <div className="message-drawer-section">
+                            <strong>Fit analysis</strong>
+                            <pre>{JSON.stringify(leadDetail.fit_analysis, null, 2)}</pre>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="message-drawer-section">
+                      <strong>History</strong>
+                      {leadDetail.activity_history.length === 0 && <p className="hint">No historical events received for this lead yet.</p>}
+                      {leadDetail.activity_history.map(e => (
+                        <div key={e.id} style={{ marginBottom: '0.4rem', fontSize: '0.85rem' }}>
+                          <strong>{e.event_type || 'unrecognized event'}</strong> — {new Date(e.received_at).toLocaleString()}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <button type="button" className="link-button" style={{ marginBottom: '0.75rem' }} onClick={() => setView('leads')}>&larr; Back to leads</button>
+          {campaignsError && <p className="error">{campaignsError}</p>}
+          {!selectedCampaign ? (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Campaign</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                   {campaigns.map(c => (
                     <tr key={c.campaignUuid || c.uuid}>
@@ -112,24 +317,20 @@ export default function Outcomes() {
             <>
               <button type="button" className="link-button" style={{ marginBottom: '0.75rem' }} onClick={() => setSelectedCampaign(null)}>&larr; Back to campaigns</button>
               <h2 style={{ margin: '0 0 0.75rem' }}>{selectedCampaign.campaignName || selectedCampaign.name}</h2>
-              {leadsError && <p className="error">{leadsError}</p>}
               <div className="table-wrap">
                 <table>
-                  <thead>
-                    <tr><th>Name</th><th>Title</th><th>Company</th><th>Status</th><th></th></tr>
-                  </thead>
+                  <thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Status</th></tr></thead>
                   <tbody>
-                    {leads.map(l => (
+                    {campaignLeads.map(l => (
                       <tr key={l.prospectUuid}>
                         <td>{l.fullName}</td>
                         <td>{l.jobTitle || '-'}</td>
                         <td>{l.companyName || '-'}</td>
                         <td><span className={`status-pill ${activityPillClass(l.lastActivity)}`}>{humanizeActivity(l.lastActivity)}</span></td>
-                        <td><button type="button" className="link-button" onClick={() => openActivity(l)}>Activity</button></td>
                       </tr>
                     ))}
-                    {leads.length === 0 && (
-                      <tr><td colSpan={5} className="empty-state">{leadsLoading ? 'Loading leads...' : 'No leads in this campaign yet.'}</td></tr>
+                    {campaignLeads.length === 0 && (
+                      <tr><td colSpan={4} className="empty-state">{campaignLeadsLoading ? 'Loading...' : 'No leads in this campaign yet.'}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -137,85 +338,26 @@ export default function Outcomes() {
             </>
           )}
         </div>
-
-        {activityLead && (
-          <div className="message-drawer">
-            <div className="message-drawer-header">
-              <div>
-                <h3>{activityLead.fullName}</h3>
-                <p className="meta">{activityLead.jobTitle} {activityLead.companyName ? `@ ${activityLead.companyName}` : ''}</p>
-              </div>
-              <button type="button" className="message-drawer-close" onClick={() => setActivityLead(null)} aria-label="Close">&times;</button>
-            </div>
-            <div className="message-drawer-body">
-              <div className="message-drawer-section">
-                <strong>Current status</strong>
-                <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                  <span className={`status-pill ${activityPillClass(activityLead.lastActivity)}`}>{humanizeActivity(activityLead.lastActivity)}</span>
-                </p>
-              </div>
-              {activityLead.profileUrl && (
-                <div className="message-drawer-section">
-                  <strong>Profile</strong>
-                  <p style={{ margin: 0, fontSize: '0.85rem' }}><a href={activityLead.profileUrl} target="_blank" rel="noopener noreferrer">{activityLead.profileUrl}</a></p>
-                </div>
-              )}
-              <div className="message-drawer-section">
-                <strong>History</strong>
-                {activityError && <p className="error">{activityError}</p>}
-                {!activityEvents && !activityError && <p className="hint">Loading...</p>}
-                {activityEvents && activityEvents.length === 0 && <p className="hint">No historical events received for this lead yet.</p>}
-                {activityEvents && activityEvents.map(e => (
-                  <div key={e.id} style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-                    <strong>{e.event_type || 'unrecognized event'}</strong> — {new Date(e.received_at).toLocaleString()}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="page-header" style={{ marginTop: '2rem' }}>
         <h1 style={{ fontSize: '1.4rem' }}>Calendar bookings</h1>
-        <p className="meta">Calls booked through the Google Calendar Appointment Schedule -- synced every 15 minutes automatically (needs Google Calendar credentials in Settings first).</p>
+        <p className="meta">Calls booked through the Google Calendar Appointment Schedule.</p>
       </div>
       <div className="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Start</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Start</th><th>Name</th><th>Email</th><th>Status</th></tr></thead>
           <tbody>
             {bookings.map(b => (
-              <Fragment key={b.id}>
-                <tr>
-                  <td>{b.start_time ? new Date(b.start_time).toLocaleString() : '-'}</td>
-                  <td>{b.booker_name || <span className="hint">unknown</span>}</td>
-                  <td>{b.booker_email || '-'}</td>
-                  <td>{b.status || '-'}</td>
-                  <td>
-                    <button type="button" className="link-button" onClick={() => setExpandedBookingId(expandedBookingId === b.id ? null : b.id)}>
-                      {expandedBookingId === b.id ? 'Hide' : 'Raw payload'}
-                    </button>
-                  </td>
-                </tr>
-                {expandedBookingId === b.id && (
-                  <tr>
-                    <td colSpan={5} style={{ background: '#f8f9fa' }}>
-                      <pre style={{ fontSize: '0.78rem', maxHeight: '300px', overflow: 'auto' }}>{JSON.stringify(b.raw_payload, null, 2)}</pre>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
+              <tr key={b.id}>
+                <td>{b.start_time ? new Date(b.start_time).toLocaleString() : '-'}</td>
+                <td>{b.booker_name || <span className="hint">unknown</span>}</td>
+                <td>{b.booker_email || '-'}</td>
+                <td>{b.status || '-'}</td>
+              </tr>
             ))}
             {bookings.length === 0 && (
-              <tr><td colSpan={5} className="empty-state">No bookings synced yet.</td></tr>
+              <tr><td colSpan={4} className="empty-state">No bookings synced yet.</td></tr>
             )}
           </tbody>
         </table>
