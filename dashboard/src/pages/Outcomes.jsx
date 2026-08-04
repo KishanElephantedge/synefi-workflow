@@ -201,7 +201,7 @@ export default function Outcomes() {
                     <th>Company</th>
                     <th>Title</th>
                     <th>Message</th>
-                    <th>Push</th>
+                    <th>Sent to SalesRobot</th>
                     <th>Activity</th>
                   </tr>
                 </thead>
@@ -213,7 +213,7 @@ export default function Outcomes() {
                       <td>{l.title || '-'}</td>
                       <td><span className={`status-pill ${messagePillClass(l.message_status)}`}>{l.message_status || 'none'}</span></td>
                       <td>{l.push_status || '-'}</td>
-                      <td><span className={`status-pill ${activityPillClass(l.salesrobot_last_activity)}`}>{humanizeActivity(l.salesrobot_last_activity)}</span></td>
+                      <td><span className={`status-pill status-pill-sm ${activityPillClass(l.salesrobot_last_activity)}`}>{humanizeActivity(l.salesrobot_last_activity)}</span></td>
                     </tr>
                   ))}
                   {leads.length === 0 && (

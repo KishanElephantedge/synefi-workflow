@@ -698,6 +698,11 @@ button.toggle-switch.on::after {
   font-weight: 600;
 }
 
+.status-pill-sm {
+  padding: 0.25rem 0.65rem;
+  font-size: 0.68rem;
+}
+
 .status-pill::before {
   content: '';
   width: 6px;

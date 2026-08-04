@@ -2,6 +2,40 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import client from '../api/client'
 
+// Schedule input/display timezone options -- the backend only ever stores/fires on UTC (see
+// autonomous_orchestrator.py), this is purely a display convenience so hour/minute don't have
+// to be mentally converted from IST/US by hand every time.
+const SCHEDULE_TIMEZONES = [
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'America/New_York', label: 'US Eastern' },
+  { value: 'America/Chicago', label: 'US Central' },
+  { value: 'America/Denver', label: 'US Mountain' },
+  { value: 'America/Los_Angeles', label: 'US Pacific' },
+  { value: 'UTC', label: 'UTC' },
+]
+
+// Uses the current real UTC offset for the given IANA zone (correctly follows DST, unlike a
+// hardcoded fixed offset) -- good enough for a daily schedule display, not meant to be exact
+// across a DST transition boundary day.
+function tzOffsetMinutes(timeZone) {
+  const now = new Date()
+  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
+  const tz = new Date(now.toLocaleString('en-US', { timeZone }))
+  return Math.round((tz - utc) / 60000)
+}
+
+function utcToLocal(hourUtc, minuteUtc, timeZone) {
+  const offset = tzOffsetMinutes(timeZone)
+  const total = (((hourUtc * 60 + minuteUtc + offset) % 1440) + 1440) % 1440
+  return { hour: Math.floor(total / 60), minute: total % 60 }
+}
+
+function localToUtc(hourLocal, minuteLocal, timeZone) {
+  const offset = tzOffsetMinutes(timeZone)
+  const total = (((hourLocal * 60 + minuteLocal - offset) % 1440) + 1440) % 1440
+  return { hour: Math.floor(total / 60), minute: total % 60 }
+}
+
 // Read-only visualization of the latest autonomous run's pipeline -- purely so you can see how
 // the flow went (which phase found what), since the autonomous cycle runs entirely on its own.
 // Elephant Edge only: Synefi's autonomous data shape (persona-based, no hiring-signal/tech-stack
@@ -159,10 +193,11 @@ export default function Autonomous() {
 
   useEffect(() => {
     if (status?.schedule_utc) {
-      setScheduleHour(String(status.schedule_utc.hour))
-      setScheduleMinute(String(status.schedule_utc.minute).padStart(2, '0'))
+      const local = utcToLocal(status.schedule_utc.hour, status.schedule_utc.minute, scheduleTimezone)
+      setScheduleHour(String(local.hour))
+      setScheduleMinute(String(local.minute).padStart(2, '0'))
     }
-  }, [status?.schedule_utc?.hour, status?.schedule_utc?.minute])
+  }, [status?.schedule_utc?.hour, status?.schedule_utc?.minute, scheduleTimezone])
 
   const toggle = async (enabled) => {
     setBusy(true)
@@ -223,16 +258,18 @@ export default function Autonomous() {
     }
   }
 
+  const [scheduleTimezone, setScheduleTimezone] = useState('Asia/Kolkata')
   const [scheduleHour, setScheduleHour] = useState('')
   const [scheduleMinute, setScheduleMinute] = useState('')
 
   const saveSchedule = async () => {
-    const hour = parseInt(scheduleHour, 10)
-    const minute = parseInt(scheduleMinute, 10)
-    if (isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+    const hourLocal = parseInt(scheduleHour, 10)
+    const minuteLocal = parseInt(scheduleMinute, 10)
+    if (isNaN(hourLocal) || hourLocal < 0 || hourLocal > 23 || isNaN(minuteLocal) || minuteLocal < 0 || minuteLocal > 59) {
       setError('Hour must be 0-23 and minute 0-59')
       return
     }
+    const { hour, minute } = localToUtc(hourLocal, minuteLocal, scheduleTimezone)
     setBusy(true)
     try {
       await client.post('/autonomous/schedule', null, { params: { hour, minute } })
@@ -291,7 +328,7 @@ export default function Autonomous() {
             </p>
 
             <div className="inline-form" style={{ marginTop: '0.75rem' }}>
-              <label style={{ minWidth: 'auto' }}>Runs daily at (UTC):</label>
+              <label style={{ minWidth: 'auto' }}>Runs daily at:</label>
               <input
                 type="number"
                 min={0}
@@ -311,13 +348,20 @@ export default function Autonomous() {
                 style={{ width: '4rem' }}
                 disabled={busy}
               />
+              <select value={scheduleTimezone} onChange={e => setScheduleTimezone(e.target.value)} disabled={busy}>
+                {SCHEDULE_TIMEZONES.map(tz => (
+                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                ))}
+              </select>
               <button type="button" className="secondary" disabled={busy} onClick={saveSchedule}>
                 Save time
               </button>
             </div>
             <p className="hint">
-              A fixed daily time (UTC), not a countdown -- takes effect immediately and isn't
-              affected by deploys or restarts, unlike a simple "every 24h" timer.
+              A fixed daily time, not a countdown -- takes effect immediately and isn't
+              affected by deploys or restarts, unlike a simple "every 24h" timer. Stored as UTC
+              internally; the timezone dropdown is just for entering/reading the time without
+              converting by hand.
             </p>
 
             <div className="inline-form" style={{ marginTop: '0.75rem' }}>
