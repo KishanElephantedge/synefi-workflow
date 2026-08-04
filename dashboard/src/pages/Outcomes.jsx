@@ -43,7 +43,12 @@ export default function Outcomes() {
   const [leadsLoading, setLeadsLoading] = useState(true)
   const [leadsError, setLeadsError] = useState(null)
   const [search, setSearch] = useState('')
-  const [messageFilter, setMessageFilter] = useState('all')
+  const [searchInput, setSearchInput] = useState('')
+  const [messageFilter, setMessageFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalLeads, setTotalLeads] = useState(0)
+  const PAGE_SIZE = 25
 
   const [selectedLead, setSelectedLead] = useState(null)
   const [leadDetail, setLeadDetail] = useState(null)
@@ -59,20 +64,35 @@ export default function Outcomes() {
 
   const [bookings, setBookings] = useState([])
 
-  const loadLeads = () => {
-    setLeadsLoading(true)
-    client.get('/leads')
-      .then(res => setLeads(res.data))
-      .catch(err => setLeadsError(err.response?.data?.detail || err.message))
-      .finally(() => setLeadsLoading(false))
-  }
-
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
     client.get('/leads/stats').then(res => setStats(res.data)).catch(err => setStatsError(err.response?.data?.detail || err.message))
-    loadLeads()
     client.get('/calendar-bookings').then(res => setBookings(res.data)).catch(() => {})
   }, [tenantSlug])
+
+  // Debounce the search box so every keystroke doesn't fire a request -- filtering happens
+  // server-side now (see GET /leads), so typing quickly would otherwise mean one query per
+  // character.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1)
+      setSearch(searchInput)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  useEffect(() => {
+    if (tenantSlug !== 'elephant-edge') return
+    setLeadsLoading(true)
+    client.get('/leads', { params: { page, page_size: PAGE_SIZE, search, message_status: messageFilter } })
+      .then(res => {
+        setLeads(res.data.leads)
+        setTotalPages(res.data.total_pages)
+        setTotalLeads(res.data.total)
+      })
+      .catch(err => setLeadsError(err.response?.data?.detail || err.message))
+      .finally(() => setLeadsLoading(false))
+  }, [tenantSlug, page, search, messageFilter])
 
   const loadCampaigns = () => {
     client.get('/salesrobot/campaigns').then(res => setCampaigns(res.data)).catch(err => setCampaignsError(err.response?.data?.detail || err.message))
@@ -114,17 +134,6 @@ export default function Outcomes() {
       </div>
     )
   }
-
-  const filteredLeads = leads.filter(l => {
-    if (messageFilter !== 'all' && l.message_status !== messageFilter) return false
-    if (!search.trim()) return true
-    const q = search.trim().toLowerCase()
-    return (
-      `${l.first_name || ''} ${l.last_name || ''}`.toLowerCase().includes(q) ||
-      (l.company_name || '').toLowerCase().includes(q) ||
-      (l.title || '').toLowerCase().includes(q)
-    )
-  })
 
   return (
     <div className="page page-wide">
@@ -171,12 +180,12 @@ export default function Outcomes() {
               <input
                 type="text"
                 placeholder="Search name, company, title..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
                 style={{ flex: '1 1 240px', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
               />
-              <select value={messageFilter} onChange={e => setMessageFilter(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                <option value="all">All message statuses</option>
+              <select value={messageFilter} onChange={e => { setPage(1); setMessageFilter(e.target.value) }} style={{ padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                <option value="">All message statuses</option>
                 <option value="draft">Draft</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
@@ -197,7 +206,7 @@ export default function Outcomes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLeads.map(l => (
+                  {leads.map(l => (
                     <tr key={l.contact_id} style={{ cursor: 'pointer' }} onClick={() => openLead(l)}>
                       <td>{l.first_name} {l.last_name}</td>
                       <td>{l.company_name || '-'}</td>
@@ -207,12 +216,19 @@ export default function Outcomes() {
                       <td><span className={`status-pill ${activityPillClass(l.salesrobot_last_activity)}`}>{humanizeActivity(l.salesrobot_last_activity)}</span></td>
                     </tr>
                   ))}
-                  {filteredLeads.length === 0 && (
+                  {leads.length === 0 && (
                     <tr><td colSpan={6} className="empty-state">{leadsLoading ? 'Loading leads...' : 'No leads match.'}</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+                <button type="button" className="secondary btn-small" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>&larr; Prev</button>
+                <span className="hint">Page {page} of {totalPages} ({totalLeads} leads)</span>
+                <button type="button" className="secondary btn-small" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next &rarr;</button>
+              </div>
+            )}
           </div>
 
           {selectedLead && (
