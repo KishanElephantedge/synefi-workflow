@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import client from '../api/client'
 
 function humanizeActivity(value) {
@@ -33,6 +33,7 @@ function pct(rate) {
 // list is now one view inside this page (a toggle), not the whole page.
 export default function Outcomes() {
   const { tenantSlug } = useParams()
+  const [searchParams] = useSearchParams()
 
   const [view, setView] = useState('leads') // 'leads' | 'campaigns'
 
@@ -44,7 +45,9 @@ export default function Outcomes() {
   const [leadsError, setLeadsError] = useState(null)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
-  const [messageFilter, setMessageFilter] = useState('')
+  const [messageFilter, setMessageFilter] = useState(searchParams.get('message_status') || '')
+  const [activityFilter, setActivityFilter] = useState(searchParams.get('activity') || '')
+  const [pipelineOnly] = useState(searchParams.get('pipeline_only') !== 'false')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [totalLeads, setTotalLeads] = useState(0)
@@ -62,12 +65,9 @@ export default function Outcomes() {
   const [campaignLeads, setCampaignLeads] = useState([])
   const [campaignLeadsLoading, setCampaignLeadsLoading] = useState(false)
 
-  const [bookings, setBookings] = useState([])
-
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
     client.get('/leads/stats').then(res => setStats(res.data)).catch(err => setStatsError(err.response?.data?.detail || err.message))
-    client.get('/calendar-bookings').then(res => setBookings(res.data)).catch(() => {})
   }, [tenantSlug])
 
   // Debounce the search box so every keystroke doesn't fire a request -- filtering happens
@@ -84,7 +84,7 @@ export default function Outcomes() {
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
     setLeadsLoading(true)
-    client.get('/leads', { params: { page, page_size: PAGE_SIZE, search, message_status: messageFilter } })
+    client.get('/leads', { params: { page, page_size: PAGE_SIZE, search, message_status: messageFilter, activity: activityFilter, pipeline_only: pipelineOnly } })
       .then(res => {
         setLeads(res.data.leads)
         setTotalPages(res.data.total_pages)
@@ -92,7 +92,7 @@ export default function Outcomes() {
       })
       .catch(err => setLeadsError(err.response?.data?.detail || err.message))
       .finally(() => setLeadsLoading(false))
-  }, [tenantSlug, page, search, messageFilter])
+  }, [tenantSlug, page, search, messageFilter, activityFilter, pipelineOnly])
 
   const loadCampaigns = () => {
     client.get('/salesrobot/campaigns').then(res => setCampaigns(res.data)).catch(err => setCampaignsError(err.response?.data?.detail || err.message))
@@ -189,6 +189,14 @@ export default function Outcomes() {
                 <option value="draft">Draft</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
+              </select>
+              <select value={activityFilter} onChange={e => { setPage(1); setActivityFilter(e.target.value) }} style={{ padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                <option value="">All activity</option>
+                <option value="SENT">Sent</option>
+                <option value="CONNECTED">Connected</option>
+                <option value="REPLIED">Replied</option>
+                <option value="NO_REPLY_YET">No reply yet</option>
+                <option value="NOT_SENT">Not sent</option>
               </select>
             </div>
 
@@ -355,29 +363,6 @@ export default function Outcomes() {
           )}
         </div>
       )}
-
-      <div className="page-header" style={{ marginTop: '2rem' }}>
-        <h1 style={{ fontSize: '1.4rem' }}>Calendar bookings</h1>
-        <p className="meta">Calls booked through the Google Calendar Appointment Schedule.</p>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Start</th><th>Name</th><th>Email</th><th>Status</th></tr></thead>
-          <tbody>
-            {bookings.map(b => (
-              <tr key={b.id}>
-                <td>{b.start_time ? new Date(b.start_time).toLocaleString() : '-'}</td>
-                <td>{b.booker_name || <span className="hint">unknown</span>}</td>
-                <td>{b.booker_email || '-'}</td>
-                <td>{b.status || '-'}</td>
-              </tr>
-            ))}
-            {bookings.length === 0 && (
-              <tr><td colSpan={4} className="empty-state">No bookings synced yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
     </div>
   )
 }
