@@ -3,12 +3,14 @@ import { BrowserRouter, Routes, Route, Link, NavLink, useParams, useNavigate, us
 import Overview from './pages/Overview'
 import Companies from './pages/Companies'
 import Meetings from './pages/Meetings'
+import Notifications from './pages/Notifications'
 import BatchList from './pages/BatchList'
 import BatchDetail from './pages/BatchDetail'
 import Autonomous from './pages/Autonomous'
 import Outcomes from './pages/Outcomes'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
+import NotificationBell from './components/NotificationBell'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
 import './App.css'
@@ -118,6 +120,7 @@ function useBreadcrumbLabel() {
     companies: 'Companies',
     campaign: 'Campaign',
     meetings: 'Meetings',
+    notifications: 'Notifications',
     settings: 'Settings',
   }
   return labels[segment] || 'Batch Detail'
@@ -190,6 +193,7 @@ function AppShell() {
             <span className="active-trail">{breadcrumbLabel}</span>
           </div>
           <div className="user-profile">
+            <NotificationBell />
             <span className="user-email">{user?.email}</span>
             <div className="avatar-circle">
               {user?.email ? user.email[0].toUpperCase() : 'U'}
@@ -205,6 +209,7 @@ function AppShell() {
             <Route path="companies" element={<TenantScope><Companies /></TenantScope>} />
             <Route path="campaign" element={<TenantScope><Outcomes /></TenantScope>} />
             <Route path="meetings" element={<TenantScope><Meetings /></TenantScope>} />
+            <Route path="notifications" element={<TenantScope><Notifications /></TenantScope>} />
             <Route path="settings" element={<TenantScope><Settings /></TenantScope>} />
           </Routes>
         </div>
