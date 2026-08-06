@@ -196,70 +196,62 @@ export default function Overview() {
   return (
     <div className="page page-wide">
       <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
-            {HEADLINE_KEYS.map(key => {
-              const stage = STAGES.find(s => s.key === key)
-              const meta = STAGE_ICONS[key]
+        {HEADLINE_KEYS.map(key => {
+          const stage = STAGES.find(s => s.key === key)
+          const meta = STAGE_ICONS[key]
+          return (
+            <div className="stat-card overview-headline-card" key={key} onClick={() => goTo(stage.to())}>
+              <div className="overview-icon-badge" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
+              <div>
+                <div className="stat-value">{stats[key] ?? 0}</div>
+                <div className="stat-label">{stage.label}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="overview-two-col">
+        <div className="overview-card">
+          <h3 className="overview-card-title">Recent Activity</h3>
+          {activity.length === 0 && <p className="hint">No activity yet.</p>}
+          <div className="activity-timeline">
+            {activity.map((a, i) => {
+              const meta = ACTIVITY_ICON[a.type] || ACTIVITY_ICON.discovery
               return (
-                <div className="stat-card overview-headline-card" key={key} onClick={() => goTo(stage.to())}>
-                  <div className="overview-icon-badge" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
+                <div className="activity-row" key={i}>
+                  <div className="activity-icon" style={{ background: meta.bg, color: meta.color }}>{meta.glyph}</div>
                   <div>
-                    <div className="stat-value">{stats[key] ?? 0}</div>
-                    <div className="stat-label">{stage.label}</div>
+                    <div className="activity-text">{a.text}</div>
+                    <div className="activity-time">{timeAgo(a.timestamp)}</div>
                   </div>
                 </div>
               )
             })}
           </div>
+        </div>
 
-          {viewMode === 'pipeline' && <div style={{ marginBottom: '1.25rem' }}>{funnelPipelineCard}</div>}
+        <div className="overview-card">
+          <h3 className="overview-card-title">Companies Found — Last 14 Days</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={trend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="companiesFoundGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} tickFormatter={d => d.slice(5)} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} width={32} />
+              <Tooltip />
+              <Area type="monotone" dataKey="companies_found" name="Companies found" stroke="#6366f1" fill="url(#companiesFoundGradient)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-          <div className={viewMode === 'funnel' ? 'overview-two-col' : ''}>
-            <div className="overview-card">
-              <h3 className="overview-card-title">Recent Activity</h3>
-              {activity.length === 0 && <p className="hint">No activity yet.</p>}
-              <div className="activity-timeline">
-                {activity.map((a, i) => {
-                  const meta = ACTIVITY_ICON[a.type] || ACTIVITY_ICON.discovery
-                  return (
-                    <div className="activity-row" key={i}>
-                      <div className="activity-icon" style={{ background: meta.bg, color: meta.color }}>{meta.glyph}</div>
-                      <div>
-                        <div className="activity-text">{a.text}</div>
-                        <div className="activity-time">{timeAgo(a.timestamp)}</div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {viewMode === 'funnel' && funnelPipelineCard}
-          </div>
-
-          <div className="overview-card" style={{ marginTop: '1.25rem' }}>
-            <h3 className="overview-card-title">Companies Found — Last 14 Days</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={trend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="companiesFoundGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} tickFormatter={d => d.slice(5)} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} width={32} />
-                <Tooltip />
-                <Area type="monotone" dataKey="companies_found" name="Companies found" stroke="#6366f1" fill="url(#companiesFoundGradient)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-      <p className="hint" style={{ marginTop: '1rem' }}>
-        Note: "Connections Accepted" and "Replied" totals come from SalesRobot's own campaign-wide counts.
-        Their drill-down lists only show leads that also exist in our own research database and could be
-        matched by LinkedIn URL, so the list you see may be shorter than the number above.
-      </p>
+      <div style={{ marginTop: '1.25rem' }}>{funnelPipelineCard}</div>
     </div>
   )
 }

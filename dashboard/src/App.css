@@ -431,6 +431,12 @@ main.content {
   transition: background 0.12s ease, color 0.12s ease;
 }
 
+.view-switcher-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 .view-switcher-btn:hover {
   color: var(--text-muted);
 }
