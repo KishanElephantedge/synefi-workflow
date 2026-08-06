@@ -40,7 +40,7 @@ const RUN_HISTORY_PAGE_SIZE = 10
 
 export default function Autonomous() {
   const { tenantSlug } = useParams()
-  const [tab, setTab] = useState('control') // 'control' | 'schedule'
+  const [tab, setTab] = useState('history') // 'control' | 'schedule' | 'history' ("Runs" tab, default)
   const [status, setStatus] = useState(null)
   const [runs, setRuns] = useState([])
   const [runsPage, setRunsPage] = useState(1)
