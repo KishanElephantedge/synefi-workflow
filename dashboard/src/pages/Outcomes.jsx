@@ -51,7 +51,7 @@ export default function Outcomes() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [totalLeads, setTotalLeads] = useState(0)
-  const PAGE_SIZE = 25
+  const PAGE_SIZE = 10
 
   const [selectedLead, setSelectedLead] = useState(null)
   const [leadDetail, setLeadDetail] = useState(null)
@@ -137,11 +137,6 @@ export default function Outcomes() {
 
   return (
     <div className="page page-wide">
-      <div className="page-header">
-        <h1>Campaign</h1>
-        <p className="meta">Every lead we've researched or messaged, with live status where available.</p>
-      </div>
-
       {statsError && <p className="error">{statsError}</p>}
       {stats && (
         <div className="stat-grid">

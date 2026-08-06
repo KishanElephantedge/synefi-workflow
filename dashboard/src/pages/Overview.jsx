@@ -1,7 +1,151 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import client from '../api/client'
+
+// Moved here from the Autonomous page -- a read-only visualization of the latest autonomous
+// run's pipeline (which phase found what), since the cycle runs entirely on its own. Synefi's
+// autonomous data shape doesn't match this step structure, so this only ever renders for
+// Elephant Edge (same constraint the original had).
+const PIPELINE_STEPS = [
+  { key: 'discovery', label: 'Discovery', isDone: (b) => (b.companies || []).length > 0 },
+  { key: 'buying-signal', label: 'Buying Signal', isDone: (b) => (b.companies || []).some(c => c.active_head_of_sales_posting !== null && c.active_head_of_sales_posting !== undefined) },
+  { key: 'tech-stack', label: 'Tech Stack', isDone: (b) => (b.companies || []).some(c => c.has_outbound_tooling !== null && c.has_outbound_tooling !== undefined) },
+  { key: 'scoring', label: 'Scoring', isDone: (b) => (b.companies || []).some(c => c.tier != null) },
+  { key: 'decision-maker', label: 'Decision Maker', isDone: (b) => (b.companies || []).some(c => c.contact_count > 0) },
+  { key: 'outreach', label: 'Outreach', isDone: (b) => b.current_phase === 'outreach_done' },
+]
+
+function LatestRunPipeline({ batchId, tenantSlug }) {
+  const [batch, setBatch] = useState(null)
+  const [activeStep, setActiveStep] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!batchId) return
+    client.get(`/batches/${batchId}`).then(res => setBatch(res.data)).catch(err => setError(err.message))
+  }, [batchId])
+
+  if (!batchId) return null
+
+  return (
+    <div className="overview-card" style={{ marginTop: '1.25rem' }}>
+      <h3 className="overview-card-title">
+        Latest Run — Pipeline Flow <Link to={`/${tenantSlug}/batches/${batchId}`} style={{ fontSize: '0.78rem', fontWeight: 400 }}>(open batch #{batchId})</Link>
+      </h3>
+      {error && <p className="error">{error}</p>}
+      {!batch && !error && <p className="hint">Loading...</p>}
+      {batch && (
+        <>
+          <div className="step-flow">
+            {PIPELINE_STEPS.map((step, i) => {
+              const done = step.isDone(batch)
+              return (
+                <div key={step.key} className="step-flow-item">
+                  {i > 0 && <span className="step-flow-arrow">&rarr;</span>}
+                  <button
+                    type="button"
+                    className={`step-pill ${activeStep === step.key ? 'active' : ''} ${done ? 'done' : ''}`}
+                    onClick={() => setActiveStep(activeStep === step.key ? null : step.key)}
+                  >
+                    <span className="step-pill-dot" />
+                    {step.label} {done && '✓'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          {activeStep === 'discovery' && (
+            <div className="step-panel">
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Name</th><th>Domain</th><th>Geo</th><th>Industry</th></tr></thead>
+                  <tbody>
+                    {(batch.companies || []).map(c => (
+                      <tr key={c.id}><td>{c.name}</td><td>{c.domain}</td><td>{c.geography_tier || '-'}</td><td>{c.industry_classification || '-'}</td></tr>
+                    ))}
+                    {(batch.companies || []).length === 0 && <tr><td colSpan={4} className="empty-state">No companies discovered yet this run.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 'buying-signal' && (
+            <div className="step-panel">
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Name</th><th>Hiring Signal</th><th>Sales HC%</th></tr></thead>
+                  <tbody>
+                    {(batch.companies || []).map(c => (
+                      <tr key={c.id}>
+                        <td>{c.name}</td>
+                        <td title={c.hiring_signal_reasoning || ''}>{c.hiring_signal_role ? `${c.hiring_signal_role} (${c.hiring_signal_strength})` : (c.active_head_of_sales_posting === false ? 'None found' : '-')}</td>
+                        <td>{c.sales_headcount_percent != null ? `${c.sales_headcount_percent.toFixed(1)}%` : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 'tech-stack' && (
+            <div className="step-panel">
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Name</th><th>Outbound Tooling</th><th>AI SDR Tool</th></tr></thead>
+                  <tbody>
+                    {(batch.companies || []).map(c => (
+                      <tr key={c.id}><td>{c.name}</td><td>{c.has_outbound_tooling ? 'Yes' : (c.has_outbound_tooling === false ? 'No' : '-')}</td><td>{c.has_ai_sdr_tool ? 'Yes' : '-'}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 'scoring' && (
+            <div className="step-panel">
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Name</th><th>Tier</th><th>Score</th></tr></thead>
+                  <tbody>
+                    {(batch.companies || []).map(c => (
+                      <tr key={c.id}><td>{c.name}</td><td>{c.tier && <span className={`tier-badge tier-${c.tier}`}>{c.tier}</span>}</td><td>{c.score ?? '-'}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 'decision-maker' && (
+            <div className="step-panel">
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Company</th><th>Contacts Found</th></tr></thead>
+                  <tbody>
+                    {(batch.companies || []).map(c => (
+                      <tr key={c.id}><td>{c.name}</td><td>{c.contact_count}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeStep === 'outreach' && (
+            <div className="step-panel">
+              <p className="hint">Current phase: <strong>{batch.current_phase}</strong> &middot; Status: {batch.status}</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
 
 // Icon + accent color per funnel stage -- shared between the vertical funnel card and the
 // horizontal pipeline strip so the two views read as one system, not two different palettes.
@@ -101,6 +245,7 @@ export default function Overview() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState('funnel') // 'funnel' | 'pipeline'
+  const [lastRunBatchId, setLastRunBatchId] = useState(null)
 
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
@@ -109,11 +254,13 @@ export default function Overview() {
       client.get('/overview/stats'),
       client.get('/overview/recent-activity'),
       client.get('/overview/trend', { params: { days: 14 } }),
+      client.get('/autonomous/status'),
     ])
-      .then(([statsRes, activityRes, trendRes]) => {
+      .then(([statsRes, activityRes, trendRes, statusRes]) => {
         setStats(statsRes.data)
         setActivity(activityRes.data)
         setTrend(trendRes.data)
+        setLastRunBatchId(statusRes.data?.last_run?.batch_id ?? null)
       })
       .catch(err => setError(err.response?.data?.detail || err.message))
       .finally(() => setLoading(false))
@@ -252,6 +399,8 @@ export default function Overview() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <LatestRunPipeline batchId={lastRunBatchId} tenantSlug={tenantSlug} />
     </div>
   )
 }

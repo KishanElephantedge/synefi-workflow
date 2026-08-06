@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrowserRouter, Routes, Route, Link, NavLink, useParams, useNavigate, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, NavLink, useParams, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import Overview from './pages/Overview'
 import Companies from './pages/Companies'
 import Meetings from './pages/Meetings'
@@ -103,9 +103,30 @@ function Home() {
   return tenantSlug === 'elephant-edge' ? <Overview /> : <BatchList />
 }
 
+// The breadcrumb previously hardcoded "Overview" regardless of which page was actually
+// showing -- derives the real current page from the URL instead.
+function useBreadcrumbLabel() {
+  const { tenantSlug } = useParams()
+  const location = useLocation()
+  const rest = location.pathname.replace(`/${tenantSlug}`, '').replace(/^\//, '')
+  const segment = rest.split('/')[0]
+
+  if (!segment) return tenantSlug === 'elephant-edge' ? 'Overview' : 'Hot Accounts'
+  const labels = {
+    batches: 'Hot Accounts',
+    autonomous: 'Autonomous',
+    companies: 'Companies',
+    campaign: 'Campaign',
+    meetings: 'Meetings',
+    settings: 'Settings',
+  }
+  return labels[segment] || 'Batch Detail'
+}
+
 function AppShell() {
   const { user, logout } = useTenant()
   const { tenantSlug } = useParams()
+  const breadcrumbLabel = useBreadcrumbLabel()
 
   return (
     <div className="app-shell">
@@ -166,7 +187,7 @@ function AppShell() {
         <header className="content-header">
           <div className="breadcrumb-trail">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            <span className="active-trail">Overview</span>
+            <span className="active-trail">{breadcrumbLabel}</span>
           </div>
           <div className="user-profile">
             <span className="user-email">{user?.email}</span>

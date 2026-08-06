@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import client from '../api/client'
 
+const TABS = [
+  { key: 'connections', label: 'Connections' },
+  { key: 'ai', label: 'AI & Messaging' },
+  { key: 'notifications', label: 'Notifications' },
+  { key: 'calendar', label: 'Calendar' },
+  { key: 'autonomous', label: 'Autonomous' },
+  { key: 'advanced', label: 'Advanced' },
+]
+
 export default function Settings() {
+  const [tab, setTab] = useState('connections')
   const [credentials, setCredentials] = useState([])
   const [parameters, setParameters] = useState([])
   const [credName, setCredName] = useState('')
@@ -21,6 +31,8 @@ export default function Settings() {
   const [salesrobotLinkedinAccountUuid, setSalesrobotLinkedinAccountUuid] = useState('')
   const [joboApiKey, setJoboApiKey] = useState('')
   const [joboApiKeySet, setJoboApiKeySet] = useState(false)
+  const [apifyApiKey, setApifyApiKey] = useState('')
+  const [apifyApiKeySet, setApifyApiKeySet] = useState(false)
   const [anthropicApiKey, setAnthropicApiKey] = useState('')
   const [anthropicApiKeySet, setAnthropicApiKeySet] = useState(false)
   const [geminiApiKey, setGeminiApiKey] = useState('')
@@ -50,6 +62,8 @@ export default function Settings() {
       setSalesrobotApiKeySet(!!srKey?.is_set)
       const joboKey = res.data.find(c => c.name === 'jobo_api_key')
       setJoboApiKeySet(!!joboKey?.is_set)
+      const apifyKey = res.data.find(c => c.name === 'apify_api_key')
+      setApifyApiKeySet(!!apifyKey?.is_set)
       const anthropicKey = res.data.find(c => c.name === 'anthropic_api_key')
       setAnthropicApiKeySet(!!anthropicKey?.is_set)
       const geminiKey = res.data.find(c => c.name === 'gemini_api_key')
@@ -155,6 +169,18 @@ export default function Settings() {
     try {
       await client.post('/credentials', null, { params: { name: 'jobo_api_key', value: joboApiKey } })
       setJoboApiKey('')
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const saveApifyApiKey = async (e) => {
+    e.preventDefault()
+    if (!apifyApiKey.trim()) return
+    try {
+      await client.post('/credentials', null, { params: { name: 'apify_api_key', value: apifyApiKey } })
+      setApifyApiKey('')
       load()
     } catch (err) {
       setError(err.message)
@@ -340,12 +366,16 @@ export default function Settings() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h1>Settings</h1>
-        <p className="meta">HeyReach connection, autonomous system tuning, and advanced overrides.</p>
-      </div>
       {error && <p className="error">{error}</p>}
 
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {TABS.map(t => (
+          <button key={t.key} type="button" className={tab === t.key ? '' : 'secondary'} onClick={() => setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab === 'connections' && (
+      <>
       <div className="card">
         <h2>HeyReach</h2>
         <p className="hint" style={{ marginBottom: '1rem' }}>Both fields below are required before you start the autonomous system or push a manual batch.</p>
@@ -435,6 +465,28 @@ export default function Settings() {
       </div>
 
       <div className="card">
+        <h2>Apify</h2>
+        <p className="hint" style={{ marginBottom: '1rem' }}>Required for the Apify discovery source (LinkedIn Jobs Scraper). Get a token from console.apify.com/settings/integrations.</p>
+
+        <form onSubmit={saveApifyApiKey} className="inline-form">
+          <label style={{ minWidth: '12rem' }}>API key</label>
+          <input
+            type="password"
+            placeholder={apifyApiKeySet ? 'Currently set (enter a new value to replace)' : 'Paste your Apify API key'}
+            value={apifyApiKey}
+            onChange={e => setApifyApiKey(e.target.value)}
+            style={{ minWidth: '20rem' }}
+          />
+          <button type="submit">Save API key</button>
+          {apifyApiKeySet && <span className="status-pill on">Set</span>}
+        </form>
+      </div>
+      </>
+      )}
+
+      {tab === 'ai' && (
+      <>
+      <div className="card">
         <h2>Phase 13: Personalized Outreach (Gemini + Claude fallback)</h2>
         <p className="hint" style={{ marginBottom: '1rem' }}>Powers company/contact research and message writing. Tries Gemini first (cheaper, same quality) and automatically falls back to Claude Haiku if Gemini is unavailable. Direct APIs, not routed through Deepline.</p>
 
@@ -477,7 +529,11 @@ export default function Settings() {
           </div>
         </form>
       </div>
+      </>
+      )}
 
+      {tab === 'notifications' && (
+      <>
       <div className="card">
         <h2>Slack</h2>
         <p className="hint" style={{ marginBottom: '1rem' }}>
@@ -509,7 +565,11 @@ export default function Settings() {
           {slackWebhookUrl2Set && <span className="status-pill on">Set</span>}
         </form>
       </div>
+      </>
+      )}
 
+      {tab === 'calendar' && (
+      <>
       <div className="card">
         <h2>Google Calendar (appointment bookings)</h2>
         <p className="hint" style={{ marginBottom: '1rem' }}>
@@ -540,7 +600,11 @@ export default function Settings() {
           )}
         </div>
       </div>
+      </>
+      )}
 
+      {tab === 'autonomous' && (
+      <>
       <div className="card">
         <h2>Autonomous system settings</h2>
         <form onSubmit={saveDailyCap} className="inline-form">
@@ -584,7 +648,11 @@ export default function Settings() {
           </div>
         </form>
       </div>
+      </>
+      )}
 
+      {tab === 'advanced' && (
+      <>
       <div className="card">
         <h2>Advanced: all credentials &amp; parameters</h2>
         <p className="hint">Everything above is saved here under the hood. Use this only for one-off keys that don't have a dedicated field yet.</p>
@@ -639,6 +707,8 @@ export default function Settings() {
           <button type="submit">Save parameter</button>
         </form>
       </div>
+      </>
+      )}
     </div>
   )
 }
