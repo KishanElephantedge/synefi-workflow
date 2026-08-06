@@ -169,6 +169,7 @@ export default function Autonomous() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button type="button" className={tab === 'control' ? '' : 'secondary'} onClick={() => setTab('control')}>Control</button>
         <button type="button" className={tab === 'schedule' ? '' : 'secondary'} onClick={() => setTab('schedule')}>Schedule</button>
+        <button type="button" className={tab === 'history' ? '' : 'secondary'} onClick={() => setTab('history')}>History</button>
       </div>
 
       {tab === 'schedule' && status && (
@@ -293,7 +294,11 @@ export default function Autonomous() {
               </>
             )}
           </div>
+        </>
+      )}
 
+      {tab === 'history' && (
+        <>
           <div className="card">
             <h2>Weekly rollup</h2>
             {report && (
