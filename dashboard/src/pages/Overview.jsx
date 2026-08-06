@@ -65,6 +65,32 @@ function timeAgo(iso) {
   return `${days}d ago`
 }
 
+// Small icon-button pair -- switches the one pipeline/funnel section between its vertical
+// ("funnel") and horizontal ("pipeline") presentation. Lives inside whichever card is
+// currently showing, so it travels with the section rather than staying in a fixed spot.
+function ViewSwitcher({ mode, onChange }) {
+  return (
+    <div className="view-switcher">
+      <button
+        type="button"
+        className={`view-switcher-btn ${mode === 'funnel' ? 'active' : ''}`}
+        title="Funnel view"
+        onClick={() => onChange('funnel')}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path></svg>
+      </button>
+      <button
+        type="button"
+        className={`view-switcher-btn ${mode === 'pipeline' ? 'active' : ''}`}
+        title="Pipeline view"
+        onClick={() => onChange('pipeline')}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><circle cx="6" cy="12" r="2.5"></circle><circle cx="12" cy="12" r="2.5"></circle><circle cx="18" cy="12" r="2.5"></circle></svg>
+      </button>
+    </div>
+  )
+}
+
 export default function Overview() {
   const { tenantSlug } = useParams()
   const navigate = useNavigate()
@@ -74,6 +100,7 @@ export default function Overview() {
   const [trend, setTrend] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState('funnel') // 'funnel' | 'pipeline'
 
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
@@ -103,19 +130,72 @@ export default function Overview() {
     )
   }
 
+  if (!stats) {
+    return (
+      <div className="page page-wide">
+        {error && <p className="error">{error}</p>}
+        {loading && <p className="hint">Loading...</p>}
+      </div>
+    )
+  }
+
+  const funnelPipelineCard = (
+    <div className="overview-card">
+      <div className="overview-card-header">
+        <h3 className="overview-card-title">{viewMode === 'funnel' ? 'Funnel Snapshot' : 'Outbound Pipeline'}</h3>
+        <ViewSwitcher mode={viewMode} onChange={setViewMode} />
+      </div>
+      {viewMode === 'funnel' ? (
+        <div className="vertical-funnel">
+          {STAGES.map((stage, i) => {
+            const value = stats[stage.key] ?? 0
+            const meta = STAGE_ICONS[stage.key]
+            return (
+              <div
+                className="vertical-funnel-row"
+                key={stage.key}
+                role="button"
+                tabIndex={0}
+                onClick={() => goTo(stage.to())}
+                onKeyDown={e => { if (e.key === 'Enter') goTo(stage.to()) }}
+              >
+                <div className="vertical-funnel-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
+                <div className="vertical-funnel-label">{stage.label}</div>
+                <div className="vertical-funnel-value">{value}</div>
+                {i < STAGES.length - 1 && <div className="vertical-funnel-line" />}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="pipeline-strip">
+          {STAGES.map((stage, i) => {
+            const meta = STAGE_ICONS[stage.key]
+            return (
+              <div className="pipeline-item" key={stage.key}>
+                <div
+                  className="pipeline-node"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => goTo(stage.to())}
+                  onKeyDown={e => { if (e.key === 'Enter') goTo(stage.to()) }}
+                >
+                  <div className="pipeline-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
+                  <div className="pipeline-value">{stats[stage.key] ?? 0}</div>
+                  <div className="pipeline-label">{stage.shortLabel}</div>
+                </div>
+                {i < STAGES.length - 1 && <div className="pipeline-connector" />}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="page page-wide">
-      <div className="page-header">
-        <h1>Overview</h1>
-        <p className="meta">The full outbound funnel, end to end. Click any stage to see exactly who's in it.</p>
-      </div>
-
-      {error && <p className="error">{error}</p>}
-      {loading && !stats && <p className="hint">Loading...</p>}
-
-      {stats && (
-        <>
-          <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+      <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
             {HEADLINE_KEYS.map(key => {
               const stage = STAGES.find(s => s.key === key)
               const meta = STAGE_ICONS[key]
@@ -131,7 +211,9 @@ export default function Overview() {
             })}
           </div>
 
-          <div className="overview-two-col">
+          {viewMode === 'pipeline' && <div style={{ marginBottom: '1.25rem' }}>{funnelPipelineCard}</div>}
+
+          <div className={viewMode === 'funnel' ? 'overview-two-col' : ''}>
             <div className="overview-card">
               <h3 className="overview-card-title">Recent Activity</h3>
               {activity.length === 0 && <p className="hint">No activity yet.</p>}
@@ -151,30 +233,7 @@ export default function Overview() {
               </div>
             </div>
 
-            <div className="overview-card">
-              <h3 className="overview-card-title">Funnel Snapshot</h3>
-              <div className="vertical-funnel">
-                {STAGES.map((stage, i) => {
-                  const value = stats[stage.key] ?? 0
-                  const meta = STAGE_ICONS[stage.key]
-                  return (
-                    <div
-                      className="vertical-funnel-row"
-                      key={stage.key}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => goTo(stage.to())}
-                      onKeyDown={e => { if (e.key === 'Enter') goTo(stage.to()) }}
-                    >
-                      <div className="vertical-funnel-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
-                      <div className="vertical-funnel-label">{stage.label}</div>
-                      <div className="vertical-funnel-value">{value}</div>
-                      {i < STAGES.length - 1 && <div className="vertical-funnel-line" />}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            {viewMode === 'funnel' && funnelPipelineCard}
           </div>
 
           <div className="overview-card" style={{ marginTop: '1.25rem' }}>
@@ -196,38 +255,11 @@ export default function Overview() {
             </ResponsiveContainer>
           </div>
 
-          <div className="overview-card" style={{ marginTop: '1.25rem' }}>
-            <h3 className="overview-card-title">Outbound Pipeline</h3>
-            <div className="pipeline-strip">
-              {STAGES.map((stage, i) => {
-                const meta = STAGE_ICONS[stage.key]
-                return (
-                  <div className="pipeline-item" key={stage.key}>
-                    <div
-                      className="pipeline-node"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => goTo(stage.to())}
-                      onKeyDown={e => { if (e.key === 'Enter') goTo(stage.to()) }}
-                    >
-                      <div className="pipeline-icon" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
-                      <div className="pipeline-value">{stats[stage.key] ?? 0}</div>
-                      <div className="pipeline-label">{stage.shortLabel}</div>
-                    </div>
-                    {i < STAGES.length - 1 && <div className="pipeline-connector" />}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <p className="hint" style={{ marginTop: '1rem' }}>
-            Note: "Connections Accepted" and "Replied" totals come from SalesRobot's own campaign-wide counts.
-            Their drill-down lists only show leads that also exist in our own research database and could be
-            matched by LinkedIn URL, so the list you see may be shorter than the number above.
-          </p>
-        </>
-      )}
+      <p className="hint" style={{ marginTop: '1rem' }}>
+        Note: "Connections Accepted" and "Replied" totals come from SalesRobot's own campaign-wide counts.
+        Their drill-down lists only show leads that also exist in our own research database and could be
+        matched by LinkedIn URL, so the list you see may be shorter than the number above.
+      </p>
     </div>
   )
 }
