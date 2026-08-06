@@ -211,7 +211,9 @@ export default function Overview() {
         })}
       </div>
 
-      <div className="overview-two-col">
+      {funnelPipelineCard}
+
+      <div className="overview-two-col" style={{ marginTop: '1.25rem' }}>
         <div className="overview-card">
           <h3 className="overview-card-title">Recent Activity</h3>
           {activity.length === 0 && <p className="hint">No activity yet.</p>}
@@ -250,8 +252,6 @@ export default function Overview() {
           </ResponsiveContainer>
         </div>
       </div>
-
-      <div style={{ marginTop: '1.25rem' }}>{funnelPipelineCard}</div>
     </div>
   )
 }

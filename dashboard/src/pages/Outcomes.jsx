@@ -146,7 +146,7 @@ export default function Outcomes() {
       {stats && (
         <div className="stat-grid">
           <div className="stat-card">
-            <div className="stat-label">Researched</div>
+            <div className="stat-label">Messages Drafted</div>
             <div className="stat-value">{stats.researched}</div>
           </div>
           <div className="stat-card">
