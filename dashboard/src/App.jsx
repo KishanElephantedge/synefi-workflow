@@ -11,6 +11,7 @@ import Outcomes from './pages/Outcomes'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import NotificationBell from './components/NotificationBell'
+import ChatWidget from './components/ChatWidget'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
 import './App.css'
@@ -214,6 +215,7 @@ function AppShell() {
           </Routes>
         </div>
       </main>
+      <ChatWidget />
     </div>
   )
 }
