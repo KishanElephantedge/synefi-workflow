@@ -1147,35 +1147,38 @@ button.btn-reject.active {
 
 /* ---------- Daily Review calendar ---------- */
 
-.calendar-layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.calendar-grid-panel {
+.calendar-solo-panel {
+  max-width: 780px;
+  margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem;
+  padding: 1.75rem 2rem;
 }
 
 .calendar-month-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.calendar-month-nav strong {
+  font-size: 1.2rem;
 }
 
 .calendar-weekday-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-weekday-row-lg {
+  margin-bottom: 0.75rem;
 }
 
 .calendar-weekday {
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-faint);
   font-weight: 600;
 }
@@ -1183,7 +1186,11 @@ button.btn-reject.active {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.3rem;
+  gap: 0.4rem;
+}
+
+.calendar-grid-lg {
+  gap: 0.6rem;
 }
 
 .calendar-cell {
@@ -1201,6 +1208,12 @@ button.btn-reject.active {
   padding: 0;
 }
 
+.calendar-cell-lg {
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
 .calendar-cell:hover {
   border-color: var(--primary);
 }
@@ -1214,11 +1227,6 @@ button.btn-reject.active {
 .calendar-cell-today {
   font-weight: 700;
   border-color: var(--primary);
-}
-
-.calendar-cell-selected {
-  outline: 2px solid var(--primary);
-  outline-offset: -1px;
 }
 
 .calendar-cell-approved {
@@ -1238,8 +1246,8 @@ button.btn-reject.active {
 
 .calendar-cell-comment-dot {
   position: absolute;
-  bottom: 3px;
-  right: 3px;
+  bottom: 6px;
+  right: 6px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -1248,10 +1256,11 @@ button.btn-reject.active {
 
 .calendar-legend {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.85rem;
-  font-size: 0.75rem;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
+  justify-content: center;
 }
 
 .calendar-legend span {
@@ -1268,11 +1277,12 @@ button.btn-reject.active {
   border: 1px solid transparent;
 }
 
-.calendar-detail-panel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.5rem;
-  min-height: 320px;
+.calendar-back-link {
+  margin-bottom: 1rem;
+  display: inline-block;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.88rem;
 }
 
 .calendar-detail-header {
@@ -1284,7 +1294,7 @@ button.btn-reject.active {
 
 .calendar-detail-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
 }
 
 .calendar-detail-actions {
@@ -1295,55 +1305,128 @@ button.btn-reject.active {
 .calendar-detail-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.calendar-batch-card {
+.calendar-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-stat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  text-align: center;
+}
+
+.calendar-stat-num {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.calendar-stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.calendar-batch-tags {
+  margin-bottom: 1.25rem;
+}
+
+.calendar-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.85rem;
+}
+
+.calendar-timeline {
+  border-left: 2px solid var(--border);
+  margin-left: 0.6rem;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.calendar-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  position: relative;
+}
+
+.calendar-timeline-icon {
+  position: absolute;
+  left: -1.95rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.calendar-timeline-body {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.86rem;
+}
+
+.calendar-timeline-time {
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+}
+
+.calendar-dm-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.85rem 1rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 
-.calendar-batch-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.5rem;
-}
-
-.calendar-company-row {
-  border-top: 1px solid var(--border);
-  padding: 0.5rem 0;
-}
-
-.calendar-company-row-head {
+.calendar-dm-head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.88rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
 }
 
-.calendar-qualified-badge {
+.calendar-msg-status {
   font-size: 0.68rem;
   font-weight: 700;
-  background: var(--success-soft);
-  color: var(--success);
+  text-transform: capitalize;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
 }
 
-.calendar-contact-row {
-  margin-top: 0.35rem;
-  padding-left: 0.75rem;
+.calendar-msg-status-approved {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.calendar-msg-status-rejected {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.calendar-msg-status-draft {
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .calendar-message-preview {
   font-size: 0.82rem;
   color: var(--text-muted);
   white-space: pre-wrap;
-  margin-top: 0.25rem;
   padding: 0.5rem 0.65rem;
   background: var(--surface-alt);
   border-radius: 6px;
@@ -1390,6 +1473,37 @@ button.btn-reject.active {
   font-family: inherit;
   background: var(--surface);
   color: var(--text);
+}
+
+.link-button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.link-button:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0.25rem;
+  color: var(--text-faint);
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  color: var(--danger);
+  background: transparent;
 }
 
 /* ---------- Step flow (Elephant Edge batch detail) ---------- */

@@ -5,6 +5,12 @@ import client from '../api/client'
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+const TIMELINE_ICON = {
+  discovery: '🔍',
+  decision_maker: '🧑',
+  message: '✉️',
+}
+
 function todayDateString() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -21,7 +27,10 @@ function buildMonthGrid(year, month) {
 
 function timeAgo(iso) {
   if (!iso) return ''
-  const diffMs = Date.now() - new Date(iso).getTime()
+  // Backend timestamps are naive UTC -- a string with no "Z"/offset gets parsed as LOCAL time
+  // by JS, silently shifting it by the browser's UTC offset. Treat offset-less strings as UTC.
+  const normalized = /[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`
+  const diffMs = Date.now() - new Date(normalized).getTime()
   const mins = Math.round(diffMs / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`
@@ -30,10 +39,15 @@ function timeAgo(iso) {
   return `${Math.round(hours / 24)}d ago`
 }
 
-// Async, cross-timezone review layer -- click a day, see everything that happened (batches/
-// companies/decision-makers/messages), leave an approve/reject verdict and comments for
-// whoever else looks at it later. Deliberately disconnected from the real pipeline -- this
-// never touches message approval or pushes, it's a human tracking layer on top.
+function formatClock(iso) {
+  const normalized = /[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`
+  return new Date(normalized).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+// Async, cross-timezone review layer -- click a day, see everything that happened (companies/
+// decision-makers/messages), leave an approve/reject verdict and comments for whoever looks
+// at it later. Deliberately disconnected from the real pipeline -- never touches message
+// approval or pushes, it's a human tracking layer on top.
 export default function Calendar() {
   const { tenantSlug } = useParams()
   const today = new Date()
@@ -60,11 +74,24 @@ export default function Calendar() {
 
   const dayByDate = Object.fromEntries(days.map(d => [d.date, d]))
 
+  // refreshDay re-fetches without touching the active tab -- loadDay is only for the initial
+  // navigation into a day (where defaulting to Activity makes sense). Found live: reusing
+  // loadDay as the post-action refresh silently kicked the user back to Activity every time
+  // they approved/rejected or added a comment while on the Comments tab.
+  const refreshDay = (dateStr) => {
+    setLoadingDay(true)
+    client.get(`/calendar/${dateStr}`).then(res => setDayDetail(res.data)).finally(() => setLoadingDay(false))
+  }
+
   const loadDay = (dateStr) => {
     setSelectedDate(dateStr)
     setTab('activity')
-    setLoadingDay(true)
-    client.get(`/calendar/${dateStr}`).then(res => setDayDetail(res.data)).finally(() => setLoadingDay(false))
+    refreshDay(dateStr)
+  }
+
+  const backToCalendar = () => {
+    setSelectedDate(null)
+    setDayDetail(null)
   }
 
   const prevMonth = () => {
@@ -76,7 +103,7 @@ export default function Calendar() {
 
   const setReview = (status) => {
     client.post(`/calendar/${selectedDate}/review`, { status }).then(() => {
-      loadDay(selectedDate)
+      refreshDay(selectedDate)
       loadMonth()
     })
   }
@@ -86,14 +113,14 @@ export default function Calendar() {
     if (!text) return
     client.post(`/calendar/${selectedDate}/comments`, { comment: text }).then(() => {
       setCommentText('')
-      loadDay(selectedDate)
+      refreshDay(selectedDate)
       loadMonth()
     })
   }
 
   const deleteComment = (id) => {
     client.delete(`/calendar/${selectedDate}/comments/${id}`).then(() => {
-      loadDay(selectedDate)
+      refreshDay(selectedDate)
       loadMonth()
     })
   }
@@ -101,29 +128,29 @@ export default function Calendar() {
   const cells = buildMonthGrid(year, month)
   const todayStr = todayDateString()
 
-  return (
-    <div className="page page-wide">
-      <div className="calendar-layout">
-        <div className="calendar-grid-panel">
+  // ---- Calendar-only view ----
+  if (!selectedDate) {
+    return (
+      <div className="page page-wide">
+        <div className="calendar-solo-panel">
           <div className="calendar-month-nav">
             <button type="button" className="secondary btn-small" onClick={prevMonth}>&larr;</button>
             <strong>{MONTH_NAMES[month - 1]} {year}</strong>
             <button type="button" className="secondary btn-small" onClick={nextMonth}>&rarr;</button>
           </div>
-          <div className="calendar-weekday-row">
+          <div className="calendar-weekday-row calendar-weekday-row-lg">
             {WEEKDAY_LABELS.map(w => <div key={w} className="calendar-weekday">{w}</div>)}
           </div>
-          <div className="calendar-grid">
+          <div className="calendar-grid calendar-grid-lg">
             {cells.map((d, i) => {
               if (d === null) return <div key={`blank-${i}`} className="calendar-cell calendar-cell-blank" />
               const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
               const info = dayByDate[dateStr]
               const status = info?.status || 'pending'
               const hasActivity = info?.has_activity
-              const classes = ['calendar-cell']
+              const classes = ['calendar-cell', 'calendar-cell-lg']
               if (hasActivity) classes.push(`calendar-cell-${status}`)
               if (dateStr === todayStr) classes.push('calendar-cell-today')
-              if (dateStr === selectedDate) classes.push('calendar-cell-selected')
               return (
                 <button type="button" key={dateStr} className={classes.join(' ')} onClick={() => loadDay(dateStr)}>
                   <span className="calendar-cell-num">{d}</span>
@@ -138,90 +165,115 @@ export default function Calendar() {
             <span><i className="calendar-legend-dot calendar-cell-pending" /> Unreviewed</span>
           </div>
         </div>
+      </div>
+    )
+  }
 
-        <div className="calendar-detail-panel">
-          {!selectedDate && <p className="hint">Click a day to see that day's activity.</p>}
-          {selectedDate && loadingDay && <p className="hint">Loading...</p>}
-          {selectedDate && !loadingDay && dayDetail && (
-            <>
-              <div className="calendar-detail-header">
-                <h2>{selectedDate}</h2>
-                <div className="calendar-detail-actions">
-                  <button type="button" className={`btn-small ${dayDetail.status === 'approved' ? 'btn-approve active' : 'btn-approve'}`} onClick={() => setReview('approved')}>Approve</button>
-                  <button type="button" className={`btn-small ${dayDetail.status === 'rejected' ? 'btn-reject active' : 'btn-reject'}`} onClick={() => setReview('rejected')}>Reject</button>
-                  {dayDetail.status !== 'pending' && (
-                    <button type="button" className="secondary btn-small" onClick={() => setReview('pending')}>Clear</button>
-                  )}
+  // ---- Day detail view ----
+  return (
+    <div className="page page-wide">
+      <button type="button" className="link-button calendar-back-link" onClick={backToCalendar}>&larr; Back to calendar</button>
+
+      {loadingDay && <p className="hint">Loading...</p>}
+      {!loadingDay && dayDetail && (
+        <>
+          <div className="calendar-detail-header">
+            <h2>{selectedDate}</h2>
+            <div className="calendar-detail-actions">
+              <button type="button" className={`btn-small ${dayDetail.status === 'approved' ? 'btn-approve active' : 'btn-approve'}`} onClick={() => setReview('approved')}>Approve</button>
+              <button type="button" className={`btn-small ${dayDetail.status === 'rejected' ? 'btn-reject active' : 'btn-reject'}`} onClick={() => setReview('rejected')}>Reject</button>
+              {dayDetail.status !== 'pending' && (
+                <button type="button" className="secondary btn-small" onClick={() => setReview('pending')}>Clear</button>
+              )}
+            </div>
+          </div>
+
+          <div className="calendar-detail-tabs">
+            <button type="button" className={tab === 'activity' ? '' : 'secondary'} onClick={() => setTab('activity')}>Activity</button>
+            <button type="button" className={tab === 'comments' ? '' : 'secondary'} onClick={() => setTab('comments')}>
+              Comments{dayDetail.comments.length > 0 ? ` (${dayDetail.comments.length})` : ''}
+            </button>
+          </div>
+
+          {tab === 'activity' && (
+            <div className="calendar-activity">
+              <div className="calendar-stat-row">
+                <div className="calendar-stat-card">
+                  <div className="calendar-stat-num">{dayDetail.summary.companies_discovered}</div>
+                  <div className="calendar-stat-label">Companies Discovered</div>
+                </div>
+                <div className="calendar-stat-card">
+                  <div className="calendar-stat-num">{dayDetail.summary.companies_qualified}</div>
+                  <div className="calendar-stat-label">Companies Qualified</div>
+                </div>
+                <div className="calendar-stat-card">
+                  <div className="calendar-stat-num">{dayDetail.summary.decision_makers_found}</div>
+                  <div className="calendar-stat-label">Decision-Makers Found</div>
                 </div>
               </div>
 
-              <div className="calendar-detail-tabs">
-                <button type="button" className={tab === 'activity' ? '' : 'secondary'} onClick={() => setTab('activity')}>Activity</button>
-                <button type="button" className={tab === 'comments' ? '' : 'secondary'} onClick={() => setTab('comments')}>
-                  Comments{dayDetail.comments.length > 0 ? ` (${dayDetail.comments.length})` : ''}
-                </button>
-              </div>
-
-              {tab === 'activity' && (
-                <div className="calendar-activity-list">
-                  {dayDetail.batches.length === 0 && <p className="hint">No batches ran this day.</p>}
-                  {dayDetail.batches.map(b => (
-                    <div key={b.id} className="calendar-batch-card">
-                      <div className="calendar-batch-card-header">
-                        <strong>{b.name}</strong>
-                        <span className="hint">{b.source} &middot; {b.current_phase}</span>
-                      </div>
-                      {b.companies.length === 0 && <p className="hint">No companies yet.</p>}
-                      {b.companies.map(c => (
-                        <div key={c.id} className="calendar-company-row">
-                          <div className="calendar-company-row-head">
-                            <span>{c.name}</span>
-                            {c.qualified && <span className="calendar-qualified-badge">Qualified</span>}
-                          </div>
-                          {c.contacts.map(ct => (
-                            <div key={ct.id} className="calendar-contact-row">
-                              <div className="hint">{ct.name || 'Unnamed'} &middot; {ct.title || 'No title'}</div>
-                              {ct.generated_message && (
-                                <div className="calendar-message-preview">{ct.generated_message}</div>
-                              )}
-                              {!ct.generated_message && <div className="hint">No message drafted yet.</div>}
-                            </div>
-                          ))}
-                          {c.contacts.length === 0 && <div className="hint">No decision-maker found.</div>}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+              {dayDetail.batch_names.length > 0 && (
+                <p className="hint calendar-batch-tags">Batches: {dayDetail.batch_names.join(', ')}</p>
               )}
 
-              {tab === 'comments' && (
-                <div className="calendar-comments">
-                  {dayDetail.comments.length === 0 && <p className="hint">No comments yet.</p>}
-                  {dayDetail.comments.map(c => (
-                    <div key={c.id} className="calendar-comment">
-                      <div className="calendar-comment-text">{c.comment}</div>
-                      <div className="calendar-comment-meta">
-                        <span className="hint">{timeAgo(c.created_at)}</span>
-                        <button type="button" className="link-button" onClick={() => deleteComment(c.id)}>Delete</button>
-                      </div>
+              <h3 className="calendar-section-title">Timeline</h3>
+              {dayDetail.timeline.length === 0 && <p className="hint">No activity this day.</p>}
+              <div className="calendar-timeline">
+                {dayDetail.timeline.map((item, i) => (
+                  <div key={i} className="calendar-timeline-item">
+                    <span className="calendar-timeline-icon">{TIMELINE_ICON[item.type] || '•'}</span>
+                    <div className="calendar-timeline-body">
+                      <span>{item.text}</span>
+                      <span className="hint calendar-timeline-time">{formatClock(item.timestamp)}</span>
                     </div>
-                  ))}
-                  <div className="calendar-comment-input-row">
-                    <textarea
-                      rows={2}
-                      placeholder="@name your comment..."
-                      value={commentText}
-                      onChange={e => setCommentText(e.target.value)}
-                    />
-                    <button type="button" onClick={addComment} disabled={!commentText.trim()}>Add</button>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="calendar-section-title">Decision-Makers &amp; Messages</h3>
+              {dayDetail.decision_makers.length === 0 && <p className="hint">No decision-makers found this day.</p>}
+              {dayDetail.decision_makers.map(dm => (
+                <div key={dm.contact_id} className="calendar-dm-card">
+                  <div className="calendar-dm-head">
+                    <strong>{dm.name || 'Unnamed'}</strong>
+                    <span className="hint">{dm.title || 'No title'} &middot; {dm.company_name}</span>
+                    {dm.message_status && <span className={`calendar-msg-status calendar-msg-status-${dm.message_status}`}>{dm.message_status}</span>}
+                  </div>
+                  {dm.generated_message
+                    ? <div className="calendar-message-preview">{dm.generated_message}</div>
+                    : <div className="hint">No message drafted yet.</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'comments' && (
+            <div className="calendar-comments">
+              {dayDetail.comments.length === 0 && <p className="hint">No comments yet.</p>}
+              {dayDetail.comments.map(c => (
+                <div key={c.id} className="calendar-comment">
+                  <div className="calendar-comment-text">{c.comment}</div>
+                  <div className="calendar-comment-meta">
+                    <span className="hint">{timeAgo(c.created_at)}</span>
+                    <button type="button" className="icon-button" title="Delete comment" onClick={() => deleteComment(c.id)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
                   </div>
                 </div>
-              )}
-            </>
+              ))}
+              <div className="calendar-comment-input-row">
+                <textarea
+                  rows={2}
+                  placeholder="@name your comment..."
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                />
+                <button type="button" onClick={addComment} disabled={!commentText.trim()}>Add</button>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

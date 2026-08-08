@@ -11,7 +11,10 @@ const SEVERITY_LABEL = {
 
 function timeAgo(iso) {
   if (!iso) return ''
-  const diffMs = Date.now() - new Date(iso).getTime()
+  // Backend timestamps are naive UTC -- a string with no "Z"/offset gets parsed as LOCAL time
+  // by JS, silently shifting it by the browser's UTC offset. Treat offset-less strings as UTC.
+  const normalized = /[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`
+  const diffMs = Date.now() - new Date(normalized).getTime()
   const mins = Math.round(diffMs / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`
