@@ -1113,6 +1113,14 @@ button.btn-small {
   border-radius: 999px;
 }
 
+button.btn-medium {
+  padding: 0.4rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: none;
+  border-radius: 999px;
+}
+
 button.btn-approve {
   background: var(--success-soft);
   color: var(--success);
@@ -1300,6 +1308,34 @@ button.btn-reject.active {
 .calendar-detail-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.calendar-reject-reason-row {
+  border: 1px solid var(--danger);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.calendar-reject-reason-row textarea {
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.86rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.calendar-reject-reason-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .calendar-detail-tabs {

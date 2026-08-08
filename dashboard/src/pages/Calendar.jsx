@@ -63,8 +63,10 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [dayDetail, setDayDetail] = useState(null)
   const [loadingDay, setLoadingDay] = useState(false)
-  const [tab, setTab] = useState('timeline')
+  const [tab, setTab] = useState('companies')
   const [commentText, setCommentText] = useState('')
+  const [rejectReasonOpen, setRejectReasonOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
 
   const loadMonth = () => {
     client.get('/calendar/month', { params: { year, month } }).then(res => setDays(res.data.days)).catch(() => {})
@@ -91,7 +93,9 @@ export default function Calendar() {
 
   const loadDay = (dateStr) => {
     setSelectedDate(dateStr)
-    setTab('timeline')
+    setTab('companies')
+    setRejectReasonOpen(false)
+    setRejectReason('')
     refreshDay(dateStr)
   }
 
@@ -112,6 +116,19 @@ export default function Calendar() {
       refreshDay(selectedDate)
       loadMonth()
     })
+  }
+
+  const submitReject = () => {
+    const reason = rejectReason.trim()
+    setReview('rejected')
+    if (reason) {
+      client.post(`/calendar/${selectedDate}/comments`, { comment: `Rejected: ${reason}` }).then(() => {
+        refreshDay(selectedDate)
+        loadMonth()
+      })
+    }
+    setRejectReasonOpen(false)
+    setRejectReason('')
   }
 
   const addComment = () => {
@@ -186,13 +203,29 @@ export default function Calendar() {
           <div className="calendar-detail-header">
             <h2>{selectedDate}</h2>
             <div className="calendar-detail-actions">
-              <button type="button" className={`btn-small ${dayDetail.status === 'approved' ? 'btn-approve active' : 'btn-approve'}`} onClick={() => setReview('approved')}>Approve</button>
-              <button type="button" className={`btn-small ${dayDetail.status === 'rejected' ? 'btn-reject active' : 'btn-reject'}`} onClick={() => setReview('rejected')}>Reject</button>
+              <button type="button" className={`btn-medium ${dayDetail.status === 'approved' ? 'btn-approve active' : 'btn-approve'}`} onClick={() => { setReview('approved'); setRejectReasonOpen(false) }}>Approve</button>
+              <button type="button" className={`btn-medium ${dayDetail.status === 'rejected' ? 'btn-reject active' : 'btn-reject'}`} onClick={() => setRejectReasonOpen(o => !o)}>Reject</button>
               {dayDetail.status !== 'pending' && (
-                <button type="button" className="secondary btn-small" onClick={() => setReview('pending')}>Clear</button>
+                <button type="button" className="secondary btn-medium" onClick={() => { setReview('pending'); setRejectReasonOpen(false) }}>Clear</button>
               )}
             </div>
           </div>
+
+          {rejectReasonOpen && (
+            <div className="calendar-reject-reason-row">
+              <textarea
+                rows={2}
+                placeholder="Reason for rejecting (optional) -- gets added to Comments"
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                autoFocus
+              />
+              <div className="calendar-reject-reason-actions">
+                <button type="button" className="btn-reject btn-small" onClick={submitReject}>Submit</button>
+                <button type="button" className="secondary btn-small" onClick={() => { setRejectReasonOpen(false); setRejectReason('') }}>Cancel</button>
+              </div>
+            </div>
+          )}
 
           <div className="calendar-stat-row">
             <div className="calendar-stat-card">
@@ -210,7 +243,6 @@ export default function Calendar() {
           </div>
 
           <div className="calendar-detail-tabs">
-            <button type="button" className={tab === 'timeline' ? '' : 'secondary'} onClick={() => setTab('timeline')}>Timeline</button>
             <button type="button" className={tab === 'companies' ? '' : 'secondary'} onClick={() => setTab('companies')}>
               Companies{dayDetail.companies.length > 0 ? ` (${dayDetail.companies.length})` : ''}
             </button>
@@ -220,6 +252,7 @@ export default function Calendar() {
             <button type="button" className={tab === 'comments' ? '' : 'secondary'} onClick={() => setTab('comments')}>
               Comments{dayDetail.comments.length > 0 ? ` (${dayDetail.comments.length})` : ''}
             </button>
+            <button type="button" className={tab === 'timeline' ? '' : 'secondary'} onClick={() => setTab('timeline')}>Timeline</button>
           </div>
 
           {tab === 'timeline' && (
