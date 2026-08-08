@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Link, NavLink, useParams, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import Overview from './pages/Overview'
+import Calendar from './pages/Calendar'
 import Companies from './pages/Companies'
 import Meetings from './pages/Meetings'
 import Notifications from './pages/Notifications'
@@ -122,6 +123,7 @@ function useBreadcrumbLabel() {
     campaign: 'Campaign',
     meetings: 'Meetings',
     notifications: 'Notifications',
+    calendar: 'Review',
     settings: 'Settings',
   }
   return labels[segment] || 'Batch Detail'
@@ -161,6 +163,10 @@ function AppShell() {
               <NavLink to={`/${tenantSlug}/meetings`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
                 Meetings
+              </NavLink>
+              <NavLink to={`/${tenantSlug}/calendar`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path></svg>
+                Review
               </NavLink>
             </>
           ) : (
@@ -211,6 +217,7 @@ function AppShell() {
             <Route path="campaign" element={<TenantScope><Outcomes /></TenantScope>} />
             <Route path="meetings" element={<TenantScope><Meetings /></TenantScope>} />
             <Route path="notifications" element={<TenantScope><Notifications /></TenantScope>} />
+            <Route path="calendar" element={<TenantScope><Calendar /></TenantScope>} />
             <Route path="settings" element={<TenantScope><Settings /></TenantScope>} />
           </Routes>
         </div>

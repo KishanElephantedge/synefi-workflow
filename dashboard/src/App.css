@@ -1135,6 +1135,263 @@ button.btn-reject:hover:not(:disabled) {
   color: #fff;
 }
 
+button.btn-approve.active {
+  background: var(--success);
+  color: #fff;
+}
+
+button.btn-reject.active {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- Daily Review calendar ---------- */
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.calendar-grid-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.calendar-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.calendar-weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.35rem;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.calendar-cell:hover {
+  border-color: var(--primary);
+}
+
+.calendar-cell-blank {
+  border: none;
+  cursor: default;
+  background: transparent;
+}
+
+.calendar-cell-today {
+  font-weight: 700;
+  border-color: var(--primary);
+}
+
+.calendar-cell-selected {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+
+.calendar-cell-approved {
+  background: var(--success-soft);
+  border-color: var(--success);
+}
+
+.calendar-cell-rejected {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.calendar-cell-pending {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+}
+
+.calendar-cell-comment-dot {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.calendar-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid transparent;
+}
+
+.calendar-detail-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  min-height: 320px;
+}
+
+.calendar-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.calendar-detail-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.calendar-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar-detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.calendar-batch-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.calendar-batch-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-company-row {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0;
+}
+
+.calendar-company-row-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.calendar-qualified-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--success-soft);
+  color: var(--success);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+
+.calendar-contact-row {
+  margin-top: 0.35rem;
+  padding-left: 0.75rem;
+}
+
+.calendar-message-preview {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface-alt);
+  border-radius: 6px;
+}
+
+.calendar-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.calendar-comment {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+
+.calendar-comment-text {
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+}
+
+.calendar-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.calendar-comment-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  margin-top: 0.25rem;
+}
+
+.calendar-comment-input-row textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.86rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+
 /* ---------- Step flow (Elephant Edge batch detail) ---------- */
 
 .step-flow {
