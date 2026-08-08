@@ -44,6 +44,12 @@ function formatClock(iso) {
   return new Date(normalized).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function LinkedInIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+  )
+}
+
 // Async, cross-timezone review layer -- click a day, see everything that happened (companies/
 // decision-makers/messages), leave an approve/reject verdict and comments for whoever looks
 // at it later. Deliberately disconnected from the real pipeline -- never touches message
@@ -57,7 +63,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [dayDetail, setDayDetail] = useState(null)
   const [loadingDay, setLoadingDay] = useState(false)
-  const [tab, setTab] = useState('activity')
+  const [tab, setTab] = useState('timeline')
   const [commentText, setCommentText] = useState('')
 
   const loadMonth = () => {
@@ -85,7 +91,7 @@ export default function Calendar() {
 
   const loadDay = (dateStr) => {
     setSelectedDate(dateStr)
-    setTab('activity')
+    setTab('timeline')
     refreshDay(dateStr)
   }
 
@@ -188,60 +194,93 @@ export default function Calendar() {
             </div>
           </div>
 
+          <div className="calendar-stat-row">
+            <div className="calendar-stat-card">
+              <div className="calendar-stat-num">{dayDetail.summary.companies_discovered}</div>
+              <div className="calendar-stat-label">Companies Discovered</div>
+            </div>
+            <div className="calendar-stat-card">
+              <div className="calendar-stat-num">{dayDetail.summary.companies_qualified}</div>
+              <div className="calendar-stat-label">Companies Qualified</div>
+            </div>
+            <div className="calendar-stat-card">
+              <div className="calendar-stat-num">{dayDetail.summary.decision_makers_found}</div>
+              <div className="calendar-stat-label">Decision-Makers Found</div>
+            </div>
+          </div>
+
+          {dayDetail.batch_names.length > 0 && (
+            <p className="hint calendar-batch-tags">Batches: {dayDetail.batch_names.join(', ')}</p>
+          )}
+
           <div className="calendar-detail-tabs">
-            <button type="button" className={tab === 'activity' ? '' : 'secondary'} onClick={() => setTab('activity')}>Activity</button>
+            <button type="button" className={tab === 'timeline' ? '' : 'secondary'} onClick={() => setTab('timeline')}>Timeline</button>
+            <button type="button" className={tab === 'companies' ? '' : 'secondary'} onClick={() => setTab('companies')}>
+              Companies{dayDetail.companies.length > 0 ? ` (${dayDetail.companies.length})` : ''}
+            </button>
+            <button type="button" className={tab === 'decision-makers' ? '' : 'secondary'} onClick={() => setTab('decision-makers')}>
+              Decision-Makers{dayDetail.decision_makers.length > 0 ? ` (${dayDetail.decision_makers.length})` : ''}
+            </button>
             <button type="button" className={tab === 'comments' ? '' : 'secondary'} onClick={() => setTab('comments')}>
               Comments{dayDetail.comments.length > 0 ? ` (${dayDetail.comments.length})` : ''}
             </button>
           </div>
 
-          {tab === 'activity' && (
-            <div className="calendar-activity">
-              <div className="calendar-stat-row">
-                <div className="calendar-stat-card">
-                  <div className="calendar-stat-num">{dayDetail.summary.companies_discovered}</div>
-                  <div className="calendar-stat-label">Companies Discovered</div>
-                </div>
-                <div className="calendar-stat-card">
-                  <div className="calendar-stat-num">{dayDetail.summary.companies_qualified}</div>
-                  <div className="calendar-stat-label">Companies Qualified</div>
-                </div>
-                <div className="calendar-stat-card">
-                  <div className="calendar-stat-num">{dayDetail.summary.decision_makers_found}</div>
-                  <div className="calendar-stat-label">Decision-Makers Found</div>
-                </div>
-              </div>
-
-              {dayDetail.batch_names.length > 0 && (
-                <p className="hint calendar-batch-tags">Batches: {dayDetail.batch_names.join(', ')}</p>
-              )}
-
-              <h3 className="calendar-section-title">Timeline</h3>
+          {tab === 'timeline' && (
+            <div className="calendar-timeline">
               {dayDetail.timeline.length === 0 && <p className="hint">No activity this day.</p>}
-              <div className="calendar-timeline">
-                {dayDetail.timeline.map((item, i) => (
-                  <div key={i} className="calendar-timeline-item">
-                    <span className="calendar-timeline-icon">{TIMELINE_ICON[item.type] || '•'}</span>
-                    <div className="calendar-timeline-body">
-                      <span>{item.text}</span>
-                      <span className="hint calendar-timeline-time">{formatClock(item.timestamp)}</span>
-                    </div>
+              {dayDetail.timeline.map((item, i) => (
+                <div key={i} className="calendar-timeline-item">
+                  <span className="calendar-timeline-icon">{TIMELINE_ICON[item.type] || '•'}</span>
+                  <div className="calendar-timeline-body">
+                    <span>{item.text}</span>
+                    <span className="hint calendar-timeline-time">{formatClock(item.timestamp)}</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-              <h3 className="calendar-section-title">Decision-Makers &amp; Messages</h3>
+          {tab === 'companies' && (
+            <div className="calendar-company-list">
+              {dayDetail.companies.length === 0 && <p className="hint">No companies this day.</p>}
+              {dayDetail.companies.map(c => (
+                <div key={c.id} className="calendar-company-card">
+                  <div className="calendar-company-card-main">
+                    <span className="calendar-company-card-name">{c.name}</span>
+                    {c.qualified && <span className="calendar-qualified-badge">Qualified</span>}
+                    <span className="hint">{c.contact_count} contact{c.contact_count === 1 ? '' : 's'}</span>
+                  </div>
+                  {c.linkedin_url && (
+                    <a href={c.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
+                      <LinkedInIcon /> LinkedIn
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'decision-makers' && (
+            <div className="calendar-dm-list">
               {dayDetail.decision_makers.length === 0 && <p className="hint">No decision-makers found this day.</p>}
               {dayDetail.decision_makers.map(dm => (
                 <div key={dm.contact_id} className="calendar-dm-card">
                   <div className="calendar-dm-head">
-                    <strong>{dm.name || 'Unnamed'}</strong>
-                    <span className="hint">{dm.title || 'No title'} &middot; {dm.company_name}</span>
+                    <div className="calendar-dm-head-main">
+                      <strong>{dm.name || 'Unnamed'}</strong>
+                      <span className="hint">{dm.title || 'No title'} &middot; {dm.company_name}</span>
+                    </div>
                     {dm.message_status && <span className={`calendar-msg-status calendar-msg-status-${dm.message_status}`}>{dm.message_status}</span>}
                   </div>
+                  {dm.linkedin_url && (
+                    <a href={dm.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
+                      <LinkedInIcon /> LinkedIn
+                    </a>
+                  )}
                   {dm.generated_message
                     ? <div className="calendar-message-preview">{dm.generated_message}</div>
-                    : <div className="hint">No message drafted yet.</div>}
+                    : <div className="hint calendar-dm-no-message">No message drafted yet.</div>}
                 </div>
               ))}
             </div>
