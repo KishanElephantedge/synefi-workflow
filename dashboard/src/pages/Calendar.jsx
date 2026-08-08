@@ -209,10 +209,6 @@ export default function Calendar() {
             </div>
           </div>
 
-          {dayDetail.batch_names.length > 0 && (
-            <p className="hint calendar-batch-tags">Batches: {dayDetail.batch_names.join(', ')}</p>
-          )}
-
           <div className="calendar-detail-tabs">
             <button type="button" className={tab === 'timeline' ? '' : 'secondary'} onClick={() => setTab('timeline')}>Timeline</button>
             <button type="button" className={tab === 'companies' ? '' : 'secondary'} onClick={() => setTab('companies')}>
@@ -246,16 +242,22 @@ export default function Calendar() {
               {dayDetail.companies.length === 0 && <p className="hint">No companies this day.</p>}
               {dayDetail.companies.map(c => (
                 <div key={c.id} className="calendar-company-card">
-                  <div className="calendar-company-card-main">
-                    <span className="calendar-company-card-name">{c.name}</span>
-                    {c.qualified && <span className="calendar-qualified-badge">Qualified</span>}
-                    <span className="hint">{c.contact_count} contact{c.contact_count === 1 ? '' : 's'}</span>
+                  <div className="calendar-company-card-left">
+                    <div className="calendar-company-card-top">
+                      <span className="calendar-company-card-name">{c.name}</span>
+                      {c.linkedin_url && (
+                        <a href={c.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
+                          <LinkedInIcon /> LinkedIn
+                        </a>
+                      )}
+                    </div>
+                    {c.primary_contact_name && (
+                      <div className="hint calendar-company-card-contact">
+                        {c.primary_contact_name}{c.primary_contact_title ? ` · ${c.primary_contact_title}` : ''}
+                      </div>
+                    )}
                   </div>
-                  {c.linkedin_url && (
-                    <a href={c.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
-                      <LinkedInIcon /> LinkedIn
-                    </a>
-                  )}
+                  {c.qualified && <span className="calendar-qualified-pill">Qualified</span>}
                 </div>
               ))}
             </div>
