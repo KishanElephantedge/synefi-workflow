@@ -184,7 +184,7 @@ export default function ChatWidget() {
         {open ? (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         ) : (
-          <svg className="h-6 w-6" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.17 0-2.29-.2-3.31-.55L3 21l1.55-4.69C3.57 15.09 3 13.6 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.17 0-2.29-.2-3.31-.55L3 21l1.55-4.69C3.57 15.09 3 13.6 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
         )}
       </button>
     </div>

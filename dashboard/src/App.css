@@ -251,12 +251,13 @@ main.content {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: none;
-  background: transparent;
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 50%;
-  color: var(--text-muted);
+  color: var(--text);
   cursor: pointer;
   transition: background 0.12s ease;
+  flex-shrink: 0;
 }
 
 .notification-bell-btn:hover {
@@ -401,8 +402,8 @@ main.content {
 }
 
 .chat-widget-bubble {
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
@@ -1480,6 +1481,20 @@ button.btn-reject.active {
 
 .calendar-linkedin-link:hover {
   text-decoration: underline;
+}
+
+.calendar-dm-channel-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.calendar-dm-email-address {
+  font-weight: 600;
+}
+
+.calendar-email-subject {
+  font-size: 0.82rem;
 }
 
 .calendar-dm-card {

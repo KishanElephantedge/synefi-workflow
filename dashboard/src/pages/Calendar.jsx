@@ -64,6 +64,7 @@ export default function Calendar() {
   const [dayDetail, setDayDetail] = useState(null)
   const [loadingDay, setLoadingDay] = useState(false)
   const [tab, setTab] = useState('companies')
+  const [dmChannel, setDmChannel] = useState('linkedin')
   const [commentText, setCommentText] = useState('')
   const [rejectReasonOpen, setRejectReasonOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -298,6 +299,10 @@ export default function Calendar() {
 
           {tab === 'decision-makers' && (
             <div className="calendar-dm-list">
+              <div className="calendar-dm-channel-toggle">
+                <button type="button" className={dmChannel === 'linkedin' ? '' : 'secondary'} onClick={() => setDmChannel('linkedin')}>LinkedIn</button>
+                <button type="button" className={dmChannel === 'email' ? '' : 'secondary'} onClick={() => setDmChannel('email')}>Email</button>
+              </div>
               {dayDetail.decision_makers.length === 0 && <p className="hint">No decision-makers found this day.</p>}
               {dayDetail.decision_makers.map(dm => (
                 <div key={dm.contact_id} className="calendar-dm-card">
@@ -308,14 +313,36 @@ export default function Calendar() {
                     </div>
                     {dm.message_status && <span className={`calendar-msg-status calendar-msg-status-${dm.message_status}`}>{dm.message_status}</span>}
                   </div>
-                  {dm.linkedin_url && (
-                    <a href={dm.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
-                      <LinkedInIcon /> LinkedIn
-                    </a>
+                  {dmChannel === 'linkedin' ? (
+                    <>
+                      {dm.linkedin_url && (
+                        <a href={dm.linkedin_url} target="_blank" rel="noreferrer" className="calendar-linkedin-link" title="View on LinkedIn">
+                          <LinkedInIcon /> LinkedIn
+                        </a>
+                      )}
+                      {dm.generated_message
+                        ? <div className="calendar-message-preview">{dm.generated_message}</div>
+                        : <div className="hint calendar-dm-no-message">No message drafted yet.</div>}
+                    </>
+                  ) : (
+                    <>
+                      {dm.contact_email ? (
+                        <>
+                          <div className="hint calendar-dm-email-address">
+                            {dm.contact_email}
+                            {dm.contact_email_source === 'pattern_guess' && <span className="status-pill warn" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>unverified guess</span>}
+                            {dm.contact_email_source === 'jobo_company' && <span className="status-pill warn" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>generic company address</span>}
+                          </div>
+                          {dm.email_subject && <div className="calendar-email-subject"><strong>Subject:</strong> {dm.email_subject}</div>}
+                          {dm.email_body
+                            ? <div className="calendar-message-preview">{dm.email_body}</div>
+                            : <div className="hint calendar-dm-no-message">No email drafted yet.</div>}
+                        </>
+                      ) : (
+                        <div className="hint calendar-dm-no-message">No email found for this contact.</div>
+                      )}
+                    </>
                   )}
-                  {dm.generated_message
-                    ? <div className="calendar-message-preview">{dm.generated_message}</div>
-                    : <div className="hint calendar-dm-no-message">No message drafted yet.</div>}
                 </div>
               ))}
             </div>
