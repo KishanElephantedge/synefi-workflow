@@ -2,6 +2,54 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import client from '../api/client'
 
+// Minimal, dependency-free markdown rendering -- just enough for what Claude's chat replies
+// actually use (bold, headers, bullet lists), so **text** and # headers render instead of
+// showing the raw markdown characters. Not a general markdown parser.
+function renderMarkdown(text) {
+  if (!text) return null
+  const lines = text.split('\n')
+  const blocks = []
+  let listItems = null
+
+  const flushList = () => {
+    if (listItems) {
+      blocks.push(<ul key={`ul-${blocks.length}`}>{listItems}</ul>)
+      listItems = null
+    }
+  }
+
+  const renderInline = (line) => {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+  }
+
+  lines.forEach((line, i) => {
+    const heading = line.match(/^(#{1,3})\s+(.*)/)
+    const bullet = line.match(/^[-*]\s+(.*)/)
+    if (heading) {
+      flushList()
+      const Tag = heading[1].length === 1 ? 'h4' : heading[1].length === 2 ? 'h5' : 'h6'
+      blocks.push(<Tag key={i} style={{ margin: '0.3rem 0' }}>{renderInline(heading[2])}</Tag>)
+    } else if (bullet) {
+      if (!listItems) listItems = []
+      listItems.push(<li key={i}>{renderInline(bullet[1])}</li>)
+    } else if (line.trim() === '') {
+      flushList()
+      blocks.push(<br key={i} />)
+    } else {
+      flushList()
+      blocks.push(<span key={i}>{renderInline(line)}<br /></span>)
+    }
+  })
+  flushList()
+  return blocks
+}
+
 // Floating AI chat widget -- Elephant Edge only. Persists across page navigation (rendered
 // once at the AppShell level, not per-route) since it's a real conversation, not a per-page
 // widget. Tenant-scoped history (see ChatConversation in the backend), not per-user -- this
@@ -103,16 +151,13 @@ export default function ChatWidget() {
             {messages.map((m, i) => (
               <div key={i} className={`chat-message chat-message-${m.role}`}>
                 <div className="chat-message-bubble">
-                  {m.content}
+                  {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
                   {m.csv && (
                     <button type="button" className="chat-csv-download" onClick={() => downloadCsv(m.csv)}>
                       Download {m.csv.filename}
                     </button>
                   )}
                 </div>
-                {m.tools_used && m.tools_used.length > 0 && (
-                  <div className="chat-message-tools">Used: {[...new Set(m.tools_used)].join(', ')}</div>
-                )}
               </div>
             ))}
             {sending && (
@@ -139,7 +184,7 @@ export default function ChatWidget() {
         {open ? (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          <svg className="h-6 w-6" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.17 0-2.29-.2-3.31-.55L3 21l1.55-4.69C3.57 15.09 3 13.6 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
         )}
       </button>
     </div>
