@@ -866,6 +866,12 @@ function ElephantEdgeBatchDetail() {
                   {messageData[messageContactId].contact_email && (
                     <div className="message-drawer-section" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
                       <strong>Email ({messageData[messageContactId].contact_email})</strong>
+                      {messageData[messageContactId].contact_email_source === 'pattern_guess' && (
+                        <span className="status-pill warn" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>unverified guess</span>
+                      )}
+                      {messageData[messageContactId].contact_email_source === 'jobo_company' && (
+                        <span className="status-pill warn" style={{ marginLeft: '0.5rem', fontSize: '0.7rem' }}>generic company address</span>
+                      )}
                       <label style={{ display: 'block', margin: '0.5rem 0 0.3rem' }}>Subject (editable)</label>
                       <input
                         type="text"
