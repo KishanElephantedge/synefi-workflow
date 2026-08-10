@@ -320,6 +320,8 @@ function ElephantEdgeBatchDetail() {
   const [messageData, setMessageData] = useState({})
   const [generatingContactId, setGeneratingContactId] = useState(null)
   const [editedMessage, setEditedMessage] = useState('')
+  const [editedEmailSubject, setEditedEmailSubject] = useState('')
+  const [editedEmailBody, setEditedEmailBody] = useState('')
   const [page, setPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
   const [showDrawerDetails, setShowDrawerDetails] = useState(false)
@@ -336,11 +338,15 @@ function ElephantEdgeBatchDetail() {
         const res = await client.get(`/contacts/${contactId}/message`)
         setMessageData(prev => ({ ...prev, [contactId]: res.data }))
         setEditedMessage(res.data.generated_message || '')
+        setEditedEmailSubject(res.data.email_subject || '')
+        setEditedEmailBody(res.data.email_body || '')
       } catch (err) {
         setError(err.response?.data?.detail || err.message)
       }
     } else {
       setEditedMessage(messageData[contactId].generated_message || '')
+      setEditedEmailSubject(messageData[contactId].email_subject || '')
+      setEditedEmailBody(messageData[contactId].email_body || '')
     }
   }
 
@@ -351,6 +357,8 @@ function ElephantEdgeBatchDetail() {
       const res = await client.post(`/contacts/${contactId}/generate-message`)
       setMessageData(prev => ({ ...prev, [contactId]: res.data }))
       setEditedMessage(res.data.generated_message || '')
+      setEditedEmailSubject(res.data.email_subject || '')
+      setEditedEmailBody(res.data.email_body || '')
       setMessageContactId(contactId)
       load()
     } catch (err) {
@@ -362,8 +370,22 @@ function ElephantEdgeBatchDetail() {
 
   const saveMessageEdit = async (contactId, status) => {
     try {
-      const res = await client.post(`/contacts/${contactId}/message/edit`, { generated_message: editedMessage, status })
-      setMessageData(prev => ({ ...prev, [contactId]: { ...prev[contactId], generated_message: res.data.generated_message, status: res.data.status } }))
+      const res = await client.post(`/contacts/${contactId}/message/edit`, {
+        generated_message: editedMessage,
+        email_subject: editedEmailSubject,
+        email_body: editedEmailBody,
+        status,
+      })
+      setMessageData(prev => ({
+        ...prev,
+        [contactId]: {
+          ...prev[contactId],
+          generated_message: res.data.generated_message,
+          email_subject: res.data.email_subject,
+          email_body: res.data.email_body,
+          status: res.data.status,
+        },
+      }))
       load()
     } catch (err) {
       setError(err.response?.data?.detail || err.message)
@@ -841,6 +863,23 @@ function ElephantEdgeBatchDetail() {
                       {generatingContactId === messageContactId ? 'Regenerating...' : 'Regenerate'}
                     </button>
                   </div>
+                  {messageData[messageContactId].contact_email && (
+                    <div className="message-drawer-section" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+                      <strong>Email ({messageData[messageContactId].contact_email})</strong>
+                      <label style={{ display: 'block', margin: '0.5rem 0 0.3rem' }}>Subject (editable)</label>
+                      <input
+                        type="text"
+                        value={editedEmailSubject}
+                        onChange={e => setEditedEmailSubject(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      <label style={{ display: 'block', margin: '0.6rem 0 0.3rem' }}>Body (editable)</label>
+                      <textarea rows={6} value={editedEmailBody} onChange={e => setEditedEmailBody(e.target.value)} style={{ width: '100%' }} />
+                      <p className="hint" style={{ marginTop: '0.3rem' }}>
+                        Approving/rejecting above applies to both the LinkedIn message and this email -- one shared review decision.
+                      </p>
+                    </div>
+                  )}
                   <button type="button" className="link-button" onClick={() => setShowDrawerDetails(v => !v)}>
                     {showDrawerDetails ? 'Hide details ▾' : 'View details ▸'}
                   </button>
