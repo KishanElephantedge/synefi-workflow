@@ -248,7 +248,7 @@ export default function Calendar() {
               <div className="calendar-autonomous-header">
                 <strong>Autonomous system -- plan &amp; outcome</strong>
                 <span className="hint">
-                  {dayDetail.autonomous.enabled ? 'Enabled' : 'Disabled'} &middot; source: {dayDetail.autonomous.discovery_source} &middot; target: {dayDetail.autonomous.daily_company_cap}/day &middot; budget: ${dayDetail.autonomous.daily_budget_usd} &middot; scheduled {dayDetail.autonomous.scheduled_time_utc} UTC
+                  {dayDetail.autonomous.enabled ? 'Enabled' : 'Disabled'} &middot; source: {dayDetail.autonomous.discovery_source} &middot; target: {dayDetail.autonomous.daily_company_cap}/day &middot; scheduled {dayDetail.autonomous.scheduled_time_utc} UTC
                 </span>
               </div>
               <div className="calendar-autonomous-steps">
