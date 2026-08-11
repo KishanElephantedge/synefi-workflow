@@ -243,6 +243,29 @@ export default function Calendar() {
             </div>
           </div>
 
+          {dayDetail.autonomous && (
+            <div className="calendar-autonomous-panel">
+              <div className="calendar-autonomous-header">
+                <strong>Autonomous system -- plan &amp; outcome</strong>
+                <span className="hint">
+                  {dayDetail.autonomous.enabled ? 'Enabled' : 'Disabled'} &middot; source: {dayDetail.autonomous.discovery_source} &middot; target: {dayDetail.autonomous.daily_company_cap}/day &middot; budget: ${dayDetail.autonomous.daily_budget_usd} &middot; scheduled {dayDetail.autonomous.scheduled_time_utc} UTC
+                </span>
+              </div>
+              <div className="calendar-autonomous-steps">
+                {dayDetail.autonomous.steps.map((step, i) => (
+                  <div key={i} className="calendar-autonomous-step">
+                    <span className={`calendar-step-status calendar-step-status-${step.status}`}>{step.status}</span>
+                    <span className="calendar-step-name">{step.name}</span>
+                    {step.detail && <span className="hint calendar-step-detail">{step.detail}</span>}
+                  </div>
+                ))}
+              </div>
+              {dayDetail.autonomous.run_count === 0 && (
+                <p className="hint" style={{ marginTop: '0.5rem' }}>No autonomous run for this day yet.</p>
+              )}
+            </div>
+          )}
+
           <div className="calendar-detail-tabs">
             <button type="button" className={tab === 'companies' ? '' : 'secondary'} onClick={() => setTab('companies')}>
               Companies{dayDetail.companies.length > 0 ? ` (${dayDetail.companies.length})` : ''}

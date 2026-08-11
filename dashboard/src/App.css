@@ -251,10 +251,10 @@ main.content {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
   border-radius: 50%;
-  color: var(--text);
+  color: #000000;
   cursor: pointer;
   transition: background 0.12s ease;
   flex-shrink: 0;
@@ -1337,6 +1337,68 @@ button.btn-reject.active {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.calendar-autonomous-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+}
+
+.calendar-autonomous-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.calendar-autonomous-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.calendar-autonomous-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem 0.3rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.calendar-step-name {
+  font-weight: 600;
+}
+
+.calendar-step-detail {
+  font-size: 0.72rem;
+}
+
+.calendar-step-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.calendar-step-status-completed {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.calendar-step-status-pending {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.calendar-step-status-failed {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .calendar-detail-tabs {
