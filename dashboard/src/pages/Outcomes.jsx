@@ -160,6 +160,18 @@ export default function Outcomes() {
             <div className="stat-label">Replied</div>
             <div className="stat-value">{stats.replied} <span className="hint">({pct(stats.reply_rate)})</span></div>
           </div>
+          <div className="stat-card">
+            <div className="stat-label">Emails Sent</div>
+            <div className="stat-value">{stats.emails_sent}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Emails Opened</div>
+            <div className="stat-value">{stats.emails_opened} <span className="hint">({pct(stats.email_open_rate)})</span></div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Email Replies</div>
+            <div className="stat-value">{stats.emails_replied} <span className="hint">({pct(stats.email_reply_rate)})</span></div>
+          </div>
         </div>
       )}
 

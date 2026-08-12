@@ -381,6 +381,24 @@ export default function Overview() {
         </div>
 
         <div className="overview-card">
+          <h3 className="overview-card-title">Email Performance</h3>
+          <div className="stat-grid">
+            <div className="stat-card">
+              <div className="stat-label">Emails Sent</div>
+              <div className="stat-value">{stats.emails_sent ?? 0}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Opened</div>
+              <div className="stat-value">{stats.emails_opened ?? 0}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Replied</div>
+              <div className="stat-value">{stats.emails_replied ?? 0}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="overview-card">
           <h3 className="overview-card-title">Companies Found — Last 14 Days</h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={trend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
