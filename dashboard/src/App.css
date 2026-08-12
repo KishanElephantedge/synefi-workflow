@@ -690,6 +690,34 @@ main.content {
   flex-shrink: 0;
 }
 
+.overview-headline-card.compact {
+  padding: 0.9rem 1.1rem;
+  gap: 0.65rem;
+}
+
+.overview-headline-card.compact .overview-icon-badge {
+  width: 32px;
+  height: 32px;
+}
+
+.overview-headline-card.compact .overview-icon-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+.overview-headline-card.compact .stat-value {
+  font-size: 1.35rem;
+}
+
+.overview-headline-card.compact .stat-label {
+  font-size: 0.66rem;
+}
+
+.email-performance-empty {
+  padding: 2rem 0;
+  text-align: center;
+}
+
 .overview-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;

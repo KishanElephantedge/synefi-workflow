@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import client from '../api/client'
 
 // Moved here from the Autonomous page -- a read-only visualization of the latest autonomous
@@ -162,6 +162,9 @@ const STAGE_ICONS = {
   messages_approved: { color: '#ec4899', bg: '#fce7f3', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
   ) },
+  emails_sent: { color: '#0891b2', bg: '#cffafe', icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>
+  ) },
   connections_sent: { color: '#4f46e5', bg: '#eef2ff', icon: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
   ) },
@@ -181,15 +184,15 @@ const STAGES = [
   { key: 'companies_qualified', label: 'Companies Qualified', shortLabel: 'Qualified', to: () => '/companies?qualified=true' },
   { key: 'decision_makers_found', label: 'Decision-Makers Found', shortLabel: 'Contacts', to: () => '/campaign?pipeline_only=false' },
   { key: 'messages_approved', label: 'Messages Approved', shortLabel: 'Approved', to: () => '/campaign?message_status=approved' },
+  { key: 'emails_sent', label: 'Emails Sent', shortLabel: 'Emails', to: () => '/campaign?view=campaigns&campaign_source=smartlead' },
   { key: 'connections_sent', label: 'Connections Sent', shortLabel: 'Sent', to: () => '/campaign?activity=SENT' },
   { key: 'connections_accepted', label: 'Connections Accepted', shortLabel: 'Accepted', to: () => '/campaign?activity=CONNECTED' },
   { key: 'replied', label: 'Replied', shortLabel: 'Replied', to: () => '/campaign?activity=REPLIED' },
   { key: 'meetings_booked', label: 'Meetings Booked', shortLabel: 'Meetings', to: () => '/meetings' },
 ]
 
-// The four headline numbers shown up top -- a quick pulse, not a repeat of the full funnel
-// below it.
-const HEADLINE_KEYS = ['companies_researched', 'decision_makers_found', 'connections_sent', 'meetings_booked']
+// The headline numbers shown up top -- a quick pulse, not a repeat of the full funnel below.
+const HEADLINE_KEYS = ['companies_researched', 'decision_makers_found', 'connections_sent', 'emails_sent', 'meetings_booked']
 
 const ACTIVITY_ICON = {
   discovery: { color: '#6366f1', bg: '#eef2ff', glyph: '🔍' },
@@ -347,7 +350,7 @@ export default function Overview() {
           const stage = STAGES.find(s => s.key === key)
           const meta = STAGE_ICONS[key]
           return (
-            <div className="stat-card overview-headline-card" key={key} onClick={() => goTo(stage.to())}>
+            <div className="stat-card overview-headline-card compact" key={key} onClick={() => goTo(stage.to())}>
               <div className="overview-icon-badge" style={{ background: meta.bg, color: meta.color }}>{meta.icon}</div>
               <div>
                 <div className="stat-value">{stats[key] ?? 0}</div>
@@ -382,20 +385,31 @@ export default function Overview() {
 
         <div className="overview-card">
           <h3 className="overview-card-title">Email Performance</h3>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-label">Emails Sent</div>
-              <div className="stat-value">{stats.emails_sent ?? 0}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Opened</div>
-              <div className="stat-value">{stats.emails_opened ?? 0}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Replied</div>
-              <div className="stat-value">{stats.emails_replied ?? 0}</div>
-            </div>
-          </div>
+          {(stats.emails_sent ?? 0) === 0 ? (
+            <p className="hint email-performance-empty">No emails sent yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={[
+                  { name: 'Sent', value: stats.emails_sent ?? 0, fill: '#0891b2' },
+                  { name: 'Opened', value: stats.emails_opened ?? 0, fill: '#0ea5e9' },
+                  { name: 'Replied', value: stats.emails_replied ?? 0, fill: '#f59e0b' },
+                ]}
+                margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+                barSize={48}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--text-faint)' }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-faint)' }} width={32} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {[{ fill: '#0891b2' }, { fill: '#0ea5e9' }, { fill: '#f59e0b' }].map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div className="overview-card">

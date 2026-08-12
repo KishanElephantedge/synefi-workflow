@@ -35,7 +35,8 @@ export default function Outcomes() {
   const { tenantSlug } = useParams()
   const [searchParams] = useSearchParams()
 
-  const [view, setView] = useState('leads') // 'leads' | 'campaigns'
+  const [view, setView] = useState(searchParams.get('view') === 'campaigns' ? 'campaigns' : 'leads') // 'leads' | 'campaigns'
+  const [campaignSource, setCampaignSource] = useState(searchParams.get('campaign_source') === 'smartlead' ? 'smartlead' : 'salesrobot') // 'salesrobot' | 'smartlead'
 
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState(null)
@@ -61,6 +62,7 @@ export default function Outcomes() {
 
   const [campaigns, setCampaigns] = useState([])
   const [campaignsError, setCampaignsError] = useState(null)
+  const [campaignsLoading, setCampaignsLoading] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState(null)
   const [campaignLeads, setCampaignLeads] = useState([])
   const [campaignLeadsLoading, setCampaignLeadsLoading] = useState(false)
@@ -69,6 +71,18 @@ export default function Outcomes() {
     if (tenantSlug !== 'elephant-edge') return
     client.get('/leads/stats').then(res => setStats(res.data)).catch(err => setStatsError(err.response?.data?.detail || err.message))
   }, [tenantSlug])
+
+  useEffect(() => {
+    if (tenantSlug !== 'elephant-edge' || view !== 'campaigns') return
+    setCampaignsLoading(true)
+    setCampaignsError(null)
+    setSelectedCampaign(null)
+    const endpoint = campaignSource === 'smartlead' ? '/smartlead/campaigns' : '/salesrobot/campaigns'
+    client.get(endpoint)
+      .then(res => setCampaigns(res.data))
+      .catch(err => setCampaignsError(err.response?.data?.detail || err.message))
+      .finally(() => setCampaignsLoading(false))
+  }, [tenantSlug, view, campaignSource])
 
   // Debounce the search box so every keystroke doesn't fire a request -- filtering happens
   // server-side now (see GET /leads), so typing quickly would otherwise mean one query per
@@ -94,24 +108,22 @@ export default function Outcomes() {
       .finally(() => setLeadsLoading(false))
   }, [tenantSlug, page, search, messageFilter, activityFilter, pipelineOnly])
 
-  const loadCampaigns = () => {
-    client.get('/salesrobot/campaigns').then(res => setCampaigns(res.data)).catch(err => setCampaignsError(err.response?.data?.detail || err.message))
-  }
-
   const openCampaign = (campaign) => {
     setSelectedCampaign(campaign)
     setCampaignLeads([])
     setCampaignLeadsLoading(true)
-    const uuid = campaign.campaignUuid || campaign.uuid
-    client.get(`/salesrobot/campaigns/${uuid}/leads`)
-      .then(res => setCampaignLeads(res.data))
-      .catch(() => {})
-      .finally(() => setCampaignLeadsLoading(false))
-  }
-
-  const switchToCampaigns = () => {
-    setView('campaigns')
-    if (campaigns.length === 0) loadCampaigns()
+    if (campaignSource === 'smartlead') {
+      client.get(`/smartlead/campaigns/${campaign.id}/leads`)
+        .then(res => setCampaignLeads(res.data.leads))
+        .catch(() => {})
+        .finally(() => setCampaignLeadsLoading(false))
+    } else {
+      const uuid = campaign.campaignUuid || campaign.uuid
+      client.get(`/salesrobot/campaigns/${uuid}/leads`)
+        .then(res => setCampaignLeads(res.data))
+        .catch(() => {})
+        .finally(() => setCampaignLeadsLoading(false))
+    }
   }
 
   const openLead = (lead) => {
@@ -177,7 +189,7 @@ export default function Outcomes() {
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button type="button" className={view === 'leads' ? '' : 'secondary'} onClick={() => setView('leads')}>Leads</button>
-        <button type="button" className={view === 'campaigns' ? '' : 'secondary'} onClick={switchToCampaigns}>Campaigns</button>
+        <button type="button" className={view === 'campaigns' ? '' : 'secondary'} onClick={() => setView('campaigns')}>Campaigns</button>
       </div>
 
       {view === 'leads' ? (
@@ -218,6 +230,7 @@ export default function Outcomes() {
                     <th>Message</th>
                     <th>Sent to SalesRobot</th>
                     <th>Activity</th>
+                    <th>Emails</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,10 +242,11 @@ export default function Outcomes() {
                       <td><span className={`status-pill ${messagePillClass(l.message_status)}`}>{l.message_status || 'none'}</span></td>
                       <td>{l.push_status || '-'}</td>
                       <td><span className={`status-pill status-pill-sm ${activityPillClass(l.salesrobot_last_activity)}`}>{humanizeActivity(l.salesrobot_last_activity)}</span></td>
+                      <td>{l.email_status === 'sent' ? <span className="status-pill status-pill-sm on">Sent</span> : ''}</td>
                     </tr>
                   ))}
                   {leads.length === 0 && (
-                    <tr><td colSpan={6} className="empty-state">{leadsLoading ? 'Loading leads...' : 'No leads match.'}</td></tr>
+                    <tr><td colSpan={7} className="empty-state">{leadsLoading ? 'Loading leads...' : 'No leads match.'}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -323,50 +337,82 @@ export default function Outcomes() {
           )}
         </div>
       ) : (
-        <div>
-          <button type="button" className="link-button" style={{ marginBottom: '0.75rem' }} onClick={() => setView('leads')}>&larr; Back to leads</button>
-          {campaignsError && <p className="error">{campaignsError}</p>}
-          {!selectedCampaign ? (
+        <div className="batch-layout">
+          <div className="batch-layout-main">
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <button type="button" className={campaignSource === 'salesrobot' ? '' : 'secondary'} onClick={() => setCampaignSource('salesrobot')}>LinkedIn</button>
+              <button type="button" className={campaignSource === 'smartlead' ? '' : 'secondary'} onClick={() => setCampaignSource('smartlead')}>Email</button>
+            </div>
+            {campaignsError && <p className="error">{campaignsError}</p>}
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Campaign</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                   {campaigns.map(c => (
-                    <tr key={c.campaignUuid || c.uuid}>
+                    <tr key={c.campaignUuid || c.uuid || c.id} style={{ cursor: 'pointer' }} onClick={() => openCampaign(c)}>
                       <td>{c.campaignName || c.name}</td>
-                      <td>{c.campaignStatus || '-'}</td>
-                      <td><button type="button" className="link-button" onClick={() => openCampaign(c)}>View leads &rarr;</button></td>
+                      <td>{c.campaignStatus || c.status || '-'}</td>
+                      <td><button type="button" className="link-button" onClick={e => { e.stopPropagation(); openCampaign(c) }}>View leads &rarr;</button></td>
                     </tr>
                   ))}
-                  {campaigns.length === 0 && !campaignsError && (
-                    <tr><td colSpan={3} className="empty-state">Loading campaigns...</td></tr>
+                  {campaigns.length === 0 && (
+                    <tr><td colSpan={3} className="empty-state">{campaignsLoading ? 'Loading campaigns...' : (campaignsError ? '' : 'No campaigns found.')}</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
-          ) : (
-            <>
-              <button type="button" className="link-button" style={{ marginBottom: '0.75rem' }} onClick={() => setSelectedCampaign(null)}>&larr; Back to campaigns</button>
-              <h2 style={{ margin: '0 0 0.75rem' }}>{selectedCampaign.campaignName || selectedCampaign.name}</h2>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {campaignLeads.map(l => (
-                      <tr key={l.prospectUuid}>
-                        <td>{l.fullName}</td>
-                        <td>{l.jobTitle || '-'}</td>
-                        <td>{l.companyName || '-'}</td>
-                        <td><span className={`status-pill ${activityPillClass(l.lastActivity)}`}>{humanizeActivity(l.lastActivity)}</span></td>
-                      </tr>
-                    ))}
-                    {campaignLeads.length === 0 && (
-                      <tr><td colSpan={4} className="empty-state">{campaignLeadsLoading ? 'Loading...' : 'No leads in this campaign yet.'}</td></tr>
-                    )}
-                  </tbody>
-                </table>
+          </div>
+
+          {selectedCampaign && (
+            <div className="message-drawer">
+              <div className="message-drawer-header">
+                <div>
+                  <h3>{selectedCampaign.campaignName || selectedCampaign.name}</h3>
+                  <p className="meta">{campaignSource === 'smartlead' ? 'Smartlead campaign' : 'SalesRobot campaign'}</p>
+                </div>
+                <button type="button" className="message-drawer-close" onClick={() => setSelectedCampaign(null)} aria-label="Close">&times;</button>
               </div>
-            </>
+              <div className="message-drawer-body">
+                <div className="table-wrap">
+                  <table>
+                    {campaignSource === 'smartlead' ? (
+                      <>
+                        <thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead>
+                        <tbody>
+                          {campaignLeads.map(l => (
+                            <tr key={l.id}>
+                              <td>{l.first_name} {l.last_name || ''}</td>
+                              <td>{l.email || '-'}</td>
+                              <td><span className={`status-pill ${activityPillClass(l.status)}`}>{humanizeActivity(l.status)}</span></td>
+                            </tr>
+                          ))}
+                          {campaignLeads.length === 0 && (
+                            <tr><td colSpan={3} className="empty-state">{campaignLeadsLoading ? 'Loading...' : 'No leads in this campaign yet.'}</td></tr>
+                          )}
+                        </tbody>
+                      </>
+                    ) : (
+                      <>
+                        <thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Status</th></tr></thead>
+                        <tbody>
+                          {campaignLeads.map(l => (
+                            <tr key={l.prospectUuid}>
+                              <td>{l.fullName}</td>
+                              <td>{l.jobTitle || '-'}</td>
+                              <td>{l.companyName || '-'}</td>
+                              <td><span className={`status-pill ${activityPillClass(l.lastActivity)}`}>{humanizeActivity(l.lastActivity)}</span></td>
+                            </tr>
+                          ))}
+                          {campaignLeads.length === 0 && (
+                            <tr><td colSpan={4} className="empty-state">{campaignLeadsLoading ? 'Loading...' : 'No leads in this campaign yet.'}</td></tr>
+                          )}
+                        </tbody>
+                      </>
+                    )}
+                  </table>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
