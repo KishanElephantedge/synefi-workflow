@@ -31,6 +31,8 @@ const TIER_SHORT = {
   'Tier 4: Competitive signals': 'Competitive',
 }
 
+const ACTION_PILL_CLASS = { engage: 'on', monitor: 'warn', ignore: 'off' }
+
 const PROFILES_PAGE_SIZE = 10
 
 // Elephant Edge only. Watches a fixed list of LinkedIn profiles (competitors, partners,
@@ -51,6 +53,7 @@ export default function Targets() {
   const [profilesError, setProfilesError] = useState(null)
   const [profileSearch, setProfileSearch] = useState('')
   const [profilePage, setProfilePage] = useState(1)
+  const [showIgnored, setShowIgnored] = useState(false)
 
   const [keywords, setKeywords] = useState(null)
   const [keywordsLoading, setKeywordsLoading] = useState(true)
@@ -187,35 +190,51 @@ export default function Targets() {
 
       {view === 'signals' && (
         <div className="overview-card">
+          <label className="hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={showIgnored} onChange={e => setShowIgnored(e.target.checked)} />
+            Show signals the AI screen marked "ignore" (matched a keyword but judged not actually relevant)
+          </label>
           {signalsError && <p className="error">{signalsError}</p>}
           {!signalsError && signals.length === 0 && (
             <p className="empty-state">{signalsLoading ? 'Loading...' : 'No signals detected yet -- the monitor checks every 45 minutes.'}</p>
           )}
           <div className="activity-timeline">
-            {signals.map(s => (
+            {signals.filter(s => showIgnored || s.recommended_action !== 'ignore').map(s => (
               <div
                 key={s.id}
                 style={{
                   border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-                  padding: '1rem 1.25rem', marginBottom: '0.85rem', background: 'var(--surface)',
+                  padding: '1rem 1.25rem', marginBottom: '0.85rem',
+                  background: s.recommended_action === 'ignore' ? 'var(--surface-alt)' : 'var(--surface)',
+                  opacity: s.recommended_action === 'ignore' ? 0.7 : 1,
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
                   <div>
                     <strong>{s.author_name || s.profile_name || 'Unknown'}</strong>
                   </div>
-                  <span className={`tier-badge ${TIER_CLASS[s.tier] || 'tier-excluded'}`}>{TIER_SHORT[s.tier] || s.tier}</span>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                    {s.recommended_action && (
+                      <span className={`status-pill status-pill-sm ${ACTION_PILL_CLASS[s.recommended_action] || 'off'}`}>
+                        {s.recommended_action}{s.relevance_score != null ? ` · ${s.relevance_score}` : ''}
+                      </span>
+                    )}
+                    <span className={`tier-badge ${TIER_CLASS[s.tier] || 'tier-excluded'}`}>{TIER_SHORT[s.tier] || s.tier}</span>
+                  </div>
                 </div>
                 <p style={{ margin: '0 0 0.6rem', fontSize: '0.88rem', whiteSpace: 'pre-wrap', color: 'var(--text)' }}>
                   {s.post_text}
                 </p>
+                {s.classifier_reason && (
+                  <p className="hint" style={{ margin: '0 0 0.6rem', fontStyle: 'italic' }}>{s.classifier_reason}</p>
+                )}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.6rem' }}>
                   {(s.matched_keywords || []).map(kw => (
                     <span key={kw} className="status-pill status-pill-sm off">{kw}</span>
                   ))}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="hint">{timeAgo(s.posted_at)}{s.alerted_at ? ' · Slack alerted' : ''}</span>
+                  <span className="hint">{timeAgo(s.posted_at)}{s.alerted_at ? ' · Alerted' : ''}</span>
                   {s.post_url && (
                     <a href={s.post_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem' }}>
                       View post &rarr;
