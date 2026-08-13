@@ -99,7 +99,14 @@ export default function Companies() {
           <tbody>
             {companies.map(c => (
               <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/${tenantSlug}/batches/${c.batch_id}`)}>
-                <td>{c.name}</td>
+                <td>
+                  {c.hot_lead && (
+                    <span className="tier-badge tier-hot" title={c.hot_lead_reasoning || ''} style={{ marginRight: '0.5rem' }}>
+                      Hot Lead
+                    </span>
+                  )}
+                  {c.name}
+                </td>
                 <td>{c.domain || '-'}</td>
                 <td>{c.industry || '-'}</td>
                 <td>{c.source || '-'}</td>
