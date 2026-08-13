@@ -53,7 +53,7 @@ export default function Targets() {
   const [profilesError, setProfilesError] = useState(null)
   const [profileSearch, setProfileSearch] = useState('')
   const [profilePage, setProfilePage] = useState(1)
-  const [showIgnored, setShowIgnored] = useState(false)
+  const [signalFilter, setSignalFilter] = useState('relevant') // 'relevant' | 'engage' | 'monitor' | 'ignored' | 'all'
 
   const [keywords, setKeywords] = useState(null)
   const [keywordsLoading, setKeywordsLoading] = useState(true)
@@ -190,16 +190,36 @@ export default function Targets() {
 
       {view === 'signals' && (
         <div className="overview-card">
-          <label className="hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem', cursor: 'pointer' }}>
-            <input type="checkbox" checked={showIgnored} onChange={e => setShowIgnored(e.target.checked)} />
-            Show signals the AI screen marked "ignore" (matched a keyword but judged not actually relevant)
-          </label>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            {[
+              { key: 'relevant', label: 'Relevant (engage + monitor)' },
+              { key: 'engage', label: 'Engage only' },
+              { key: 'monitor', label: 'Monitor only' },
+              { key: 'ignored', label: 'Ignored by AI' },
+              { key: 'all', label: 'All' },
+            ].map(f => (
+              <button
+                key={f.key}
+                type="button"
+                className={signalFilter === f.key ? '' : 'secondary'}
+                style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }}
+                onClick={() => setSignalFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           {signalsError && <p className="error">{signalsError}</p>}
           {!signalsError && signals.length === 0 && (
             <p className="empty-state">{signalsLoading ? 'Loading...' : 'No signals detected yet -- the monitor checks every 45 minutes.'}</p>
           )}
           <div className="activity-timeline">
-            {signals.filter(s => showIgnored || s.recommended_action !== 'ignore').map(s => (
+            {signals.filter(s => {
+              if (signalFilter === 'all') return true
+              if (signalFilter === 'relevant') return s.recommended_action !== 'ignore'
+              if (signalFilter === 'ignored') return s.recommended_action === 'ignore'
+              return s.recommended_action === signalFilter
+            }).map(s => (
               <div
                 key={s.id}
                 style={{
