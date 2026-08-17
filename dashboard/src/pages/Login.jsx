@@ -15,73 +15,94 @@ export default function Login() {
     try {
       await login(email, password)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      setError(err.response?.data?.detail || 'Login failed. Please check your email and password.')
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="login-container">
-      {/* Left Pane - Branding & Intro */}
-      <div className="login-left-pane">
-        <div className="login-brand-section">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    <div className="deepline-login-container">
+      {/* Left Pane - Clean Slate Brand Showcase */}
+      <div className="deepline-left-pane">
+        <div className="deepline-brand-header">
+          <div className="deepline-brand-logo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
           <span>Sales Operating System</span>
         </div>
 
-        <div className="login-info-section">
+        <div className="deepline-info-body">
           <h2>Automate your outbound GTM engine.</h2>
-          <p>Discover high-intent accounts, detect buying signals, identify decision-makers, and execute campaigns autonomously.</p>
+          <p>Discover high-intent accounts, detect buying signals, identify decision-makers, and execute multi-channel campaigns autonomously.</p>
 
-          <div className="login-features-list">
-            <div className="login-feature-item">
-              <div className="login-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
+          {/* Metric Pills */}
+          <div className="deepline-metrics-row">
+            <div className="deepline-metric-card">
+              <span className="metric-val">20+</span>
+              <span className="metric-lbl">Daily Accounts</span>
+            </div>
+            <div className="deepline-metric-card">
+              <span className="metric-val">100%</span>
+              <span className="metric-lbl">Verified Leads</span>
+            </div>
+            <div className="deepline-metric-card">
+              <span className="metric-val">0</span>
+              <span className="metric-lbl">Manual Data Entry</span>
+            </div>
+          </div>
+
+          {/* Minimal Feature List */}
+          <div className="deepline-features">
+            <div className="deepline-feature-item">
+              <div className="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
               </div>
-              <div className="login-feature-text">
+              <div>
                 <h4>Autonomous Discovery</h4>
-                <p>Scrape job boards and signals to target companies with GTM vacancies automatically.</p>
+                <p>Scrape active job board feeds (Jobo & Sentrion) for live hiring signals.</p>
               </div>
             </div>
 
-            <div className="login-feature-item">
-              <div className="login-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <div className="deepline-feature-item">
+              <div className="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 16 14"></polyline></svg>
               </div>
-              <div className="login-feature-text">
-                <h4>Signal Tracking</h4>
-                <p>Track live hiring signals, tech stack changes, and financial data point-in-time.</p>
+              <div>
+                <h4>Waterfall Enrichment</h4>
+                <p>Locate Founders, CEOs, and VPs automatically via multi-source API checks.</p>
               </div>
             </div>
 
-            <div className="login-feature-item">
-              <div className="login-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <div className="deepline-feature-item">
+              <div className="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
               </div>
-              <div className="login-feature-text">
-                <h4>LinkedIn Automation</h4>
-                <p>Deploy personalized connection campaigns directly to decision-maker mailboxes.</p>
+              <div>
+                <h4>HubSpot & Calendar Sync</h4>
+                <p>Register contacts in CRM and sync demo availability to Google Calendar.</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="login-footer-section">
+        <div className="deepline-footer">
           &copy; {new Date().getFullYear()} Elephant Edge. All rights reserved.
         </div>
       </div>
 
-      {/* Right Pane - Sign In Form */}
-      <div className="login-right-pane">
-        <div className="login-form-box">
-          <h1>Sign in</h1>
-          <p className="subtitle">Enter your credentials to access your operating system.</p>
+      {/* Right Pane - Crisp White Form Box */}
+      <div className="deepline-right-pane">
+        <div className="deepline-form-card">
+          <div className="deepline-form-header">
+            <h1>Sign in</h1>
+            <p>Enter your credentials to access your operating system.</p>
+          </div>
 
-          {error && <p className="error">{error}</p>}
+          {error && <div className="deepline-error-alert">{error}</div>}
 
-          <form onSubmit={submit} className="login-input-group">
-            <div className="login-input-wrapper">
+          <form onSubmit={submit} className="deepline-form-group">
+            <div className="deepline-input-field">
               <label htmlFor="email">Email address</label>
               <input 
                 id="email"
@@ -93,7 +114,7 @@ export default function Login() {
               />
             </div>
 
-            <div className="login-input-wrapper">
+            <div className="deepline-input-field">
               <label htmlFor="password">Password</label>
               <input 
                 id="password"
@@ -105,8 +126,22 @@ export default function Login() {
               />
             </div>
 
-            <button type="submit" className="login-submit-btn" disabled={busy}>
-              {busy ? 'Signing in...' : 'Sign in'}
+            <div className="deepline-options-row">
+              <label className="deepline-checkbox-label">
+                <input type="checkbox" defaultChecked />
+                <span>Keep me signed in</span>
+              </label>
+            </div>
+
+            <button type="submit" className="deepline-submit-btn" disabled={busy}>
+              {busy ? (
+                <>
+                  <span className="deepline-spinner"></span>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <span>Sign in</span>
+              )}
             </button>
           </form>
         </div>

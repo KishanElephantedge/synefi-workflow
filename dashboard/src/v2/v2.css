@@ -1,0 +1,1351 @@
+/* ==========================================================================
+   V2 design tokens + shell styles.
+
+   Isolation rule: every selector in this file is scoped under .v2-shell, and
+   every token is a CSS custom property defined ONLY on .v2-shell (never on
+   :root/html/body). This means V2's dark-first tokens can never leak into or
+   override V1's own :root tokens in index.css, and nothing V1 already uses
+   (.sidebar, .card, .stat-card, etc.) is redefined here. V1 and V2 can change
+   independently.
+
+   Token values extracted from the reference material (Phase 0 frontend-
+   structure report, Part 9) -- near-black dark theme, indigo accent, minimal
+   borders, generous radius, eyebrow-over-headline text pattern.
+   ========================================================================== */
+
+.v2-shell {
+  --v2-bg: #0c0d12;
+  --v2-surface: #15161f;
+  --v2-surface-elevated: #1b1d29;
+  --v2-border: #262838;
+  --v2-text: #edeef4;
+  --v2-text-muted: #9aa1b5;
+  --v2-text-faint: #656b80;
+  --v2-accent: #6a6fef;
+  --v2-accent-soft: #23244a;
+  --v2-success: #34d399;
+  --v2-success-soft: rgba(52, 211, 153, 0.15);
+  --v2-warning: #f2ac3f;
+  --v2-warning-soft: rgba(242, 172, 63, 0.15);
+  --v2-danger: #f0685f;
+  --v2-danger-soft: rgba(240, 104, 95, 0.15);
+  --v2-info: #5b93f5;
+  --v2-info-soft: rgba(91, 147, 245, 0.15);
+
+  --v2-radius-sm: 8px;
+  --v2-radius: 12px;
+  --v2-radius-lg: 16px;
+  --v2-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+
+  --v2-space-1: 4px;
+  --v2-space-2: 8px;
+  --v2-space-3: 12px;
+  --v2-space-4: 16px;
+  --v2-space-5: 24px;
+  --v2-space-6: 32px;
+
+  --v2-icon-sm: 16px;
+  --v2-icon-md: 20px;
+
+  --v2-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  background: var(--v2-bg);
+  color: var(--v2-text);
+  font-family: var(--v2-sans);
+  min-height: 100vh;
+}
+
+.v2-shell[data-v2-theme='light'] {
+  --v2-bg: #f6f7fb;
+  --v2-surface: #ffffff;
+  --v2-surface-elevated: #eef0f6;
+  --v2-border: #dfe2ea;
+  --v2-text: #12141c;
+  --v2-text-muted: #565c70;
+  --v2-text-faint: #8a90a3;
+  --v2-accent: #4f46e5;
+  --v2-accent-soft: #eceafe;
+  --v2-success: #0f9d63;
+  --v2-success-soft: #dff7ec;
+  --v2-warning: #b5790a;
+  --v2-warning-soft: #fbf0dc;
+  --v2-danger: #d13c34;
+  --v2-danger-soft: #fbe7e5;
+  --v2-info: #2860c9;
+  --v2-info-soft: #e6eefb;
+  --v2-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.04);
+}
+
+.v2-shell * {
+  box-sizing: border-box;
+}
+
+/* ---------- app shell layout ---------- */
+
+.v2-app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.v2-sidebar {
+  /* Sidebar tokens default to the ambient theme tokens (dark mode: sidebar looks like the rest
+     of the shell). Light mode overrides these below to fixed dark values, so the sidebar stays
+     a dark rail against a light page -- every sidebar-scoped rule reads from these, never the
+     ambient --v2-* tokens directly, so this is the only place the behavior is defined. */
+  --v2-sidebar-bg: var(--v2-surface);
+  --v2-sidebar-border: var(--v2-border);
+  --v2-sidebar-surface-elevated: var(--v2-surface-elevated);
+  --v2-sidebar-text: var(--v2-text);
+  --v2-sidebar-text-muted: var(--v2-text-muted);
+  --v2-sidebar-text-faint: var(--v2-text-faint);
+  --v2-sidebar-accent: var(--v2-accent);
+  --v2-sidebar-accent-soft: var(--v2-accent-soft);
+
+  width: 250px;
+  flex-shrink: 0;
+  background: var(--v2-sidebar-bg);
+  border-right: 1px solid var(--v2-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  padding: var(--v2-space-5) var(--v2-space-4);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  transition: transform 0.2s ease;
+}
+
+.v2-shell[data-v2-theme='light'] .v2-sidebar {
+  --v2-sidebar-bg: #15161f;
+  --v2-sidebar-border: #262838;
+  --v2-sidebar-surface-elevated: #1b1d29;
+  --v2-sidebar-text: #edeef4;
+  --v2-sidebar-text-muted: #9aa1b5;
+  --v2-sidebar-text-faint: #656b80;
+  --v2-sidebar-accent: #6a6fef;
+  --v2-sidebar-accent-soft: #23244a;
+}
+
+.v2-brand {
+  padding: var(--v2-space-2) var(--v2-space-2) var(--v2-space-5);
+}
+
+.v2-brand-name {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--v2-sidebar-text);
+}
+
+.v2-brand-sub {
+  font-size: 0.72rem;
+  color: var(--v2-sidebar-text-faint);
+  margin-top: 2px;
+}
+
+.v2-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-5);
+  flex: 1;
+}
+
+.v2-nav-group-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--v2-sidebar-text-faint);
+  padding: 0 var(--v2-space-2);
+  margin-bottom: var(--v2-space-2);
+}
+
+.v2-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.v2-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  padding: 0.55rem var(--v2-space-2);
+  border-radius: var(--v2-radius-sm);
+  color: var(--v2-sidebar-text-muted);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.v2-nav-item:hover {
+  background: var(--v2-sidebar-surface-elevated);
+  color: var(--v2-sidebar-text);
+}
+
+.v2-nav-item.active {
+  background: var(--v2-sidebar-accent-soft);
+  color: var(--v2-sidebar-accent);
+  font-weight: 600;
+}
+
+.v2-nav-item svg {
+  flex-shrink: 0;
+}
+
+.v2-nav-count {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--v2-sidebar-text-faint);
+  background: var(--v2-sidebar-surface-elevated);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.v2-nav-item.active .v2-nav-count {
+  color: var(--v2-sidebar-accent);
+  background: var(--v2-sidebar-bg);
+}
+
+.v2-sidebar-footer {
+  padding-top: var(--v2-space-4);
+  border-top: 1px solid var(--v2-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-2);
+}
+
+.v2-user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  padding: var(--v2-space-1) var(--v2-space-2);
+}
+
+.v2-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--v2-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.v2-user-email {
+  font-size: 0.78rem;
+  color: var(--v2-sidebar-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- header ---------- */
+
+.v2-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--v2-space-4) var(--v2-space-5);
+  border-bottom: 1px solid var(--v2-border);
+  gap: var(--v2-space-4);
+}
+
+.v2-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  min-width: 0;
+}
+
+.v2-menu-toggle {
+  display: none;
+}
+
+.v2-header-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--v2-text);
+}
+
+.v2-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+}
+
+.v2-theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--v2-radius-sm);
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface);
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+/* An inline SVG as a flex child can resolve to a 0-width flex item in Chromium unless
+   flex-shrink is pinned to 0 (the width/height HTML attributes alone aren't enough once the
+   parent is a flex container) -- same fix already applied to .v2-nav-item svg below, needed
+   here too for the icon-only header/footer buttons (theme toggle, mobile menu trigger). Actual
+   pixel size still comes from each icon's own width/height props, not hardcoded here. */
+.v2-theme-toggle svg,
+.v2-menu-toggle svg {
+  flex-shrink: 0;
+}
+
+.v2-theme-toggle:hover {
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text);
+}
+
+.v2-theme-toggle:focus-visible,
+.v2-nav-item:focus-visible,
+.v2-menu-toggle:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 2px;
+}
+
+.v2-content {
+  flex: 1;
+  padding: var(--v2-space-5);
+  overflow-x: auto;
+}
+
+.v2-sidebar-scrim {
+  display: none;
+}
+
+/* ---------- shared page primitives ---------- */
+
+.v2-page-head {
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-page-eyebrow {
+  font-size: 0.76rem;
+  color: var(--v2-text-faint);
+  margin-bottom: 2px;
+}
+
+.v2-page-title {
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--v2-text);
+  margin: 0;
+}
+
+.v2-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-5);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-card-accent {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-accent);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+}
+
+.v2-placeholder-note {
+  color: var(--v2-text-muted);
+  font-size: 0.9rem;
+  max-width: 60ch;
+  line-height: 1.55;
+}
+
+.v2-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.v2-badge-info { background: var(--v2-info-soft); color: var(--v2-info); }
+.v2-badge-success { background: var(--v2-success-soft); color: var(--v2-success); }
+.v2-badge-warning { background: var(--v2-warning-soft); color: var(--v2-warning); }
+.v2-badge-danger { background: var(--v2-danger-soft); color: var(--v2-danger); }
+.v2-badge-neutral { background: var(--v2-surface-elevated); color: var(--v2-text-muted); }
+
+/* ---------- Accounts list ---------- */
+
+.v2-toolbar {
+  display: flex;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-search-input {
+  flex: 1 1 260px;
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.86rem;
+  font-family: inherit;
+}
+
+.v2-search-input:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 1px;
+}
+
+.v2-search-input::placeholder {
+  color: var(--v2-text-faint);
+}
+
+.v2-stat-row {
+  display: flex;
+  gap: var(--v2-space-3);
+  margin-bottom: var(--v2-space-4);
+  flex-wrap: wrap;
+}
+
+.v2-stat-tile {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  min-width: 130px;
+}
+
+.v2-stat-tile .v2-stat-label {
+  font-size: 0.7rem;
+  color: var(--v2-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.v2-stat-tile .v2-stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.v2-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--v2-border);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  overflow: hidden;
+}
+
+.v2-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-4);
+  background: var(--v2-surface);
+  padding: var(--v2-space-4);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.v2-account-row:hover {
+  background: var(--v2-surface-elevated);
+}
+
+.v2-account-identity {
+  min-width: 0;
+}
+
+.v2-account-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--v2-text);
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+}
+
+.v2-account-meta {
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-account-tags {
+  display: flex;
+  gap: var(--v2-space-2);
+  flex-shrink: 0;
+}
+
+.v2-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v2-space-3);
+  margin-top: var(--v2-space-4);
+  font-size: 0.84rem;
+  color: var(--v2-text-muted);
+}
+
+.v2-pagination button {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  border-radius: var(--v2-radius-sm);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.v2-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- states: loading / error / empty ---------- */
+
+.v2-state {
+  padding: var(--v2-space-6) var(--v2-space-4);
+  text-align: center;
+  color: var(--v2-text-muted);
+  font-size: 0.9rem;
+}
+
+.v2-state-error {
+  color: var(--v2-danger);
+}
+
+.v2-skeleton-row {
+  height: 58px;
+  background: linear-gradient(90deg, var(--v2-surface) 25%, var(--v2-surface-elevated) 37%, var(--v2-surface) 63%);
+  background-size: 400% 100%;
+  animation: v2-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes v2-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-skeleton-row {
+    animation: none;
+  }
+}
+
+/* ---------- Account 360 ---------- */
+
+.v2-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v2-space-1);
+  color: var(--v2-text-muted);
+  text-decoration: none;
+  font-size: 0.82rem;
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-back-link:hover {
+  color: var(--v2-text);
+}
+
+.v2-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--v2-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-account-header-identity .v2-page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+}
+
+.v2-account-header-meta {
+  color: var(--v2-text-muted);
+  font-size: 0.88rem;
+  margin-top: 4px;
+}
+
+.v2-needs-you-banner {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-accent);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-needs-you-banner .v2-banner-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-accent);
+  margin-bottom: 0.3rem;
+}
+
+.v2-needs-you-banner .v2-banner-body {
+  color: var(--v2-text);
+  font-size: 0.92rem;
+}
+
+/* Segmented-pill tab control -- a compact, bordered, rounded container with a solid-filled
+   active state, not an underline. Used consistently by both .v2-tabs (Account 360) and
+   .v2-config-tabs (config pages/Settings) so every tab bar in V2 reads the same way. */
+.v2-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: 3px;
+  margin-bottom: var(--v2-space-5);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.v2-tab {
+  background: none;
+  border: none;
+  border-radius: var(--v2-radius-sm);
+  color: var(--v2-text-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.v2-tab:hover {
+  color: var(--v2-text);
+}
+
+.v2-tab.active {
+  color: #fff;
+  background: var(--v2-accent);
+}
+
+.v2-section {
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-3);
+}
+
+.v2-evidence-item {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+}
+
+.v2-evidence-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--v2-space-3);
+  margin-bottom: 4px;
+}
+
+.v2-evidence-item-title {
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--v2-text);
+}
+
+.v2-evidence-item-body {
+  font-size: 0.84rem;
+  color: var(--v2-text-muted);
+}
+
+.v2-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--v2-space-4);
+}
+
+.v2-kv-label {
+  font-size: 0.7rem;
+  color: var(--v2-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.v2-kv-value {
+  font-size: 0.92rem;
+  color: var(--v2-text);
+  font-weight: 600;
+}
+
+.v2-action-chain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-2);
+}
+
+.v2-action-step {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  font-size: 0.85rem;
+  padding: var(--v2-space-2) 0;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-action-step:last-child {
+  border-bottom: none;
+}
+
+.v2-action-step-index {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.v2-action-step-label {
+  color: var(--v2-text);
+}
+
+/* ---------- Demand Grid ---------- */
+
+.v2-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+}
+
+.v2-demand-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.v2-demand-grid th,
+.v2-demand-grid td {
+  padding: var(--v2-space-3) var(--v2-space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--v2-border);
+  white-space: nowrap;
+}
+
+.v2-demand-grid thead th {
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text-faint);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+
+.v2-demand-grid tbody th {
+  background: var(--v2-surface);
+  color: var(--v2-text);
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+}
+
+.v2-demand-grid tbody tr:last-child td,
+.v2-demand-grid tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.v2-grid-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: default;
+  padding: 0;
+}
+
+.v2-grid-cell.clickable {
+  cursor: pointer;
+}
+
+.v2-grid-cell.clickable:hover .v2-badge {
+  filter: brightness(1.15);
+}
+
+.v2-grid-cell-count {
+  font-size: 0.72rem;
+  color: var(--v2-text-faint);
+}
+
+/* ---------- Market Intelligence ---------- */
+
+.v2-trend-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  margin-bottom: 0.6rem;
+}
+
+.v2-trend-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-evidence-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v2-space-4);
+  margin-top: var(--v2-space-4);
+  padding-top: var(--v2-space-4);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-evidence-split-block .v2-kv-label {
+  margin-bottom: 4px;
+}
+
+.v2-evidence-split-block.account-evidence {
+  border-left: 2px solid var(--v2-border);
+  padding-left: var(--v2-space-4);
+}
+
+.v2-evidence-split-block.account-evidence.has-evidence {
+  border-left-color: var(--v2-success);
+}
+
+/* ---------- ICPs & Offerings configuration ---------- */
+
+.v2-config-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: 3px;
+  margin-bottom: var(--v2-space-5);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.v2-config-tab {
+  background: none;
+  border: none;
+  border-radius: var(--v2-radius-sm);
+  color: var(--v2-text-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.v2-config-tab:hover { color: var(--v2-text); }
+
+.v2-config-tab.active {
+  color: #fff;
+  background: var(--v2-accent);
+}
+
+.v2-config-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+  margin-bottom: 0.5rem;
+}
+
+.v2-config-card-title {
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-btn {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--v2-radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface);
+  color: var(--v2-text);
+  transition: background 0.12s ease;
+}
+
+.v2-btn:hover { background: var(--v2-surface-elevated); }
+.v2-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.v2-btn-primary {
+  background: var(--v2-accent);
+  border-color: var(--v2-accent);
+  color: #fff;
+}
+
+.v2-btn-primary:hover { filter: brightness(1.08); }
+
+.v2-btn-danger {
+  background: var(--v2-danger);
+  border-color: var(--v2-danger);
+  color: #fff;
+}
+
+.v2-btn-danger:hover { filter: brightness(1.08); }
+
+.v2-btn-row {
+  display: flex;
+  gap: var(--v2-space-2);
+  margin-top: var(--v2-space-4);
+}
+
+.v2-field {
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-field-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.v2-field-hint {
+  font-size: 0.72rem;
+  color: var(--v2-text-faint);
+  margin-top: 0.3rem;
+}
+
+.v2-input,
+.v2-select,
+.v2-textarea {
+  width: 100%;
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.86rem;
+  font-family: inherit;
+}
+
+.v2-textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.v2-input:focus-visible,
+.v2-select:focus-visible,
+.v2-textarea:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 1px;
+}
+
+.v2-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v2-space-3);
+}
+
+.v2-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v2-space-2);
+}
+
+.v2-chip-option {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.v2-chip-option input { accent-color: var(--v2-accent); }
+
+.v2-chip-option.checked {
+  color: var(--v2-text);
+  border-color: var(--v2-accent);
+  background: var(--v2-accent-soft);
+}
+
+.v2-section-group-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-accent);
+  margin: var(--v2-space-4) 0 var(--v2-space-2);
+}
+
+.v2-section-group-label:first-child { margin-top: 0; }
+
+.v2-form-message {
+  font-size: 0.84rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--v2-radius-sm);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-form-message.error {
+  background: var(--v2-danger-soft);
+  color: var(--v2-danger);
+}
+
+.v2-form-message.success {
+  background: var(--v2-success-soft);
+  color: var(--v2-success);
+}
+
+/* ---------- Briefing / Governance ---------- */
+
+/* "Spotlight" card -- always dark, regardless of theme (same fixed-dark-tokens technique the
+   sidebar already uses), for the one or two moments per page that genuinely deserve to read as
+   a system-level callout rather than another neutral card. Reused by the readiness hero below;
+   available generically as .v2-spotlight for any future page that needs the same treatment. */
+.v2-spotlight {
+  --v2-spot-bg: #15161f;
+  --v2-spot-surface: #1b1d29;
+  --v2-spot-border: #262838;
+  --v2-spot-text: #edeef4;
+  --v2-spot-text-muted: #9aa1b5;
+  --v2-spot-text-faint: #656b80;
+  background: var(--v2-spot-bg);
+  border: 1px solid var(--v2-spot-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-5);
+  color: var(--v2-spot-text);
+}
+
+.v2-readiness-hero {
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-readiness-hero .v2-stat-tile {
+  background: var(--v2-spot-surface);
+  border-color: var(--v2-spot-border);
+}
+
+.v2-readiness-hero .v2-stat-tile .v2-stat-label { color: var(--v2-spot-text-faint); }
+.v2-readiness-hero .v2-stat-tile .v2-stat-value { color: var(--v2-spot-text); }
+
+.v2-check-row {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  margin-bottom: var(--v2-space-2);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+}
+
+.v2-check-row-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.v2-check-row.severity-danger .v2-check-row-icon { background: var(--v2-danger-soft); color: var(--v2-danger); }
+.v2-check-row.severity-warning .v2-check-row-icon { background: var(--v2-warning-soft); color: var(--v2-warning); }
+.v2-check-row.severity-info .v2-check-row-icon { background: var(--v2-info-soft); color: var(--v2-info); }
+
+.v2-check-row-body { min-width: 0; flex: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--v2-space-3); flex-wrap: wrap; }
+
+.v2-check-row-text { min-width: 0; }
+
+.v2-check-row-desc {
+  font-size: 0.86rem;
+  color: var(--v2-text);
+}
+
+.v2-check-row-meta {
+  font-size: 0.74rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+}
+
+.v2-check-row-action {
+  flex-shrink: 0;
+}
+
+.v2-check-row-action a {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--v2-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.v2-check-row-action a:hover { text-decoration: underline; }
+
+/* ---------- Opportunity Detail / Deal Strategy / Message Review ---------- */
+
+.v2-fact-group {
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-fact-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-fact-group-label.facts { background: var(--v2-info-soft); color: var(--v2-info); }
+.v2-fact-group-label.recommendations { background: var(--v2-accent-soft); color: var(--v2-accent); }
+.v2-fact-group-label.missing { background: var(--v2-warning-soft); color: var(--v2-warning); }
+
+.v2-message-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-5);
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-message-card.stale { border-style: dashed; opacity: 0.85; }
+
+.v2-message-status-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-message-status-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+}
+
+.v2-message-status-value {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  margin-top: 2px;
+}
+
+.v2-message-text {
+  background: var(--v2-surface-elevated);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  color: var(--v2-text);
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  margin: var(--v2-space-3) 0;
+}
+
+.v2-not-sent-notice {
+  font-size: 0.76rem;
+  color: var(--v2-text-faint);
+  margin-top: var(--v2-space-3);
+  padding-top: var(--v2-space-3);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-review-meta {
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  margin-top: var(--v2-space-2);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 1024px) {
+  .v2-sidebar {
+    width: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .v2-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 40;
+    width: 260px;
+    transform: translateX(-100%);
+    box-shadow: var(--v2-shadow);
+  }
+
+  .v2-sidebar.v2-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .v2-sidebar-scrim.v2-scrim-visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 30;
+  }
+
+  .v2-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--v2-radius-sm);
+    border: 1px solid var(--v2-border);
+    background: var(--v2-surface);
+    color: var(--v2-text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .v2-header {
+    padding: var(--v2-space-3) var(--v2-space-4);
+  }
+
+  .v2-content {
+    padding: var(--v2-space-4);
+  }
+
+  .v2-user-email {
+    display: none;
+  }
+
+  .v2-account-row {
+    flex-direction: column;
+    /* NOT align-items: flex-start -- that lets a flex-column child size to its own content
+       instead of the row's width, which silently defeats .v2-account-meta's
+       overflow/text-overflow/white-space truncation (found via a real mobile screenshot: text
+       was overflowing the card uncropped instead of ellipsizing). `stretch` (the flex default)
+       keeps children full-width so truncation actually has a boundary to truncate against. */
+    align-items: stretch;
+    gap: var(--v2-space-2);
+  }
+
+  .v2-account-tags {
+    flex-wrap: wrap;
+  }
+
+  .v2-account-header {
+    flex-direction: column;
+  }
+
+  .v2-evidence-split {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-evidence-split-block.account-evidence {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--v2-border);
+    padding-top: var(--v2-space-3);
+  }
+
+  .v2-kv-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .v2-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-config-card-head {
+    flex-direction: column;
+  }
+
+  .v2-check-row {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .v2-header-title {
+    font-size: 0.92rem;
+  }
+
+  .v2-kv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-page-title {
+    font-size: 1.25rem;
+  }
+}

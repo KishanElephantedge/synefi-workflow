@@ -16,14 +16,17 @@ import NotificationBell from './components/NotificationBell'
 import ChatWidget from './components/ChatWidget'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
+import V2App from './v2/V2App.jsx'
 import './App.css'
 
 function TenantSwitcher() {
   const { tenants } = useTenant()
   const { tenantSlug } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const isV2 = location.pathname.startsWith('/v2')
 
   const activeTenant = tenants.find(t => t.slug === tenantSlug) || tenants[0]
 
@@ -46,24 +49,39 @@ function TenantSwitcher() {
         className={`custom-select-trigger ${isOpen ? 'open' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>{activeTenant?.name}</span>
+        <span>{isV2 ? 'Elephant Edge V2' : activeTenant?.name}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       
       {isOpen && (
         <div className="custom-select-dropdown">
           {tenants.map(t => (
-            <div
-              key={t.slug}
-              className={`custom-select-option ${t.slug === tenantSlug ? 'selected' : ''}`}
-              onClick={() => {
-                navigate(`/${t.slug}`)
-                setIsOpen(false)
-              }}
-            >
-              {t.name}
-              {t.slug === tenantSlug && (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <div key={t.slug}>
+              <div
+                className={`custom-select-option ${t.slug === tenantSlug && !isV2 ? 'selected' : ''}`}
+                onClick={() => {
+                  navigate(`/${t.slug}`)
+                  setIsOpen(false)
+                }}
+              >
+                {t.name}
+                {t.slug === tenantSlug && !isV2 && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                )}
+              </div>
+              {t.slug === 'elephant-edge' && (
+                <div
+                  className={`custom-select-option ${isV2 ? 'selected' : ''}`}
+                  onClick={() => {
+                    navigate('/v2/jobs')
+                    setIsOpen(false)
+                  }}
+                >
+                  Elephant Edge V2
+                  {isV2 && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -243,6 +261,7 @@ function Gate() {
   return (
     <Routes>
       <Route path="/" element={<RootRedirect />} />
+      <Route path="/v2/*" element={<V2App />} />
       <Route path="/:tenantSlug/*" element={<AppShell />} />
     </Routes>
   )
