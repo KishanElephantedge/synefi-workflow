@@ -42,7 +42,12 @@ const PROFILES_PAGE_SIZE = 10
 // profile add/remove -- both editable here, not in code, so this list never needs a deploy).
 export default function Targets() {
   const { tenantSlug } = useParams()
-  const [view, setView] = useState('signals') // 'signals' | 'profiles' | 'settings'
+  const [view, setView] = useState('signals') // 'signals' | 'profiles' | 'partners' | 'settings'
+
+  const [partnerMatches, setPartnerMatches] = useState(null)
+  const [partnerMatchesError, setPartnerMatchesError] = useState(null)
+  const [classifying, setClassifying] = useState(false)
+  const [classifyResult, setClassifyResult] = useState(null)
 
   const [signals, setSignals] = useState([])
   const [signalsLoading, setSignalsLoading] = useState(true)
@@ -89,13 +94,33 @@ export default function Targets() {
       .finally(() => setKeywordsLoading(false))
   }
 
+  const loadPartnerMatches = () => {
+    client.get('/linkedin-monitor/partner-matches')
+      .then(res => setPartnerMatches(res.data))
+      .catch(err => setPartnerMatchesError(err.response?.data?.detail || err.message))
+  }
+
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
     loadSignals()
     loadProfiles()
     loadKeywords()
+    loadPartnerMatches()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantSlug])
+
+  const runClassification = (onlyUnclassified) => {
+    setClassifying(true)
+    setClassifyResult(null)
+    client.post('/linkedin-monitor/classify', null, { params: { only_unclassified: onlyUnclassified } })
+      .then(res => {
+        setClassifyResult(res.data)
+        loadProfiles()
+        loadPartnerMatches()
+      })
+      .catch(err => setPartnerMatchesError(err.response?.data?.detail || err.message))
+      .finally(() => setClassifying(false))
+  }
 
   if (tenantSlug !== 'elephant-edge') {
     return (
@@ -185,6 +210,7 @@ export default function Targets() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button type="button" className={view === 'signals' ? '' : 'secondary'} onClick={() => setView('signals')}>Signal Feed</button>
         <button type="button" className={view === 'profiles' ? '' : 'secondary'} onClick={() => setView('profiles')}>Watched Profiles</button>
+        <button type="button" className={view === 'partners' ? '' : 'secondary'} onClick={() => setView('partners')}>Partner Matches</button>
         <button type="button" className={view === 'settings' ? '' : 'secondary'} onClick={() => setView('settings')}>Settings</button>
       </div>
 
@@ -269,13 +295,28 @@ export default function Targets() {
 
       {view === 'profiles' && (
         <div className="overview-card">
-          <input
-            type="text"
-            placeholder="Search name or company..."
-            value={profileSearch}
-            onChange={e => { setProfileSearch(e.target.value); setProfilePage(1) }}
-            style={{ width: '100%', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '0.9rem' }}
-          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
+            <input
+              type="text"
+              placeholder="Search name or company..."
+              value={profileSearch}
+              onChange={e => { setProfileSearch(e.target.value); setProfilePage(1) }}
+              style={{ width: '100%', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+            />
+            <div style={{ textAlign: 'right' }}>
+              <button type="button" className="secondary btn-small" disabled={classifying} onClick={() => runClassification(true)}>
+                {classifying ? 'Classifying...' : 'Classify unclassified'}
+              </button>
+              {classifyResult && (
+                <p className="hint" style={{ margin: '0.3rem 0 0' }}>
+                  {classifyResult.classified} classified, {classifyResult.insufficient_evidence} insufficient evidence, {classifyResult.failed} failed
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="hint" style={{ marginTop: 0, marginBottom: '0.9rem' }}>
+            Industry / Sells to are inferred from each profile's company name, a real web search about the company, and their own captured posts -- grows more accurate as more of their activity is captured. A profile with no evidence yet stays unclassified rather than guessed.
+          </p>
           {profilesError && <p className="error">{profilesError}</p>}
           <div className="table-wrap">
             <table>
@@ -283,6 +324,8 @@ export default function Targets() {
                 <tr>
                   <th>Name</th>
                   <th>Company</th>
+                  <th>Industry</th>
+                  <th>Sells to</th>
                   <th>LinkedIn</th>
                   <th>Status</th>
                   <th>Last Checked</th>
@@ -294,6 +337,8 @@ export default function Targets() {
                   <tr key={p.id}>
                     <td>{p.name || '-'}</td>
                     <td>{p.company || '-'}</td>
+                    <td>{p.industry || (p.classification_status === 'insufficient_evidence' ? <span className="hint">insufficient evidence</span> : '-')}</td>
+                    <td>{p.sells_to || '-'}</td>
                     <td><a href={p.linkedin_url} target="_blank" rel="noopener noreferrer">Profile &rarr;</a></td>
                     <td>
                       <span
@@ -310,7 +355,7 @@ export default function Targets() {
                   </tr>
                 ))}
                 {pagedProfiles.length === 0 && (
-                  <tr><td colSpan={6} className="empty-state">{profilesLoading ? 'Loading...' : 'No profiles match.'}</td></tr>
+                  <tr><td colSpan={8} className="empty-state">{profilesLoading ? 'Loading...' : 'No profiles match.'}</td></tr>
                 )}
               </tbody>
             </table>
@@ -321,6 +366,68 @@ export default function Targets() {
               <span className="hint">Page {profilePage} of {totalProfilePages} ({filteredProfiles.length} profiles)</span>
               <button type="button" className="secondary btn-small" disabled={profilePage >= totalProfilePages} onClick={() => setProfilePage(p => p + 1)}>Next &rarr;</button>
             </div>
+          )}
+        </div>
+      )}
+
+      {view === 'partners' && (
+        <div className="overview-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
+            <div>
+              <h3 className="overview-card-title" style={{ marginBottom: '0.3rem' }}>Candidate referral partners</h3>
+              <p className="hint" style={{ margin: 0 }}>
+                Watched companies in DIFFERENT industries who sell to the same real, stated buyer type -- worth introducing to each other.
+                Grouped only from companies you've already classified below.
+              </p>
+            </div>
+            <button type="button" className="secondary btn-small" disabled={classifying} onClick={() => runClassification(true)}>
+              {classifying ? 'Classifying...' : 'Classify unclassified'}
+            </button>
+          </div>
+          {partnerMatchesError && <p className="error">{partnerMatchesError}</p>}
+          {partnerMatches && (
+            <p className="hint" style={{ marginBottom: '1rem' }}>
+              {partnerMatches.classified_count} of {partnerMatches.total_active_profiles} watched profiles classified so far.
+            </p>
+          )}
+          {!partnerMatches ? (
+            <p className="empty-state">Loading...</p>
+          ) : partnerMatches.clusters.length === 0 ? (
+            <p className="empty-state">
+              No cross-industry matches yet. Click "Classify unclassified" above -- classification needs at least a company name (used to run a real web search) or some captured posts per profile.
+            </p>
+          ) : (
+            partnerMatches.clusters.map(cluster => (
+              <div key={cluster.sells_to} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1rem 1.25rem', marginBottom: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                  <strong>Sells to: {cluster.sells_to}</strong>
+                  <span className="hint">{cluster.member_count} companies · {cluster.industries_represented.length} industries</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.8rem' }}>
+                  {cluster.industries_represented.map(ind => (
+                    <span key={ind} className="status-pill status-pill-sm off">{ind}</span>
+                  ))}
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr><th>Name</th><th>Company</th><th>Industry</th><th>Confidence</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                      {cluster.members.map(m => (
+                        <tr key={m.id}>
+                          <td>{m.name || '-'}</td>
+                          <td>{m.company || '-'}</td>
+                          <td>{m.industry}</td>
+                          <td>{m.confidence || '-'}</td>
+                          <td><a href={m.linkedin_url} target="_blank" rel="noopener noreferrer">Profile &rarr;</a></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
