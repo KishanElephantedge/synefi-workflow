@@ -1220,6 +1220,216 @@
 
 .v2-check-row-action a:hover { text-decoration: underline; }
 
+/* ---------- Briefing v2 (executive overview redesign) ---------- */
+
+.v2-exec-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--v2-space-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-exec-header-text .v2-page-title { margin-bottom: 2px; }
+
+.v2-exec-header-sub {
+  color: var(--v2-text-muted);
+  font-size: 0.88rem;
+}
+
+.v2-exec-refresh {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  flex-shrink: 0;
+}
+
+.v2-exec-refresh-note {
+  color: var(--v2-text-faint);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.v2-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--v2-space-3);
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-kpi-tile {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4);
+}
+
+.v2-kpi-tile-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+  margin-bottom: 6px;
+}
+
+.v2-kpi-tile-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.v2-kpi-tile-value.attention { color: var(--v2-warning); }
+
+.v2-kpi-tile-context {
+  font-size: 0.78rem;
+  color: var(--v2-text-muted);
+  margin-top: 4px;
+}
+
+.v2-card-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v2-space-4);
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-mini-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+}
+
+.v2-mini-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-mini-card-empty {
+  color: var(--v2-text-muted);
+  font-size: 0.86rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.v2-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-3);
+  flex: 1;
+}
+
+.v2-mini-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-space-2);
+}
+
+.v2-mini-item-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.v2-mini-item-dot.severity-warning { background: var(--v2-warning); }
+.v2-mini-item-dot.severity-danger { background: var(--v2-danger); }
+
+.v2-mini-item-body { min-width: 0; }
+
+.v2-mini-item-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-mini-item-subtitle {
+  font-size: 0.78rem;
+  color: var(--v2-text-muted);
+  margin-top: 1px;
+}
+
+.v2-mini-card-footer {
+  margin-top: var(--v2-space-3);
+  padding-top: var(--v2-space-3);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-mini-card-footer a {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--v2-accent);
+  text-decoration: none;
+}
+
+.v2-mini-card-footer a:hover { text-decoration: underline; }
+
+.v2-insight-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-left: 3px solid var(--v2-accent);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-5);
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-insight-card-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-accent);
+  margin-bottom: 6px;
+}
+
+.v2-insight-card-title {
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  margin-bottom: 6px;
+}
+
+.v2-insight-card-body {
+  color: var(--v2-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  max-width: 70ch;
+}
+
+.v2-system-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.v2-system-badge.v1_discovery { background: var(--v2-surface-elevated); color: var(--v2-text-faint); }
+.v2-system-badge.gtm_os { background: var(--v2-accent-soft); color: var(--v2-accent); }
+
+@keyframes v2-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ---------- Opportunity Detail / Deal Strategy / Message Review ---------- */
 
 .v2-fact-group {
@@ -1309,6 +1519,14 @@
 }
 
 @media (max-width: 768px) {
+  .v2-kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .v2-card-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
   .v2-sidebar {
     position: fixed;
     left: 0;
@@ -1415,5 +1633,9 @@
 
   .v2-page-title {
     font-size: 1.25rem;
+  }
+
+  .v2-kpi-strip {
+    grid-template-columns: 1fr;
   }
 }

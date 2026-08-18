@@ -1,25 +1,35 @@
 import { useEffect, useState } from 'react'
-import { getBriefingGovernance, formatApiError } from '../api.js'
-import { IconAlertTriangle } from '../icons.jsx'
-import { CheckRow, PreviewSection, Section, CATEGORY_LINK, STAGE_LINK } from '../briefingHelpers.jsx'
+import { getBriefingGovernance, getRevenuePace, refreshBriefingGovernance, formatApiError } from '../api.js'
+import { IconAlertTriangle, IconRefreshCw } from '../icons.jsx'
+import { KpiTile, MiniCard, MiniItem, SystemBadge, formatUsd, timeAgo } from '../briefingHelpers.jsx'
 
 const PREVIEW_LIMIT = 3
 
-// "Is this account configured well enough to safely generate a GTM briefing?" -- answered
-// entirely from evaluate_gtm_governance()'s real output (Batch 14). No score, allocation, or
-// recommendation is computed in this file: the only derived value is `overallLabel` below, a
-// plain-English restatement of whether configuration_gaps/data_gaps/operational_issues are
-// empty -- counting, not scoring, and shown as exactly that (see the hero card's own caption).
-// Each list below shows at most 3 items inline + a real "View all N" link to
-// /v2/briefing/:category (BriefingCategoryDetail.jsx) instead of unrolling every gap onto this
-// page -- the full, untruncated list is always one click away, never hidden.
+// V2 UI audit redesign (2026-08-18) -- replaces the earlier full-width-row layout with an
+// executive KPI strip + 2-column category cards + a prominent bottleneck insight, per the
+// lead-reviewed design direction. No new scores/priorities/forecasts are computed here: every
+// number still comes straight from evaluate_gtm_governance()'s real output (now read from a
+// cached GovernanceSnapshot, see api.js) plus GET /gtm-os/revenue-pace (already real, existing).
+// `overallLabel` below is the same plain-English restatement of empty/non-empty real lists this
+// page always used -- counting, never scoring.
 export default function Briefing() {
   const [gov, setGov] = useState(null)
   const [error, setError] = useState(null)
+  const [revenue, setRevenue] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     getBriefingGovernance().then(setGov).catch(err => setError(formatApiError(err)))
+    getRevenuePace().then(setRevenue).catch(() => setRevenue(false)) // false = "couldn't load", distinct from null = "still loading"
   }, [])
+
+  function handleRefresh() {
+    setRefreshing(true)
+    refreshBriefingGovernance()
+      .then(setGov)
+      .catch(err => setError(formatApiError(err)))
+      .finally(() => setRefreshing(false))
+  }
 
   if (error) {
     return (
@@ -35,7 +45,7 @@ export default function Briefing() {
   if (gov === null) {
     return (
       <div>
-        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 140, marginBottom: '1.5rem' }} />
+        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 110, marginBottom: '1.5rem' }} />
         <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 300 }} />
       </div>
     )
@@ -46,113 +56,90 @@ export default function Briefing() {
   const opsIssues = gov.operational_issues || []
   const humanAttention = gov.human_attention || []
   const bottleneck = gov.bottlenecks?.[0]
+  const execution = gov.execution_readiness || {}
 
-  const heroTone = opsIssues.length > 0 ? 'has-blockers' : (configGaps.length + dataGaps.length > 0 ? 'has-warnings' : 'clear')
-  const overallLabel = opsIssues.length > 0 ? 'Blocked' : (configGaps.length + dataGaps.length > 0 ? 'Needs configuration' : 'Ready')
+  const revenueLoaded = revenue && revenue !== false
+  const revenueValue = revenueLoaded && revenue.target_configured
+    ? `${formatUsd(revenue.actual_usd)} / ${formatUsd(revenue.target_usd)}`
+    : revenueLoaded ? formatUsd(revenue.actual_usd) : '—'
+  const revenueContext = revenueLoaded
+    ? (revenue.target_configured ? `${revenue.pace_percent}% of target this month` : 'No target set -- see Revenue Pace')
+    : (revenue === false ? 'Unavailable' : 'Loading…')
 
   return (
     <div>
-      <div className={`v2-readiness-hero v2-spotlight ${heroTone}`}>
-        <div style={{ fontSize: '0.76rem', color: 'var(--v2-spot-text-faint)' }}>Overall readiness (derived from the real counts below -- not a backend score)</div>
-        <div style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0.3rem 0 0.5rem', color: 'var(--v2-spot-text)' }}>{overallLabel}</div>
-        <p style={{ marginBottom: 0, color: 'var(--v2-spot-text-muted)', fontSize: '0.9rem', lineHeight: 1.55, maxWidth: '60ch' }}>
-          {opsIssues.length > 0 && `${opsIssues.length} operational issue${opsIssues.length === 1 ? '' : 's'} recorded. `}
-          {configGaps.length > 0 && `${configGaps.length} configuration gap${configGaps.length === 1 ? '' : 's'}. `}
-          {dataGaps.length > 0 && `${dataGaps.length} data gap${dataGaps.length === 1 ? '' : 's'}. `}
-          {configGaps.length === 0 && dataGaps.length === 0 && opsIssues.length === 0 && 'No configuration, data, or operational gaps were found by the governance evaluator.'}
-        </p>
-        <div className="v2-stat-row" style={{ marginTop: '1rem', marginBottom: 0 }}>
-          <div className="v2-stat-tile">
-            <div className="v2-stat-label">Companies evaluated</div>
-            <div className="v2-stat-value">{gov.overview?.total_companies ?? 0}</div>
-          </div>
-          <div className="v2-stat-tile">
-            <div className="v2-stat-label">Opportunities evaluated</div>
-            <div className="v2-stat-value">{gov.overview?.opportunities_evaluated ?? 0}</div>
-          </div>
-          <div className="v2-stat-tile">
-            <div className="v2-stat-label">Needs your attention</div>
-            <div className="v2-stat-value">{humanAttention.length}</div>
-          </div>
+      <div className="v2-exec-header">
+        <div className="v2-exec-header-text">
+          <h2 className="v2-page-title" style={{ fontSize: '1.3rem' }}>Executive Briefing</h2>
+          <div className="v2-exec-header-sub">Your GTM system at a glance</div>
+        </div>
+        <div className="v2-exec-refresh">
+          {gov.computed_at && <span className="v2-exec-refresh-note">as of {timeAgo(gov.computed_at)}</span>}
+          <button type="button" className="v2-btn" onClick={handleRefresh} disabled={refreshing}>
+            <IconRefreshCw width={14} height={14} style={{ marginRight: 6, animation: refreshing ? 'v2-spin 1s linear infinite' : 'none' }} />
+            {refreshing ? 'Refreshing…' : 'Refresh now'}
+          </button>
         </div>
       </div>
 
-      <PreviewSection
-        title="Needs your attention"
-        items={humanAttention}
-        limit={PREVIEW_LIMIT}
-        emptyText="Nothing currently needs attention."
-        viewAllTo="/v2/briefing/attention"
-        renderItem={(item, i) => (
-          <CheckRow
-            key={i}
-            severity={item.category === 'operational' ? 'danger' : 'warning'}
-            description={item.description}
-            link={CATEGORY_LINK[item.category]}
-          />
-        )}
-      />
+      <div className="v2-kpi-strip">
+        <KpiTile label="Revenue" value={revenueValue} context={revenueContext} />
+        <KpiTile label="Pipeline" value={execution.evaluated ?? 0} context="opportunities evaluated" />
+        <KpiTile label="Companies" value={gov.overview?.total_companies ?? 0} context="in your account database" />
+        <KpiTile label="Needs attention" value={humanAttention.length} context="items requiring action" tone={humanAttention.length > 0 ? 'attention' : undefined} />
+      </div>
 
-      <PreviewSection
-        title="Configuration gaps"
-        items={configGaps}
-        limit={PREVIEW_LIMIT}
-        emptyText="No configuration gaps -- every offering/motion this evaluator checks has at least one applicable_icps/applicable_offerings rule set."
-        viewAllTo="/v2/briefing/configuration"
-        renderItem={(gap, i) => (
-          <CheckRow
-            key={i}
-            severity="warning"
-            description={gap.description}
-            meta={`source: ${gap.source}`}
-            link={STAGE_LINK[gap.relates_to_stage] || CATEGORY_LINK.configuration}
-          />
-        )}
-      />
-
-      <PreviewSection
-        title="Data gaps"
-        items={dataGaps}
-        limit={PREVIEW_LIMIT}
-        emptyText="No data gaps found on the fields this evaluator checks."
-        viewAllTo="/v2/briefing/data"
-        renderItem={(gap, i) => (
-          <CheckRow
-            key={i}
-            severity="warning"
-            description={`${gap.missing_count}/${gap.denominator} companies missing ${gap.field}`}
-            meta={`source: ${gap.source}`}
-            link={CATEGORY_LINK.data}
-          />
-        )}
-      />
-
-      {opsIssues.length > 0 && (
-        <PreviewSection
-          title="Operational issues"
-          items={opsIssues}
+      <div className="v2-card-grid-2">
+        <MiniCard
+          title="Needs your attention"
+          items={humanAttention}
           limit={PREVIEW_LIMIT}
-          viewAllTo="/v2/briefing/operational"
-          renderItem={(issue, i) => (
-            <CheckRow
-              key={i}
-              severity="danger"
-              description={issue.error_message}
-              meta={`run #${issue.run_id} · ${issue.started_at ? new Date(issue.started_at).toLocaleString() : ''}`}
-            />
+          emptyText="Nothing currently needs attention."
+          viewAllTo="/v2/briefing/attention"
+          renderItem={(item, i) => (
+            <MiniItem key={i} severity={item.category === 'operational' ? 'danger' : 'warning'} title={item.title || item.description} subtitle={item.subtitle} />
           )}
         />
-      )}
+        <MiniCard
+          title="Configuration gaps"
+          items={configGaps}
+          limit={PREVIEW_LIMIT}
+          emptyText="No configuration gaps -- every offering/motion this evaluator checks has at least one applicable_icps/applicable_offerings rule set."
+          viewAllTo="/v2/briefing/configuration"
+          renderItem={(gap, i) => <MiniItem key={i} title={gap.title} subtitle={gap.short_description} />}
+        />
+        <MiniCard
+          title="Data gaps"
+          items={dataGaps}
+          limit={PREVIEW_LIMIT}
+          emptyText="No data gaps found on the fields this evaluator checks."
+          viewAllTo="/v2/briefing/data"
+          renderItem={(gap, i) => <MiniItem key={i} title={gap.title} subtitle={gap.short_description} />}
+        />
+        <MiniCard
+          title="System health"
+          items={opsIssues}
+          limit={PREVIEW_LIMIT}
+          emptyText="No recorded run failures -- V1 discovery and GTM-OS are both operating normally."
+          viewAllTo="/v2/briefing/operational"
+          renderItem={(issue, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--v2-space-2)', width: '100%' }}>
+              <MiniItem severity="danger" title={issue.title} subtitle={issue.started_at ? new Date(issue.started_at).toLocaleDateString() : null} />
+              <div style={{ marginLeft: 'auto' }}><SystemBadge system={issue.system} /></div>
+            </div>
+          )}
+        />
+      </div>
 
       {bottleneck && (
-        <Section title="Largest observed bottleneck">
-          <div className="v2-card">
-            <div className="v2-config-card-title" style={{ marginBottom: 6 }}>{bottleneck.from} → {bottleneck.to}</div>
-            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
-              {bottleneck.drop_count} account{bottleneck.drop_count === 1 ? '' : 's'} drop off between these stages. {bottleneck.reason}
-            </p>
-          </div>
-        </Section>
+        <div className="v2-insight-card">
+          <div className="v2-insight-card-eyebrow">Largest observed bottleneck</div>
+          <div className="v2-insight-card-title">{bottleneck.from_label} → {bottleneck.to_label}</div>
+          <p className="v2-insight-card-body">
+            {bottleneck.drop_count} account{bottleneck.drop_count === 1 ? '' : 's'} currently drop off between these stages.
+            {' '}{bottleneck.reason_short || bottleneck.reason}
+          </p>
+        </div>
       )}
     </div>
   )

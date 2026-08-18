@@ -81,3 +81,79 @@ export function PreviewSection({ title, items, limit, renderItem, emptyText, vie
     </div>
   )
 }
+
+// ---------- V2 Briefing redesign (2026-08-18 UI audit) ----------
+// A contained, fixed-height category card: header (title + real count), up to `limit` compact
+// title+subtitle items, and a real "View all N" link to the same full-list pages PreviewSection
+// already routes to. Deliberately never renders a raw backend sentence -- callers pass structured
+// `title`/`subtitle` per item (from governance.py's own title/short_description fields where they
+// exist), not free-text description strings.
+export function MiniCard({ title, items, limit, emptyText, viewAllTo, renderItem }) {
+  return (
+    <div className="v2-mini-card">
+      <div className="v2-mini-card-head">
+        {title} <span className="v2-badge v2-badge-neutral">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <div className="v2-mini-card-empty">{emptyText}</div>
+      ) : (
+        <div className="v2-mini-list">{items.slice(0, limit).map(renderItem)}</div>
+      )}
+      {viewAllTo && items.length > limit && (
+        <div className="v2-mini-card-footer">
+          <Link to={viewAllTo}>View all {items.length} →</Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function MiniItem({ severity = 'warning', title, subtitle }) {
+  return (
+    <div className="v2-mini-item">
+      <div className={`v2-mini-item-dot severity-${severity}`} />
+      <div className="v2-mini-item-body">
+        <div className="v2-mini-item-title">{title}</div>
+        {subtitle && <div className="v2-mini-item-subtitle">{subtitle}</div>}
+      </div>
+    </div>
+  )
+}
+
+export function KpiTile({ label, value, context, tone }) {
+  return (
+    <div className="v2-kpi-tile">
+      <div className="v2-kpi-tile-label">{label}</div>
+      <div className={`v2-kpi-tile-value${tone ? ` ${tone}` : ''}`}>{value}</div>
+      {context && <div className="v2-kpi-tile-context">{context}</div>}
+    </div>
+  )
+}
+
+export function formatUsd(value) {
+  if (value == null) return '—'
+  return `$${Number(value).toLocaleString()}`
+}
+
+// Real system label (governance.py's own "v1_discovery" | "gtm_os" tag on each operational
+// issue, added so legacy V1 discovery-pipeline failures are never presented as if they were the
+// new GTM-OS system's own health) -> a short badge caption.
+const SYSTEM_LABEL = { v1_discovery: 'V1 discovery', gtm_os: 'GTM-OS' }
+
+export function SystemBadge({ system }) {
+  if (!system) return null
+  return <span className={`v2-system-badge ${system}`}>{SYSTEM_LABEL[system] || system}</span>
+}
+
+// Plain "N minutes/hours ago" for a snapshot's computed_at -- so the Briefing page honestly
+// communicates it's reading a periodic snapshot (see governance.py's GovernanceSnapshot), not a
+// live number, without requiring the reader to parse a raw timestamp.
+export function timeAgo(isoString) {
+  if (!isoString) return null
+  const diffMs = Date.now() - new Date(isoString).getTime()
+  const minutes = Math.round(diffMs / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  const hours = Math.round(minutes / 60)
+  return `${hours} hour${hours === 1 ? '' : 's'} ago`
+}

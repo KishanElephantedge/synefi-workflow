@@ -89,10 +89,17 @@ export function putGtmMotions(motions) {
   return client.put('/gtm-os/gtm-motions', motions).then(res => res.data)
 }
 
-// Phase 6 -- backed by GET /gtm-os/briefing-governance, a thin wrapper returning
-// evaluate_gtm_governance() (Batch 14) verbatim, with zero fields added/removed/renamed.
+// Phase 6 -- backed by GET /gtm-os/briefing-governance. V2 UI audit (2026-08-18): now reads a
+// cached GovernanceSnapshot (computed hourly) instead of recomputing evaluate_gtm_governance()
+// live on every request -- same real fields, plus `computed_at` for staleness display.
 export function getBriefingGovernance() {
   return client.get('/gtm-os/briefing-governance').then(res => res.data)
+}
+
+// Manual "Refresh now" -- forces a fresh evaluate_gtm_governance() computation right now (can
+// take a couple of minutes; the caller shows a loading state while this is in flight).
+export function refreshBriefingGovernance() {
+  return client.post('/gtm-os/briefing-governance/refresh').then(res => res.data)
 }
 
 // Phase 7 -- backed by GET /gtm-os/pipeline/{opportunity_id}, the single-opportunity

@@ -270,3 +270,16 @@ export function IconX(props) {
     </svg>
   )
 }
+
+// Not in the reference deck -- own choice for the Briefing "Refresh now" action (V2 UI audit,
+// 2026-08-18), the standard two-arrow-loop refresh glyph, unconfirmed against any reference source.
+export function IconRefreshCw(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  )
+}
