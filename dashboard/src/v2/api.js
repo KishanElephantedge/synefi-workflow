@@ -21,8 +21,13 @@ export function formatApiError(err) {
   return err?.message || 'Something went wrong.'
 }
 
-export function listAccounts({ page = 1, pageSize = 25, search = '' } = {}) {
-  return client.get('/companies', { params: { page, page_size: pageSize, search } }).then(res => res.data)
+// `accountFilter` -- "hot_leads" | "no_contact" | "missing_email" (V2 Jobs-to-Be-Done wiring,
+// 2026-08-19). Maps straight to the backend's `account_filter` param (app/routes/api.py),
+// itself reusing the exact same real conditions jobs_to_be_done.py computes its counts from --
+// see that route's own docstring for why this exists (a Jobs "View all 99" used to link to the
+// fully unfiltered 706-company list).
+export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilter = '' } = {}) {
+  return client.get('/companies', { params: { page, page_size: pageSize, search, account_filter: accountFilter } }).then(res => res.data)
 }
 
 // Backed by the new, purely-additive GET /gtm-os/accounts/{company_id}/brief route (Phase 2),
@@ -197,3 +202,4 @@ export function confirmPattern(category, confirmedBy) {
 export function dismissPattern(category, confirmedBy) {
   return client.post(`/gtm-os/patterns/${encodeURIComponent(category)}/dismiss`, { confirmed_by: confirmedBy }).then(res => res.data)
 }
+

@@ -5,18 +5,19 @@ import { IconAlertTriangle, IconTrendingUp, IconUsers, IconFlame, IconPhone, Ico
 
 const PREVIEW_LIMIT = 3
 
-// Jobs to Be Done, visual pass v2 (2026-08-19) -- per the lead's own reference direction: compact
-// ACTION MODULES (icon chip -> title + right-aligned count -> 1-line explanation -> 2-3 examples
-// -> ONE category CTA), not the large mostly-empty cards the first redesign produced. Data/
-// category decisions from the prior pass are unchanged -- see jobs_to_be_done.py: Worth Engaging
-// stays removed, Contacts to Find stays split via the backend's own `breakdown` field, V1
-// provenance stays on Contacts/Hot Leads only. This pass is presentation-only.
+// Jobs to Be Done, visual pass v3 (2026-08-19) -- lighter icon treatment (no filled chip, just
+// a category-colored outline icon), more editorial category-label typography, and real routing:
+// every "View all"/action link now sends the user into Accounts pre-filtered to the exact real
+// work (?filter=hot_leads|no_contact|missing_email -- see api.js's listAccounts() and
+// app/routes/api.py's `account_filter` param, which reuses jobs_to_be_done.py's own conditions
+// verbatim), instead of dumping them on the full unfiltered account list. Data/category logic
+// itself is unchanged from the prior pass.
 
 function ProvenanceLabel() {
   return <span className="v2-job-provenance">V1 Discovery</span>
 }
 
-function ModuleHead({ icon, accent, title, count, provenance }) {
+function ModuleHead({ title, count, provenance }) {
   return (
     <div className="v2-job-head">
       <div className="v2-job-title-row">
@@ -31,7 +32,7 @@ function ModuleHead({ icon, accent, title, count, provenance }) {
 function EmptyLine({ title }) {
   return (
     <div className="v2-job-empty">
-      <IconCheckCircle width={16} height={16} />
+      <IconCheckCircle width={15} height={15} />
       <span>{title}</span>
     </div>
   )
@@ -72,8 +73,6 @@ export default function JobsToBeDone() {
   const hotLeads = data.category_status.hot_leads_to_review
   const calls = data.category_status.calls_to_make
 
-  const bothContactTypes = contacts.breakdown.no_contact_found > 0 && contacts.breakdown.missing_email > 0
-
   return (
     <div>
       <div style={{ marginBottom: 'var(--v2-space-4)' }}>
@@ -83,18 +82,14 @@ export default function JobsToBeDone() {
 
       <div className="v2-card" style={{ padding: '0 var(--v2-space-5)' }}>
 
-        {/* 1. Deal needs you -- the one GTM-OS-native category, always the strongest identity
-            (purple/accent) even at zero, since it's the real revenue-execution surface. */}
+        {/* 1. Deal needs you -- the one GTM-OS-native category, strongest identity (accent)
+            even at zero, since it's the real revenue-execution surface. */}
         <div className="v2-job-module">
-          <div className={`v2-job-icon-chip accent`}>
-            <IconTrendingUp width={19} height={19} />
-          </div>
+          <IconTrendingUp width={18} height={18} className="v2-job-icon accent" />
           <div className="v2-job-body">
             <ModuleHead title="Deal needs you" count={deals.count} />
             {dealItems.length === 0 ? (
-              <>
-                <p className="v2-job-explanation" style={{ marginBottom: 0 }}>You're clear for now -- no deals currently require your action.</p>
-              </>
+              <EmptyLine title="You're clear for now -- no deals currently require your action." />
             ) : (
               <>
                 <p className="v2-job-explanation">Opportunities blocked on a human step.</p>
@@ -115,39 +110,39 @@ export default function JobsToBeDone() {
           </div>
         </div>
 
-        {/* 2. Contacts to find -- two real sub-jobs, both from V1's decision-maker search. */}
+        {/* 2. Contacts to find -- two real sub-jobs. Each is its own real link straight into
+            Accounts filtered to exactly that work, not a single generic button. */}
         <div className="v2-job-module">
-          <div className="v2-job-icon-chip danger">
-            <IconUsers width={19} height={19} />
-          </div>
+          <IconUsers width={18} height={18} className="v2-job-icon danger" />
           <div className="v2-job-body">
             <ModuleHead title="Contacts to find" count={contacts.count} provenance />
             {contacts.count === 0 ? (
-              <p className="v2-job-explanation" style={{ marginBottom: 0 }}>Every account has a confirmed contact.</p>
+              <EmptyLine title="Every account has a confirmed contact." />
             ) : (
               <>
                 <p className="v2-job-explanation">Two research jobs, from the discovery pipeline's contact search.</p>
                 <div className="v2-job-examples">
                   {contacts.breakdown.no_contact_found > 0 && (
-                    <div className="v2-job-example">
+                    <Link to="/v2/accounts?filter=no_contact" className="v2-job-example linked">
                       <span className="v2-job-example-count">{contacts.breakdown.no_contact_found}</span>
-                      <span className="v2-job-example-name">No decision-maker found</span>
-                      <span className="v2-job-example-sep">—</span>
-                      <span className="v2-job-example-reason">companies that still need contact research</span>
-                    </div>
+                      <span className="v2-job-example-body">
+                        <span className="v2-job-example-name">No decision-maker found</span>
+                        <span className="v2-job-example-reason">Companies that still need contact research</span>
+                      </span>
+                      <span className="v2-job-example-arrow">↗</span>
+                    </Link>
                   )}
                   {contacts.breakdown.missing_email > 0 && (
-                    <div className="v2-job-example">
+                    <Link to="/v2/accounts?filter=missing_email" className="v2-job-example linked">
                       <span className="v2-job-example-count">{contacts.breakdown.missing_email}</span>
-                      <span className="v2-job-example-name">Missing email</span>
-                      <span className="v2-job-example-sep">—</span>
-                      <span className="v2-job-example-reason">a decision-maker was found, but no confirmed email is on file</span>
-                    </div>
+                      <span className="v2-job-example-body">
+                        <span className="v2-job-example-name">Missing email</span>
+                        <span className="v2-job-example-reason">Decision-maker found, but no confirmed email on file</span>
+                      </span>
+                      <span className="v2-job-example-arrow">↗</span>
+                    </Link>
                   )}
                 </div>
-                <Link to="/v2/accounts" className="v2-job-cta">
-                  {bothContactTypes ? 'Research both' : 'Research now'} ↗
-                </Link>
               </>
             )}
           </div>
@@ -156,13 +151,11 @@ export default function JobsToBeDone() {
         {/* 3. Hot leads to review -- V1 discovery-pipeline heuristics, compact, one concise
             reason per lead (not the old full semicolon-joined reasoning string). */}
         <div className="v2-job-module">
-          <div className="v2-job-icon-chip warning">
-            <IconFlame width={19} height={19} />
-          </div>
+          <IconFlame width={18} height={18} className="v2-job-icon warning" />
           <div className="v2-job-body">
             <ModuleHead title="Hot leads to review" count={hotLeads.count} provenance />
             {hotLeadItems.length === 0 ? (
-              <p className="v2-job-explanation" style={{ marginBottom: 0 }}>No hot leads flagged right now.</p>
+              <EmptyLine title="No hot leads flagged right now." />
             ) : (
               <>
                 <p className="v2-job-explanation">Flagged by discovery-pipeline signals -- worth a look.</p>
@@ -175,8 +168,8 @@ export default function JobsToBeDone() {
                     </div>
                   ))}
                 </div>
-                <Link to="/v2/accounts" className="v2-job-cta">
-                  Review {hotLeadItems.length === hotLeads.count ? `all ${hotLeads.count}` : 'leads'} ↗
+                <Link to="/v2/accounts?filter=hot_leads" className="v2-job-cta">
+                  Review all {hotLeads.count} ↗
                 </Link>
               </>
             )}
@@ -186,9 +179,7 @@ export default function JobsToBeDone() {
         {/* 4. Calls to make -- kept as a real future category, compact disabled state, no
             backend/model terminology even when explicitly unavailable rather than just empty. */}
         <div className="v2-job-module">
-          <div className="v2-job-icon-chip info">
-            <IconPhone width={19} height={19} />
-          </div>
+          <IconPhone width={18} height={18} className="v2-job-icon info" />
           <div className="v2-job-body">
             <ModuleHead title="Calls to make" count={calls.count} />
             <EmptyLine title={calls.available ? 'No calls need your attention right now.' : "Not available yet -- this isn't tracking real call/reply activity yet."} />

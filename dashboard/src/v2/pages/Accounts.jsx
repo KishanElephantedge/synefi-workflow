@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { listAccounts, getAccountsSummary, formatApiError } from '../api.js'
-import { IconAlertTriangle, IconChevronLeft, IconChevronRight } from '../icons.jsx'
+import { IconAlertTriangle, IconChevronLeft, IconChevronRight, IconX } from '../icons.jsx'
+
+// Real, plain-English label for each ?filter= value Jobs to Be Done can link here with -- see
+// api.js's listAccounts() and app/routes/api.py's `account_filter` docstring for the exact
+// conditions each one reuses from jobs_to_be_done.py.
+const FILTER_LABEL = {
+  hot_leads: 'Hot leads',
+  no_contact: 'No decision-maker found',
+  missing_email: 'Missing email',
+}
 
 const PAGE_SIZE = 25
 
@@ -78,6 +87,9 @@ function AccountRow({ company }) {
 // them for one company is trivial; computing them for every row of a 25-company page would mean
 // 25x the backend work per list view, which this endpoint doesn't do and Phase 2 doesn't add.
 export default function Accounts() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const accountFilter = searchParams.get('filter') || ''
+
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -104,7 +116,7 @@ export default function Accounts() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listAccounts({ page, pageSize: PAGE_SIZE, search })
+    listAccounts({ page, pageSize: PAGE_SIZE, search, accountFilter })
       .then(data => {
         if (cancelled) return
         setCompanies(data.companies)
@@ -119,11 +131,20 @@ export default function Accounts() {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [page, search])
+  }, [page, search, accountFilter])
 
   return (
     <div>
       <SummaryStrip summary={summary} />
+
+      {accountFilter && FILTER_LABEL[accountFilter] && (
+        <div className="v2-active-filter">
+          <span>Showing: <strong>{FILTER_LABEL[accountFilter]}</strong> ({total})</span>
+          <button type="button" onClick={() => { setSearchParams({}); setPage(1) }}>
+            <IconX width={13} height={13} /> Clear
+          </button>
+        </div>
+      )}
 
       <div className="v2-toolbar">
         <input
@@ -149,7 +170,7 @@ export default function Accounts() {
       ) : companies.length === 0 ? (
         <div className="v2-card">
           <div className="v2-state">
-            {search ? `No accounts match "${search}".` : 'No accounts have been researched yet.'}
+            {search ? `No accounts match "${search}".` : accountFilter ? 'No accounts currently match this filter.' : 'No accounts have been researched yet.'}
           </div>
         </div>
       ) : (

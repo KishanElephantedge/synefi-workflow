@@ -463,6 +463,40 @@
 
 /* ---------- Accounts list ---------- */
 
+/* V2 Jobs-to-Be-Done wiring (2026-08-19) -- shown only when Accounts was opened with a real
+   ?filter= from Jobs to Be Done, so the user always knows why the list looks narrowed and can
+   get back to the full list in one click. */
+.v2-active-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  background: var(--v2-accent-soft);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+  padding: 0.55rem 0.9rem;
+  margin-bottom: var(--v2-space-3);
+  font-size: 0.85rem;
+  color: var(--v2-text);
+}
+
+.v2-active-filter button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  min-width: auto;
+}
+
+.v2-active-filter button:hover { color: var(--v2-accent); }
+
 .v2-toolbar {
   display: flex;
   gap: var(--v2-space-3);
@@ -1501,42 +1535,37 @@
   to { transform: rotate(360deg); }
 }
 
-/* ---------- Jobs to Be Done (2026-08-19 redesign, visual pass v2) ---------- */
+/* ---------- Jobs to Be Done (2026-08-19 redesign, visual pass v3) ---------- */
 /* Vertical priority flow of compact ACTION MODULES, per the lead's reference direction --
    deliberately not Briefing's 2-column dashboard grid (this is a queue, not an overview) and
-   deliberately not big mostly-empty cards either (the v1 redesign's own problem). Each module:
-   icon chip -> title + right-aligned count -> 1-line explanation -> 2-3 compact examples ->
-   ONE category-level CTA. Individual examples are plain text, not separately-clickable rows --
-   the single CTA is the one real action per category, matching the reference's "Start calling"/
-   "Research both" pattern instead of an arrow on every line. */
+   deliberately not big mostly-empty cards either (the earlier redesign's own problem). Each
+   module: outline icon -> title + right-aligned count -> 1-line explanation -> 2-3 compact
+   examples -> one real action (a category CTA, or -- for Contacts, where there are two genuinely
+   separate real jobs -- each example row is its own link straight into the filtered work). */
 
 .v2-job-module {
   display: flex;
-  gap: var(--v2-space-4);
+  gap: var(--v2-space-3);
   padding: var(--v2-space-4) 0;
   border-bottom: 1px solid var(--v2-border);
 }
 
 .v2-job-module:last-child { border-bottom: none; }
 
-/* Category identity lives here -- a real, visible colored icon, not the tiny muted-gray icons
-   the previous pass used. Semantic mapping (not decorative): accent/purple = GTM-OS's own
-   primary output (Deal needs you); danger/coral = Contacts to find (V1); warning/amber = Hot
-   leads (V1); info/blue = Calls to make (future category, currently disabled). */
-.v2-job-icon-chip {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--v2-radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Lightweight outline icon, category-colored, no filled container -- simple and visible per
+   the lead reference, not the heavier "SaaS dashboard tile" chip the prior pass used. Semantic
+   mapping (not decorative): accent/purple = GTM-OS's own primary output (Deal needs you);
+   danger/coral = Contacts to find (V1); warning/amber = Hot leads (V1); info/blue = Calls to
+   make (future category, currently disabled). */
+.v2-job-icon {
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.v2-job-icon-chip.accent { background: var(--v2-accent-soft); color: var(--v2-accent); }
-.v2-job-icon-chip.danger { background: var(--v2-danger-soft); color: var(--v2-danger); }
-.v2-job-icon-chip.warning { background: var(--v2-warning-soft); color: var(--v2-warning); }
-.v2-job-icon-chip.info { background: var(--v2-info-soft); color: var(--v2-info); }
+.v2-job-icon.accent { color: var(--v2-accent); }
+.v2-job-icon.danger { color: var(--v2-danger); }
+.v2-job-icon.warning { color: var(--v2-warning); }
+.v2-job-icon.info { color: var(--v2-info); }
 
 .v2-job-body { flex: 1; min-width: 0; }
 
@@ -1554,18 +1583,18 @@
   flex-wrap: wrap;
 }
 
+/* More editorial than an eyebrow label -- a real (small) heading, not a tiny uppercase tag. */
 .v2-job-title {
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: -0.005em;
   color: var(--v2-text);
 }
 
 /* Deliberately NOT a small badge pill -- this is an action queue, the count IS the headline,
    per the lead reference's own treatment. */
 .v2-job-count {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--v2-text);
   font-variant-numeric: tabular-nums;
@@ -1584,24 +1613,24 @@
 }
 
 .v2-job-explanation {
-  font-size: 0.82rem;
+  font-size: 0.83rem;
   color: var(--v2-text-muted);
-  margin-top: 3px;
-  margin-bottom: var(--v2-space-3);
+  margin-top: 2px;
+  margin-bottom: var(--v2-space-2);
 }
 
 .v2-job-examples {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-bottom: var(--v2-space-3);
+  gap: 5px;
+  margin-bottom: var(--v2-space-2);
 }
 
 .v2-job-example {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   line-height: 1.4;
 }
 
@@ -1617,22 +1646,56 @@
 .v2-job-example-reason { color: var(--v2-text-muted); }
 .v2-job-example-sep { color: var(--v2-text-faint); }
 
+/* Contacts to Find's two sub-jobs are real links (V1 Jobs-to-Be-Done wiring, 2026-08-19) --
+   each one is its own genuine action, not a plain-text example, so it gets the row-level
+   hover-arrow treatment instead of living behind one generic category CTA. */
+a.v2-job-example.linked {
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: var(--v2-radius-sm);
+  transition: background 0.12s ease;
+}
+
+a.v2-job-example.linked:hover { background: var(--v2-surface-elevated); }
+
+.v2-job-example-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.v2-job-example-body .v2-job-example-reason { font-size: 0.78rem; margin-top: 1px; }
+
+.v2-job-example-arrow {
+  color: var(--v2-text-faint);
+  flex-shrink: 0;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+a.v2-job-example.linked:hover .v2-job-example-arrow {
+  transform: translateX(2px);
+  color: var(--v2-accent);
+}
+
 .v2-job-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 0.82rem;
   font-weight: 600;
-  padding: 0.45rem 0.85rem;
+  padding: 0.4rem 0.7rem;
   border-radius: var(--v2-radius-sm);
-  border: 1px solid var(--v2-border);
-  background: var(--v2-surface-elevated);
-  color: var(--v2-text);
+  color: var(--v2-accent);
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: opacity 0.15s ease;
+  margin-left: -0.7rem;
 }
 
-.v2-job-cta:hover { border-color: var(--v2-accent); color: var(--v2-accent); }
+.v2-job-cta:hover { opacity: 0.75; }
 
 .v2-job-empty {
   display: flex;
@@ -1642,11 +1705,11 @@
   color: var(--v2-text-muted);
 }
 
-.v2-job-empty svg { color: var(--v2-success); flex-shrink: 0; }
+.v2-job-empty svg { color: var(--v2-success); flex-shrink: 0; opacity: 0.85; }
 
 @media (max-width: 480px) {
   .v2-job-head { flex-direction: column; gap: 2px; }
-  .v2-job-icon-chip { width: 34px; height: 34px; }
+  .v2-job-module { padding: var(--v2-space-4) 0; }
 }
 
 /* ---------- Opportunity Detail / Deal Strategy / Message Review ---------- */
