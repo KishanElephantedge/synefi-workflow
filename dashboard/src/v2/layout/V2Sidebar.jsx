@@ -1,8 +1,70 @@
-import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useTenant } from '../../context/TenantContext.jsx'
 import { V2_NAV_GROUPS } from '../navConfig.js'
 import { getJobsToBeDone, getOverridesEvals } from '../api.js'
+
+// Mirrors V1's TenantSwitcher (App.jsx) so the same "Workspace" dropdown reachable from V1
+// is also reachable from inside V2: real tenants come from useTenant() (unchanged), plus one
+// extra static "Elephant Edge V2" row appended right after the real "Elephant Edge" entry --
+// same convention App.jsx's TenantSwitcher already uses. Picking a real tenant navigates to
+// /:slug (leaving V2 entirely, mounting V1's AppShell); picking "Elephant Edge V2" just closes
+// the menu since we're already there.
+function V2WorkspaceSwitcher() {
+  const { tenants } = useTenant()
+  const navigate = useNavigate()
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="v2-workspace-switcher" ref={dropdownRef}>
+      <div
+        className={`v2-workspace-trigger${isOpen ? ' open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div>
+          <div className="v2-brand-name">Elephant Edge V2</div>
+          <div className="v2-brand-sub">Sales execution</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      {isOpen && (
+        <div className="v2-workspace-dropdown">
+          {tenants.map(t => (
+            <div key={t.slug}>
+              <div
+                className="v2-workspace-option"
+                onClick={() => {
+                  navigate(`/${t.slug}`)
+                  setIsOpen(false)
+                }}
+              >
+                {t.name}
+              </div>
+              {t.slug === 'elephant-edge' && (
+                <div className="v2-workspace-option selected" onClick={() => setIsOpen(false)}>
+                  Elephant Edge V2
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Real, live sidebar badge counts -- fetched once on mount, never hardcoded. "jobs" sums every
 // AVAILABLE Jobs to Be Done category's real count (skipping "calls_to_make", which is always
@@ -36,8 +98,7 @@ export default function V2Sidebar({ open, onNavigate }) {
   return (
     <aside className={`v2-sidebar${open ? ' v2-sidebar-open' : ''}`}>
       <div className="v2-brand">
-        <div className="v2-brand-name">Elephant Edge</div>
-        <div className="v2-brand-sub">Sales execution</div>
+        <V2WorkspaceSwitcher />
       </div>
 
       <nav className="v2-nav">

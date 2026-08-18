@@ -28,13 +28,13 @@ export const V2_NAV_GROUPS = [
       // V2Sidebar.jsx), never a hardcoded number. Briefing moved to the end of this group: now
       // that Jobs to Be Done is the actionable home screen, Briefing's governance-summary role is
       // secondary, not primary -- kept, not deleted (per prior "do not delete Briefing" decision).
+      { path: 'briefing', label: 'Briefing', icon: IconSparkles },
       { path: 'jobs', label: 'Jobs to be done', icon: IconListChecks, countKey: 'jobs' },
       { path: 'meetings', label: 'Meetings', icon: IconCalendar },
       { path: 'pipeline', label: 'Pipeline', icon: IconTrendingUp },
       { path: 'revenue-pace', label: 'Revenue Pace', icon: IconBarChart },
       { path: 'efficiency', label: 'Efficiency', icon: IconZap },
       { path: 'overrides-evals', label: 'Overrides & Evals', icon: IconScale, countKey: 'overridesEvals' },
-      { path: 'briefing', label: 'Briefing', icon: IconSparkles },
     ],
   },
   {
