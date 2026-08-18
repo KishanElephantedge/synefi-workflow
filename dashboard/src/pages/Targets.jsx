@@ -359,6 +359,11 @@ export default function Targets() {
             </div>
             {keywordsError && <p className="error">{keywordsError}</p>}
             {keywordsLoading && <p className="hint">Loading...</p>}
+            {keywords && Object.values(keywords).every(kws => kws.length === 0) && (
+              <p className="hint" style={{ marginBottom: '1rem' }}>
+                Every tier is empty — the monitor will capture and alert on ALL activity from watched profiles, unfiltered.
+              </p>
+            )}
             {keywords && Object.entries(keywords).map(([tier, kws]) => (
               <div key={tier} style={{ marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
