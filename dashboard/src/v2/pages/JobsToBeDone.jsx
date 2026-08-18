@@ -5,57 +5,35 @@ import { IconAlertTriangle, IconTrendingUp, IconUsers, IconFlame, IconPhone, Ico
 
 const PREVIEW_LIMIT = 3
 
-// Jobs to Be Done redesign (2026-08-19), per the audit's own findings -- see that report for
-// the full data/provenance trace. Structural changes from the pre-redesign version:
-//   - "Worth engaging" is gone entirely: those were raw GtmSignal sensing records ("observed,
-//     not yet interpreted"), never real human jobs -- the backend itself no longer returns this
-//     category (see jobs_to_be_done.py), so the sidebar badge total dropped from 115 to
-//     whatever the real job count is, with zero extra frontend logic needed.
-//   - "Contacts to find" is now visually split into its two real sub-jobs (no contact found vs.
-//     missing email) using the backend's own `breakdown` field -- never re-derived by string-
-//     matching `description` client-side.
-//   - Hot Leads and Contacts to Find both carry a "V1 Discovery" provenance tag: both are 100%
-//     produced by V1's daily autonomous pipeline (Company.hot_lead / decision_maker_searched_at
-//     are never touched by GTM-OS), confirmed in the audit -- the UI must not imply these are
-//     GTM-OS-native output.
-//   - A vertical, one-section-at-a-time priority flow (Deals -> Contacts -> Hot Leads -> Calls),
-//     not Briefing's 2-column dashboard grid -- this is an action queue, not an overview.
+// Jobs to Be Done, visual pass v2 (2026-08-19) -- per the lead's own reference direction: compact
+// ACTION MODULES (icon chip -> title + right-aligned count -> 1-line explanation -> 2-3 examples
+// -> ONE category CTA), not the large mostly-empty cards the first redesign produced. Data/
+// category decisions from the prior pass are unchanged -- see jobs_to_be_done.py: Worth Engaging
+// stays removed, Contacts to Find stays split via the backend's own `breakdown` field, V1
+// provenance stays on Contacts/Hot Leads only. This pass is presentation-only.
 
-function ProvenanceBadge() {
-  return <span className="v2-system-badge v1_discovery">V1 Discovery</span>
+function ProvenanceLabel() {
+  return <span className="v2-job-provenance">V1 Discovery</span>
 }
 
-function EmptyState({ title, subtitle }) {
+function ModuleHead({ icon, accent, title, count, provenance }) {
   return (
-    <div className="v2-jobs-empty">
-      <IconCheckCircle width={18} height={18} />
-      <div>
-        <div className="v2-jobs-empty-title">{title}</div>
-        {subtitle && <div className="v2-jobs-empty-subtitle">{subtitle}</div>}
+    <div className="v2-job-head">
+      <div className="v2-job-title-row">
+        <span className="v2-job-title">{title}</span>
+        {provenance && <ProvenanceLabel />}
       </div>
+      <span className="v2-job-count">{count}</span>
     </div>
   )
 }
 
-function ViewAllRow({ to, count }) {
+function EmptyLine({ title }) {
   return (
-    <div className="v2-mini-card-footer">
-      <Link to={to}>View all {count} →</Link>
+    <div className="v2-job-empty">
+      <IconCheckCircle width={16} height={16} />
+      <span>{title}</span>
     </div>
-  )
-}
-
-// Generic job row: title + one-line "why", real action_route from the backend, never invented.
-function JobItem({ item, dotSeverity, subtitle }) {
-  return (
-    <Link to={item.action_route} className="v2-jobs-item">
-      {dotSeverity && <div className={`v2-jobs-item-dot severity-${dotSeverity}`} />}
-      <div className="v2-jobs-item-body">
-        <div className="v2-jobs-item-title">{item.title}</div>
-        <div className="v2-jobs-item-sub">{subtitle}</div>
-      </div>
-      <span className="v2-jobs-item-arrow">→</span>
-    </Link>
   )
 }
 
@@ -81,8 +59,8 @@ export default function JobsToBeDone() {
   if (data === null) {
     return (
       <div>
-        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 90, marginBottom: '1.5rem' }} />
-        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 260 }} />
+        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 70, marginBottom: '1rem' }} />
+        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 320 }} />
       </div>
     )
   }
@@ -94,118 +72,129 @@ export default function JobsToBeDone() {
   const hotLeads = data.category_status.hot_leads_to_review
   const calls = data.category_status.calls_to_make
 
+  const bothContactTypes = contacts.breakdown.no_contact_found > 0 && contacts.breakdown.missing_email > 0
+
   return (
     <div>
-      <div style={{ marginBottom: 'var(--v2-space-5)' }}>
-        <h2 className="v2-page-title" style={{ fontSize: '1.3rem', marginBottom: 2 }}>Jobs to Be Done</h2>
+      <div style={{ marginBottom: 'var(--v2-space-4)' }}>
+        <h2 className="v2-page-title" style={{ fontSize: '1.2rem', marginBottom: 2 }}>Jobs to Be Done</h2>
         <div className="v2-exec-header-sub">Your highest-priority actions, top to bottom</div>
       </div>
 
-      {/* Deals needing you -- always the strongest section visually, even at 0, since this is
-          GTM-OS's own real Opportunity-execution output and the closest thing to revenue. */}
-      <div className="v2-jobs-section">
-        <div className="v2-jobs-section-head">
-          <IconTrendingUp width={15} height={15} />
-          <span>Deals needing you</span>
-          <span className="v2-badge v2-badge-neutral">{deals.count}</span>
-        </div>
-        <div className="v2-jobs-card primary">
-          {dealItems.length === 0 ? (
-            <EmptyState title="You're clear for now" subtitle="No deals currently require your action." />
-          ) : (
-            <>
-              {dealItems.slice(0, PREVIEW_LIMIT).map(item => (
-                <JobItem key={`${item.source_type}-${item.source_id}`} item={item} subtitle={item.description} />
-              ))}
-              {dealItems.length > PREVIEW_LIMIT && <ViewAllRow to="/v2/pipeline" count={dealItems.length} />}
-            </>
-          )}
-        </div>
-      </div>
+      <div className="v2-card" style={{ padding: '0 var(--v2-space-5)' }}>
 
-      {/* Contacts to find -- two distinct real jobs, never flattened into one generic bucket. */}
-      <div className="v2-jobs-section">
-        <div className="v2-jobs-section-head">
-          <IconUsers width={15} height={15} />
-          <span>Contacts to find</span>
-          <span className="v2-badge v2-badge-neutral">{contacts.count}</span>
-        </div>
-        <div className="v2-jobs-provenance"><ProvenanceBadge /></div>
-        <div className="v2-jobs-card">
-          {contacts.count === 0 ? (
-            <EmptyState title="Every account has a confirmed contact" />
-          ) : (
-            <>
-              {contacts.breakdown.no_contact_found > 0 && (
-                <Link to="/v2/accounts" className="v2-jobs-subrow">
-                  <span className="v2-jobs-subrow-count">{contacts.breakdown.no_contact_found}</span>
-                  <div className="v2-jobs-item-body">
-                    <div className="v2-jobs-item-title">No decision-maker found</div>
-                    <div className="v2-jobs-item-sub">Companies that still need contact research</div>
-                  </div>
-                  <span className="v2-jobs-item-arrow">→</span>
+        {/* 1. Deal needs you -- the one GTM-OS-native category, always the strongest identity
+            (purple/accent) even at zero, since it's the real revenue-execution surface. */}
+        <div className="v2-job-module">
+          <div className={`v2-job-icon-chip accent`}>
+            <IconTrendingUp width={19} height={19} />
+          </div>
+          <div className="v2-job-body">
+            <ModuleHead title="Deal needs you" count={deals.count} />
+            {dealItems.length === 0 ? (
+              <>
+                <p className="v2-job-explanation" style={{ marginBottom: 0 }}>You're clear for now -- no deals currently require your action.</p>
+              </>
+            ) : (
+              <>
+                <p className="v2-job-explanation">Opportunities blocked on a human step.</p>
+                <div className="v2-job-examples">
+                  {dealItems.slice(0, PREVIEW_LIMIT).map(item => (
+                    <div className="v2-job-example" key={`${item.source_type}-${item.source_id}`}>
+                      <span className="v2-job-example-name">{item.title}</span>
+                      <span className="v2-job-example-sep">—</span>
+                      <span className="v2-job-example-reason">{item.description}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link to={dealItems.length === 1 ? dealItems[0].action_route : '/v2/pipeline'} className="v2-job-cta">
+                  {dealItems.length === 1 ? 'Open deal strategy' : 'Review deals'} ↗
                 </Link>
-              )}
-              {contacts.breakdown.missing_email > 0 && (
-                <Link to="/v2/accounts" className="v2-jobs-subrow">
-                  <span className="v2-jobs-subrow-count">{contacts.breakdown.missing_email}</span>
-                  <div className="v2-jobs-item-body">
-                    <div className="v2-jobs-item-title">Missing email</div>
-                    <div className="v2-jobs-item-sub">A decision-maker was found, but no confirmed email is on file</div>
-                  </div>
-                  <span className="v2-jobs-item-arrow">→</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 2. Contacts to find -- two real sub-jobs, both from V1's decision-maker search. */}
+        <div className="v2-job-module">
+          <div className="v2-job-icon-chip danger">
+            <IconUsers width={19} height={19} />
+          </div>
+          <div className="v2-job-body">
+            <ModuleHead title="Contacts to find" count={contacts.count} provenance />
+            {contacts.count === 0 ? (
+              <p className="v2-job-explanation" style={{ marginBottom: 0 }}>Every account has a confirmed contact.</p>
+            ) : (
+              <>
+                <p className="v2-job-explanation">Two research jobs, from the discovery pipeline's contact search.</p>
+                <div className="v2-job-examples">
+                  {contacts.breakdown.no_contact_found > 0 && (
+                    <div className="v2-job-example">
+                      <span className="v2-job-example-count">{contacts.breakdown.no_contact_found}</span>
+                      <span className="v2-job-example-name">No decision-maker found</span>
+                      <span className="v2-job-example-sep">—</span>
+                      <span className="v2-job-example-reason">companies that still need contact research</span>
+                    </div>
+                  )}
+                  {contacts.breakdown.missing_email > 0 && (
+                    <div className="v2-job-example">
+                      <span className="v2-job-example-count">{contacts.breakdown.missing_email}</span>
+                      <span className="v2-job-example-name">Missing email</span>
+                      <span className="v2-job-example-sep">—</span>
+                      <span className="v2-job-example-reason">a decision-maker was found, but no confirmed email is on file</span>
+                    </div>
+                  )}
+                </div>
+                <Link to="/v2/accounts" className="v2-job-cta">
+                  {bothContactTypes ? 'Research both' : 'Research now'} ↗
                 </Link>
-              )}
-              <ViewAllRow to="/v2/accounts" count={contacts.count} />
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Hot leads to review -- compact rows, not the old giant full-reasoning cards. */}
-      <div className="v2-jobs-section">
-        <div className="v2-jobs-section-head">
-          <IconFlame width={15} height={15} />
-          <span>Hot leads to review</span>
-          <span className="v2-badge v2-badge-neutral">{hotLeads.count}</span>
+        {/* 3. Hot leads to review -- V1 discovery-pipeline heuristics, compact, one concise
+            reason per lead (not the old full semicolon-joined reasoning string). */}
+        <div className="v2-job-module">
+          <div className="v2-job-icon-chip warning">
+            <IconFlame width={19} height={19} />
+          </div>
+          <div className="v2-job-body">
+            <ModuleHead title="Hot leads to review" count={hotLeads.count} provenance />
+            {hotLeadItems.length === 0 ? (
+              <p className="v2-job-explanation" style={{ marginBottom: 0 }}>No hot leads flagged right now.</p>
+            ) : (
+              <>
+                <p className="v2-job-explanation">Flagged by discovery-pipeline signals -- worth a look.</p>
+                <div className="v2-job-examples">
+                  {hotLeadItems.slice(0, PREVIEW_LIMIT).map(item => (
+                    <div className="v2-job-example" key={`${item.source_type}-${item.source_id}`}>
+                      <span className="v2-job-example-name">{item.title}</span>
+                      <span className="v2-job-example-sep">—</span>
+                      <span className="v2-job-example-reason">{(item.reason || '').split(';')[0].trim() || 'Hot lead'}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/v2/accounts" className="v2-job-cta">
+                  Review {hotLeadItems.length === hotLeads.count ? `all ${hotLeads.count}` : 'leads'} ↗
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-        <div className="v2-jobs-provenance"><ProvenanceBadge /></div>
-        <div className="v2-jobs-card">
-          {hotLeadItems.length === 0 ? (
-            <EmptyState title="No hot leads flagged right now" />
-          ) : (
-            <>
-              {hotLeadItems.slice(0, PREVIEW_LIMIT).map(item => (
-                <JobItem
-                  key={`${item.source_type}-${item.source_id}`}
-                  item={item}
-                  dotSeverity="warning"
-                  // Concise, not the full raw semicolon-joined reasoning string -- the first
-                  // real reason is enough to say WHY at a glance; the rest is one click away
-                  // on the account page itself.
-                  subtitle={(item.reason || '').split(';')[0].trim() || 'Hot lead'}
-                />
-              ))}
-              {hotLeadItems.length > PREVIEW_LIMIT && <ViewAllRow to="/v2/accounts" count={hotLeadItems.length} />}
-            </>
-          )}
-        </div>
-      </div>
 
-      {/* Calls to make -- kept as a real future category (per instruction), never showing raw
-          backend/model language even when explicitly "unavailable" rather than just empty. */}
-      <div className="v2-jobs-section">
-        <div className="v2-jobs-section-head">
-          <IconPhone width={15} height={15} />
-          <span>Calls to make</span>
-          <span className="v2-badge v2-badge-neutral">{calls.count}</span>
+        {/* 4. Calls to make -- kept as a real future category, compact disabled state, no
+            backend/model terminology even when explicitly unavailable rather than just empty. */}
+        <div className="v2-job-module">
+          <div className="v2-job-icon-chip info">
+            <IconPhone width={19} height={19} />
+          </div>
+          <div className="v2-job-body">
+            <ModuleHead title="Calls to make" count={calls.count} />
+            <EmptyLine title={calls.available ? 'No calls need your attention right now.' : "Not available yet -- this isn't tracking real call/reply activity yet."} />
+          </div>
         </div>
-        <div className="v2-jobs-card">
-          <EmptyState
-            title={calls.available ? 'No calls need your attention right now' : 'Not available yet'}
-            subtitle={calls.available ? null : "This isn't tracking real call/reply activity yet."}
-          />
-        </div>
+
       </div>
     </div>
   )
