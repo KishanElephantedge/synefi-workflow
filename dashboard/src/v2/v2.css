@@ -1263,9 +1263,17 @@
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
   padding: var(--v2-space-4);
+  transition: border-color 0.15s ease;
 }
 
+/* A real attention count gets a subtle warm border, not a loud red block -- restrained accent,
+   not decoration (visual polish pass, 2026-08-18). */
+.v2-kpi-tile.tone-attention { border-color: color-mix(in srgb, var(--v2-warning) 35%, var(--v2-border)); }
+
 .v2-kpi-tile-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1273,6 +1281,8 @@
   color: var(--v2-text-faint);
   margin-bottom: 6px;
 }
+
+.v2-kpi-tile-label svg { flex-shrink: 0; opacity: 0.75; }
 
 .v2-kpi-tile-value {
   font-size: 1.55rem;
@@ -1310,7 +1320,7 @@
 .v2-mini-card-head {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-2);
+  gap: 7px;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1319,13 +1329,24 @@
   margin-bottom: var(--v2-space-3);
 }
 
+.v2-mini-card-head .v2-badge { margin-left: auto; }
+
+.v2-mini-card-icon {
+  display: flex;
+  color: var(--v2-text-muted);
+  flex-shrink: 0;
+}
+
 .v2-mini-card-empty {
   color: var(--v2-text-muted);
   font-size: 0.86rem;
   flex: 1;
   display: flex;
   align-items: center;
+  gap: var(--v2-space-2);
 }
+
+.v2-mini-card-empty.healthy svg { color: var(--v2-success); flex-shrink: 0; }
 
 .v2-mini-list {
   display: flex;
@@ -1410,7 +1431,57 @@
   font-size: 0.88rem;
   line-height: 1.6;
   max-width: 70ch;
+  margin-top: var(--v2-space-3);
 }
+
+.v2-insight-stat {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-insight-stat-sub {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--v2-text-muted);
+}
+
+.v2-funnel {
+  margin-top: var(--v2-space-4);
+  max-width: 480px;
+}
+
+.v2-funnel-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--v2-surface-elevated);
+  overflow: hidden;
+}
+
+.v2-funnel-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--v2-accent);
+}
+
+.v2-funnel-labels {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-funnel-labels span:first-child,
+.v2-funnel-labels span:last-child {
+  color: var(--v2-text);
+  font-weight: 600;
+}
+
+.v2-funnel-arrow { color: var(--v2-text-faint); font-weight: 400; }
 
 .v2-system-badge {
   font-size: 0.66rem;

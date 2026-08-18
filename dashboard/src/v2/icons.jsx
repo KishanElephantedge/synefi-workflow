@@ -283,3 +283,27 @@ export function IconRefreshCw(props) {
     </svg>
   )
 }
+
+// Not in the reference deck -- own choice for the Briefing "Data gaps" card header (visual
+// polish pass, 2026-08-18), the standard stacked-cylinder database glyph, unconfirmed against
+// any reference source.
+export function IconDatabase(props) {
+  return (
+    <svg {...base} {...props}>
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
+      <path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+    </svg>
+  )
+}
+
+// Not in the reference deck -- own choice for Briefing empty/healthy states (visual polish pass,
+// 2026-08-18), a circled checkmark, unconfirmed against any reference source.
+export function IconCheckCircle(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
+}

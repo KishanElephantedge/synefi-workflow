@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getBriefingGovernance, getRevenuePace, refreshBriefingGovernance, formatApiError } from '../api.js'
-import { IconAlertTriangle, IconRefreshCw } from '../icons.jsx'
-import { KpiTile, MiniCard, MiniItem, SystemBadge, formatUsd, timeAgo } from '../briefingHelpers.jsx'
+import { IconAlertTriangle, IconRefreshCw, IconTrendingUp, IconBarChart, IconUsers, IconSettings, IconDatabase, IconZap } from '../icons.jsx'
+import { KpiTile, MiniCard, MiniItem, SYSTEM_LABEL, formatUsd, timeAgo, shortDate } from '../briefingHelpers.jsx'
 
 const PREVIEW_LIMIT = 3
 
@@ -63,8 +63,16 @@ export default function Briefing() {
     ? `${formatUsd(revenue.actual_usd)} / ${formatUsd(revenue.target_usd)}`
     : revenueLoaded ? formatUsd(revenue.actual_usd) : '—'
   const revenueContext = revenueLoaded
-    ? (revenue.target_configured ? `${revenue.pace_percent}% of target this month` : 'No target set -- see Revenue Pace')
+    ? (revenue.target_configured ? `${revenue.pace_percent}% of target this month` : 'No target set')
     : (revenue === false ? 'Unavailable' : 'Loading…')
+
+  // Real stage counts for the bottleneck funnel bar below -- pulled from the SAME
+  // pipeline.stages list the bottleneck itself was detected over (governance.py's
+  // _detect_bottleneck), never a second computation. Falls back to no visual if either stage
+  // is missing from the readout, rather than guessing.
+  const stages = gov.pipeline?.stages || []
+  const fromStage = bottleneck && stages.find(s => s.stage === bottleneck.from)
+  const toStage = bottleneck && stages.find(s => s.stage === bottleneck.to)
 
   return (
     <div>
@@ -83,14 +91,21 @@ export default function Briefing() {
       </div>
 
       <div className="v2-kpi-strip">
-        <KpiTile label="Revenue" value={revenueValue} context={revenueContext} />
-        <KpiTile label="Pipeline" value={execution.evaluated ?? 0} context="opportunities evaluated" />
-        <KpiTile label="Companies" value={gov.overview?.total_companies ?? 0} context="in your account database" />
-        <KpiTile label="Needs attention" value={humanAttention.length} context="items requiring action" tone={humanAttention.length > 0 ? 'attention' : undefined} />
+        <KpiTile icon={<IconTrendingUp width={14} height={14} />} label="Revenue" value={revenueValue} context={revenueContext} />
+        <KpiTile icon={<IconBarChart width={14} height={14} />} label="Pipeline" value={execution.evaluated ?? 0} context="opportunities evaluated" />
+        <KpiTile icon={<IconUsers width={14} height={14} />} label="Companies" value={gov.overview?.total_companies ?? 0} context="in your account database" />
+        <KpiTile
+          icon={<IconAlertTriangle width={14} height={14} />}
+          label="Needs attention"
+          value={humanAttention.length}
+          context={humanAttention.length > 0 ? 'items requiring action' : 'nothing needs action'}
+          tone={humanAttention.length > 0 ? 'attention' : undefined}
+        />
       </div>
 
       <div className="v2-card-grid-2">
         <MiniCard
+          icon={<IconAlertTriangle width={15} height={15} />}
           title="Needs your attention"
           items={humanAttention}
           limit={PREVIEW_LIMIT}
@@ -101,14 +116,16 @@ export default function Briefing() {
           )}
         />
         <MiniCard
+          icon={<IconSettings width={15} height={15} />}
           title="Configuration gaps"
           items={configGaps}
           limit={PREVIEW_LIMIT}
-          emptyText="No configuration gaps -- every offering/motion this evaluator checks has at least one applicable_icps/applicable_offerings rule set."
+          emptyText="Every offering/motion this evaluator checks is fully configured."
           viewAllTo="/v2/briefing/configuration"
           renderItem={(gap, i) => <MiniItem key={i} title={gap.title} subtitle={gap.short_description} />}
         />
         <MiniCard
+          icon={<IconDatabase width={15} height={15} />}
           title="Data gaps"
           items={dataGaps}
           limit={PREVIEW_LIMIT}
@@ -117,16 +134,19 @@ export default function Briefing() {
           renderItem={(gap, i) => <MiniItem key={i} title={gap.title} subtitle={gap.short_description} />}
         />
         <MiniCard
+          icon={<IconZap width={15} height={15} />}
           title="System health"
           items={opsIssues}
           limit={PREVIEW_LIMIT}
-          emptyText="No recorded run failures -- V1 discovery and GTM-OS are both operating normally."
+          emptyText="V1 discovery and GTM-OS are both operating normally."
           viewAllTo="/v2/briefing/operational"
           renderItem={(issue, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--v2-space-2)', width: '100%' }}>
-              <MiniItem severity="danger" title={issue.title} subtitle={issue.started_at ? new Date(issue.started_at).toLocaleDateString() : null} />
-              <div style={{ marginLeft: 'auto' }}><SystemBadge system={issue.system} /></div>
-            </div>
+            <MiniItem
+              key={i}
+              severity="danger"
+              title={issue.title}
+              subtitle={[SYSTEM_LABEL[issue.system] || issue.system, shortDate(issue.started_at)].filter(Boolean).join(' · ')}
+            />
           )}
         />
       </div>
@@ -135,10 +155,34 @@ export default function Briefing() {
         <div className="v2-insight-card">
           <div className="v2-insight-card-eyebrow">Largest observed bottleneck</div>
           <div className="v2-insight-card-title">{bottleneck.from_label} → {bottleneck.to_label}</div>
-          <p className="v2-insight-card-body">
-            {bottleneck.drop_count} account{bottleneck.drop_count === 1 ? '' : 's'} currently drop off between these stages.
-            {' '}{bottleneck.reason_short || bottleneck.reason}
-          </p>
+          <div className="v2-insight-stat">
+            {bottleneck.drop_count} account{bottleneck.drop_count === 1 ? '' : 's'}
+            <span className="v2-insight-stat-sub">
+              {fromStage?.count ? ` of ${fromStage.count.toLocaleString()} companies don't progress beyond this stage` : ' don’t progress beyond this stage'}
+            </span>
+          </div>
+
+          {fromStage && toStage && fromStage.count > 0 && (
+            <div className="v2-funnel">
+              <div className="v2-funnel-bar">
+                <div className="v2-funnel-bar-fill" style={{ width: `${Math.max((toStage.count / fromStage.count) * 100, 2)}%` }} />
+              </div>
+              <div className="v2-funnel-labels">
+                <span>{fromStage.count.toLocaleString()} {fromStage.label || fromStage.stage}</span>
+                <span className="v2-funnel-arrow">→</span>
+                <span>{toStage.count.toLocaleString()} {toStage.label || toStage.stage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* bottleneck.reason falls back to a generic "no specific gap traced..." internal
+              sentence (governance.py's _detect_bottleneck) when no structured reason exists --
+              that fallback conveys nothing actionable, so it's better omitted than shown as if
+              it were a real explanation (no invented causal reasoning, per this page's own
+              standing rule). Only ever renders a REAL, structured reason. */}
+          {bottleneck.reason_short && (
+            <p className="v2-insight-card-body">{bottleneck.reason_short}</p>
+          )}
         </div>
       )}
     </div>

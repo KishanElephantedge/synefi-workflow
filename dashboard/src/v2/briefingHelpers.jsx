@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { IconAlertTriangle, IconInfo } from './icons.jsx'
+import { IconAlertTriangle, IconInfo, IconCheckCircle } from './icons.jsx'
 
 // category (configuration_gaps/data_gaps/human_attention's own real field, Batch 14) -> where in
 // V2 that category's config actually lives. Purely presentational routing over an already-real
@@ -82,20 +82,27 @@ export function PreviewSection({ title, items, limit, renderItem, emptyText, vie
   )
 }
 
-// ---------- V2 Briefing redesign (2026-08-18 UI audit) ----------
-// A contained, fixed-height category card: header (title + real count), up to `limit` compact
+// ---------- V2 Briefing redesign (2026-08-18 UI audit, visual polish pass same day) ----------
+// A contained, fixed-height category card: icon + title + real count, up to `limit` compact
 // title+subtitle items, and a real "View all N" link to the same full-list pages PreviewSection
 // already routes to. Deliberately never renders a raw backend sentence -- callers pass structured
 // `title`/`subtitle` per item (from governance.py's own title/short_description fields where they
-// exist), not free-text description strings.
-export function MiniCard({ title, items, limit, emptyText, viewAllTo, renderItem }) {
+// exist), not free-text description strings. Empty state gets a genuine green check + "healthy"
+// framing -- per the lead's own instruction, a real zero-issue count is a positive signal, not
+// just an absence of text, and should read as one at a glance.
+export function MiniCard({ icon, title, items, limit, emptyText, viewAllTo, renderItem }) {
   return (
     <div className="v2-mini-card">
       <div className="v2-mini-card-head">
-        {title} <span className="v2-badge v2-badge-neutral">{items.length}</span>
+        {icon && <span className="v2-mini-card-icon">{icon}</span>}
+        <span>{title}</span>
+        <span className="v2-badge v2-badge-neutral">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <div className="v2-mini-card-empty">{emptyText}</div>
+        <div className="v2-mini-card-empty healthy">
+          <IconCheckCircle width={16} height={16} />
+          <span>{emptyText}</span>
+        </div>
       ) : (
         <div className="v2-mini-list">{items.slice(0, limit).map(renderItem)}</div>
       )}
@@ -120,10 +127,10 @@ export function MiniItem({ severity = 'warning', title, subtitle }) {
   )
 }
 
-export function KpiTile({ label, value, context, tone }) {
+export function KpiTile({ icon, label, value, context, tone }) {
   return (
-    <div className="v2-kpi-tile">
-      <div className="v2-kpi-tile-label">{label}</div>
+    <div className={`v2-kpi-tile${tone ? ` tone-${tone}` : ''}`}>
+      <div className="v2-kpi-tile-label">{icon}{label}</div>
       <div className={`v2-kpi-tile-value${tone ? ` ${tone}` : ''}`}>{value}</div>
       {context && <div className="v2-kpi-tile-context">{context}</div>}
     </div>
@@ -137,12 +144,22 @@ export function formatUsd(value) {
 
 // Real system label (governance.py's own "v1_discovery" | "gtm_os" tag on each operational
 // issue, added so legacy V1 discovery-pipeline failures are never presented as if they were the
-// new GTM-OS system's own health) -> a short badge caption.
-const SYSTEM_LABEL = { v1_discovery: 'V1 discovery', gtm_os: 'GTM-OS' }
+// new GTM-OS system's own health) -> a short caption, combined with a real date into one
+// subtitle line (e.g. "V1 Discovery · Aug 18") rather than a separate floating badge -- reads
+// faster as one fact ("this is old, from the other system") instead of two disconnected labels.
+export const SYSTEM_LABEL = { v1_discovery: 'V1 Discovery', gtm_os: 'GTM-OS' }
 
 export function SystemBadge({ system }) {
   if (!system) return null
   return <span className={`v2-system-badge ${system}`}>{SYSTEM_LABEL[system] || system}</span>
+}
+
+// "Aug 18" -- short, real date for the System Health subtitle line. No relative "N days ago"
+// here (unlike timeAgo() for the snapshot itself) since a run's own date is a fixed historical
+// fact worth reading exactly, not a freshness signal that decays.
+export function shortDate(isoString) {
+  if (!isoString) return null
+  return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 // Plain "N minutes/hours ago" for a snapshot's computed_at -- so the Briefing page honestly
