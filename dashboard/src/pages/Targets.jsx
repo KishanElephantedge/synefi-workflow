@@ -35,6 +35,17 @@ const ACTION_PILL_CLASS = { engage: 'on', monitor: 'warn', ignore: 'off' }
 
 const PROFILES_PAGE_SIZE = 10
 
+// "1d 2h 30m" -- compact, real, from the schedule's own days/hours/minutes fields (never
+// re-derived from interval_minutes, which is the backend's OWN pre-computed total, not a
+// second source of truth to keep in sync by hand).
+function formatSchedule(days, hours, minutes) {
+  const parts = []
+  if (days) parts.push(`${days}d`)
+  if (hours) parts.push(`${hours}h`)
+  if (minutes || parts.length === 0) parts.push(`${minutes}m`)
+  return parts.join(' ')
+}
+
 // Elephant Edge only. Watches a fixed list of LinkedIn profiles (competitors, partners,
 // ecosystem people) for new posts matching a GTM keyword taxonomy -- see
 // app/phases/linkedin_monitor.py. Three views: the signal feed (what actually matched, most
@@ -69,6 +80,30 @@ export default function Targets() {
   const [newProfile, setNewProfile] = useState({ name: '', company: '', linkedin_url: '' })
   const [addingProfile, setAddingProfile] = useState(false)
   const [addProfileError, setAddProfileError] = useState(null)
+
+  const [schedule, setSchedule] = useState(null)
+  const [scheduleForm, setScheduleForm] = useState({ days: 0, hours: 0, minutes: 45, enabled: true })
+  const [scheduleLoading, setScheduleLoading] = useState(true)
+  const [scheduleError, setScheduleError] = useState(null)
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+
+  const loadSchedule = () => {
+    setScheduleLoading(true)
+    client.get('/linkedin-monitor/schedule')
+      .then(res => { setSchedule(res.data); setScheduleForm({ days: res.data.days, hours: res.data.hours, minutes: res.data.minutes, enabled: res.data.enabled }) })
+      .catch(err => setScheduleError(err.response?.data?.detail || err.message))
+      .finally(() => setScheduleLoading(false))
+  }
+
+  const saveSchedule = (overrides = {}) => {
+    const next = { ...scheduleForm, ...overrides }
+    setScheduleSaving(true)
+    setScheduleError(null)
+    client.put('/linkedin-monitor/schedule', next)
+      .then(res => { setSchedule(res.data); setScheduleForm({ days: res.data.days, hours: res.data.hours, minutes: res.data.minutes, enabled: res.data.enabled }) })
+      .catch(err => setScheduleError(err.response?.data?.detail || err.message))
+      .finally(() => setScheduleSaving(false))
+  }
 
   const loadSignals = () => {
     setSignalsLoading(true)
@@ -106,6 +141,7 @@ export default function Targets() {
     loadProfiles()
     loadKeywords()
     loadPartnerMatches()
+    loadSchedule()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantSlug])
 
@@ -203,7 +239,9 @@ export default function Targets() {
         </div>
         <div className="stat-card">
           <div className="stat-label">Poll Interval</div>
-          <div className="stat-value" style={{ fontSize: '1.15rem' }}>Every 45 min</div>
+          <div className="stat-value" style={{ fontSize: '1.15rem' }}>
+            {scheduleLoading ? '...' : schedule ? (schedule.enabled ? `Every ${formatSchedule(schedule.days, schedule.hours, schedule.minutes)}` : 'Paused') : 'Every 45 min'}
+          </div>
         </div>
       </div>
 
@@ -237,7 +275,9 @@ export default function Targets() {
           </div>
           {signalsError && <p className="error">{signalsError}</p>}
           {!signalsError && signals.length === 0 && (
-            <p className="empty-state">{signalsLoading ? 'Loading...' : 'No signals detected yet -- the monitor checks every 45 minutes.'}</p>
+            <p className="empty-state">
+              {signalsLoading ? 'Loading...' : `No signals detected yet -- the monitor checks ${schedule ? (schedule.enabled ? `every ${formatSchedule(schedule.days, schedule.hours, schedule.minutes)}` : 'is currently paused') : 'periodically'}.`}
+            </p>
           )}
           <div className="activity-timeline">
             {signals.filter(s => {
@@ -434,6 +474,67 @@ export default function Targets() {
 
       {view === 'settings' && (
         <div style={{ display: 'grid', gap: '1.25rem' }}>
+          <div className="overview-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="overview-card-title">Monitor Schedule</h3>
+              {scheduleSaving && <span className="hint">Saving...</span>}
+            </div>
+            {scheduleError && <p className="error">{scheduleError}</p>}
+            {scheduleLoading && <p className="hint">Loading...</p>}
+            {schedule && (
+              <>
+                <p className="hint" style={{ marginTop: 0, marginBottom: '0.9rem' }}>
+                  How often the monitor checks watched profiles for new posts. Each check only pulls posts since the
+                  last check, so a shorter interval finds new posts sooner -- it doesn't re-fetch older ones.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.9rem' }}>
+                  <div>
+                    <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Days</label>
+                    <input
+                      type="number" min="0" value={scheduleForm.days}
+                      onChange={e => setScheduleForm({ ...scheduleForm, days: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                      style={{ width: 80, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Hours</label>
+                    <input
+                      type="number" min="0" max="23" value={scheduleForm.hours}
+                      onChange={e => setScheduleForm({ ...scheduleForm, hours: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                      style={{ width: 80, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Minutes</label>
+                    <input
+                      type="number" min="0" max="59" value={scheduleForm.minutes}
+                      onChange={e => setScheduleForm({ ...scheduleForm, minutes: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                      style={{ width: 80, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                    />
+                  </div>
+                  <button type="button" onClick={() => saveSchedule()} disabled={scheduleSaving}>
+                    {scheduleSaving ? 'Saving...' : 'Save interval'}
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span
+                    className={`status-pill status-pill-sm ${scheduleForm.enabled ? 'on' : 'off'}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => { setScheduleForm({ ...scheduleForm, enabled: !scheduleForm.enabled }); saveSchedule({ enabled: !scheduleForm.enabled }) }}
+                    title="Click to toggle"
+                  >
+                    {scheduleForm.enabled ? 'Running' : 'Paused'}
+                  </span>
+                  <span className="hint">
+                    {scheduleForm.enabled
+                      ? 'Click to pause -- watched profiles stop being checked until resumed.'
+                      : 'Click to resume checking watched profiles.'}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="overview-card">
             <h3 className="overview-card-title">Add a Profile to Watch</h3>
             {addProfileError && <p className="error">{addProfileError}</p>}
