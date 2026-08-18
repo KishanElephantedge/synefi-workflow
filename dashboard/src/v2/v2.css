@@ -1501,6 +1501,122 @@
   to { transform: rotate(360deg); }
 }
 
+/* ---------- Jobs to Be Done (2026-08-19 redesign) ---------- */
+/* Vertical priority-flow layout, deliberately NOT Briefing's 2-column grid -- this is an
+   action queue, read top to bottom, not an overview scanned in any order. */
+
+.v2-jobs-section {
+  margin-bottom: var(--v2-space-5);
+}
+
+.v2-jobs-section-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+  margin-bottom: 6px;
+}
+
+.v2-jobs-section-head svg { flex-shrink: 0; opacity: 0.8; }
+
+.v2-jobs-provenance { margin-bottom: var(--v2-space-2); }
+
+.v2-jobs-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: 0 var(--v2-space-5);
+}
+
+/* The one section that should read as visually strongest even at zero items -- same accent-
+   border language as Briefing's insight card, so "this is the important one" is consistent
+   across the whole product, not a one-off treatment. */
+.v2-jobs-card.primary {
+  border-left: 3px solid var(--v2-accent);
+}
+
+.v2-jobs-item, .v2-jobs-subrow {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  padding: var(--v2-space-3) 0;
+  border-bottom: 1px solid var(--v2-border);
+  text-decoration: none;
+  color: inherit;
+}
+
+.v2-jobs-item:last-child, .v2-jobs-subrow:last-child { border-bottom: none; }
+
+.v2-jobs-item-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.v2-jobs-item-dot.severity-warning { background: var(--v2-warning); }
+
+.v2-jobs-item-body { min-width: 0; flex: 1; }
+
+.v2-jobs-item-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-jobs-item-sub {
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  margin-top: 2px;
+}
+
+.v2-jobs-item-arrow {
+  color: var(--v2-text-faint);
+  flex-shrink: 0;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.v2-jobs-item:hover .v2-jobs-item-arrow,
+.v2-jobs-subrow:hover .v2-jobs-item-arrow {
+  transform: translateX(2px);
+  color: var(--v2-accent);
+}
+
+.v2-jobs-subrow-count {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  min-width: 2.4rem;
+  text-align: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-jobs-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  padding: var(--v2-space-4) 0;
+}
+
+.v2-jobs-empty svg { color: var(--v2-success); flex-shrink: 0; }
+
+.v2-jobs-empty-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-jobs-empty-subtitle {
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  margin-top: 2px;
+}
+
 /* ---------- Opportunity Detail / Deal Strategy / Message Review ---------- */
 
 .v2-fact-group {
