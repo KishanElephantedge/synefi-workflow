@@ -43,6 +43,13 @@ export function getPipeline({ page = 1, pageSize = 25 } = {}) {
   return client.get('/gtm-os/pipeline', { params: { page, page_size: pageSize } }).then(res => res.data)
 }
 
+// Real, persisted hourly-sweep run history -- used by Pipeline's empty state to show honest
+// system status (last run time/status, funnel counts) instead of a bare "nothing here" message.
+// Never used to invent a next-run ETA or a qualification reason the API doesn't provide.
+export function getIntelligenceRuns(limit = 1) {
+  return client.get('/gtm-os/intelligence-runs', { params: { limit } }).then(res => res.data)
+}
+
 // Phase 3 -- backed by GET /gtm-os/accounts/{company_id}/messages, a read-only wrapper over
 // list_messages_for_company() (Batch 7's MessageDraft). Never generates or approves anything.
 export function getAccountMessages(companyId) {
