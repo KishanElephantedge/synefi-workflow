@@ -242,7 +242,12 @@ export default function Targets() {
 
   const updateRecoStatus = (id, status) => {
     client.patch(`/linkedin-monitor/recommendations/${id}`, { status })
-      .then(() => loadRecommendations())
+      .then(() => {
+        loadRecommendations()
+        // Approving auto-drafts the message server-side now -- refresh the message panel too
+        // so it shows up without a separate manual step, if we're looking at that partner.
+        if (status === 'approved' && selectedRecoProfileId) loadRecoMessages(selectedRecoProfileId)
+      })
       .catch(() => {})
   }
 
@@ -636,14 +641,7 @@ export default function Targets() {
 
       {view === 'recommendations' && (
         <div className="overview-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
-            <div>
-              <h3 className="overview-card-title" style={{ marginBottom: '0.3rem' }}>Recommended Companies</h3>
-              <p className="hint" style={{ margin: 0 }}>
-                Every watched partner. Open one to run matching (up to {matchCap} companies) just for them --
-                identify, approve, draft a message, approve, then mark sent. Bulk matching runs automatically on the daily schedule (Settings tab), not from a click here.
-              </p>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.9rem' }}>
             <div className="settings-popover-wrap">
               <button type="button" className="icon-button" title="Settings" onClick={() => setCapPopoverOpen(v => !v)} style={{ color: 'var(--text-muted)' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
