@@ -3854,3 +3854,119 @@ pre {
     display: none;
   }
 }
+
+/* ---------- Partner cards (Targets > Recommended Companies) ---------- */
+
+.partner-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  cursor: pointer;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.partner-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  border-color: var(--text-faint);
+}
+
+.partner-card.stage-on { border-left-color: var(--success); }
+.partner-card.stage-warn { border-left-color: var(--warning); }
+.partner-card.stage-off { border-left-color: var(--border); }
+
+.partner-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.partner-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.partner-card-name {
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+/* ---------- Settings popover (small gear-triggered panel, e.g. cap/Slack identity) ---------- */
+
+.settings-popover-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.settings-popover-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 20;
+  width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem;
+}
+
+.settings-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+/* ---------- Partner detail header (Targets > Recommended Companies detail view) ---------- */
+
+.partner-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.partner-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.partner-avatar-lg {
+  width: 52px;
+  height: 52px;
+  font-size: 1.15rem;
+}
+
+.linkedin-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0a66c2;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.linkedin-icon-link:hover {
+  background: #004182;
+}

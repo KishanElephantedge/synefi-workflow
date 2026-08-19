@@ -46,6 +46,13 @@ function formatSchedule(days, hours, minutes) {
   return parts.join(' ')
 }
 
+// "Jane Doe" -> "JD", "cher" -> "C", no name -> "?" -- avatar-circle initials, no photo needed.
+function initials(name) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
+}
+
 // Elephant Edge only. Watches a fixed list of LinkedIn profiles (competitors, partners,
 // ecosystem people) for new posts matching a GTM keyword taxonomy -- see
 // app/phases/linkedin_monitor.py. Three views: the signal feed (what actually matched, most
@@ -82,6 +89,9 @@ export default function Targets() {
   const [recoMessagesLoading, setRecoMessagesLoading] = useState(false)
   const [sweepRunning, setSweepRunning] = useState(false)
   const [sweepResult, setSweepResult] = useState(null)
+  const [recoSearch, setRecoSearch] = useState('')
+  const [capPopoverOpen, setCapPopoverOpen] = useState(false)
+  const [slackPopoverOpen, setSlackPopoverOpen] = useState(false)
   const [generatingMessage, setGeneratingMessage] = useState(false)
   const [matchCap, setMatchCap] = useState(3)
   const [matchCapSaving, setMatchCapSaving] = useState(false)
@@ -210,10 +220,13 @@ export default function Targets() {
     loadRecoMessages(profileId)
   }
 
-  const runMatchingSweep = () => {
+  // Always scoped to ONE partner -- clicking "Run matching" for a partner must never fan out
+  // and spend LLM calls matching everyone else too. Bulk matching is handled entirely by the
+  // daily schedule (Settings tab), not a manual click target.
+  const runMatchingForProfile = (profileId) => {
     setSweepRunning(true)
     setSweepResult(null)
-    client.post('/linkedin-monitor/match-companies')
+    client.post('/linkedin-monitor/match-companies', null, { params: { profile_id: profileId } })
       .then(res => { setSweepResult(res.data); loadRecommendations() })
       .catch(err => setRecommendationsError(err.response?.data?.detail || err.message))
       .finally(() => setSweepRunning(false))
@@ -365,6 +378,14 @@ export default function Targets() {
   }
   const selectedProfile = selectedRecoProfileId ? profilesById[selectedRecoProfileId] : null
   const selectedRecos = selectedRecoProfileId ? (recosByProfile[selectedRecoProfileId] || []) : []
+  // The full roster, like GTM University's own marketplace grid -- not just partners who
+  // already happen to have recommendations. Active only (paused profiles aren't real targets).
+  const recoCards = profiles.filter(p => {
+    if (!p.active) return false
+    const q = recoSearch.trim().toLowerCase()
+    if (!q) return true
+    return (p.name || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q)
+  })
 
   return (
     <div className="page page-wide">
@@ -619,28 +640,31 @@ export default function Targets() {
             <div>
               <h3 className="overview-card-title" style={{ marginBottom: '0.3rem' }}>Recommended Companies</h3>
               <p className="hint" style={{ margin: 0 }}>
-                For each classified partner, up to {matchCap} Elephant Edge companies matched to their known specialty --
-                identify, approve, draft a message, approve, then mark sent. No auto-send yet.
+                Every watched partner. Open one to run matching (up to {matchCap} companies) just for them --
+                identify, approve, draft a message, approve, then mark sent. Bulk matching runs automatically on the daily schedule (Settings tab), not from a click here.
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-                <label className="hint">Cap per partner</label>
-                <input
-                  type="number" min="1" value={matchCap} disabled={matchCapSaving}
-                  onChange={e => saveMatchCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  style={{ width: 60, padding: '0.35rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
-                />
-              </div>
-              <button type="button" className="secondary btn-small" disabled={sweepRunning} onClick={runMatchingSweep}>
-                {sweepRunning ? 'Matching...' : 'Run matching now'}
+            <div className="settings-popover-wrap">
+              <button type="button" className="icon-button" title="Settings" onClick={() => setCapPopoverOpen(v => !v)} style={{ color: 'var(--text-muted)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
               </button>
-              {sweepResult && (
-                <p className="hint" style={{ margin: '0.3rem 0 0' }}>
-                  {sweepResult.status === 'paused'
-                    ? 'Matching schedule is paused'
-                    : `${sweepResult.partners_evaluated} partners evaluated, ${sweepResult.recommendations_created} new recommendations`}
-                </p>
+              {capPopoverOpen && (
+                <>
+                  <div className="settings-popover-backdrop" onClick={() => setCapPopoverOpen(false)} />
+                  <div className="settings-popover-panel">
+                    <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Matching settings</strong>
+                    <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Cap per partner</label>
+                    <input
+                      type="number" min="1" value={matchCap} disabled={matchCapSaving}
+                      onChange={e => saveMatchCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      style={{ width: 80, padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                    />
+                    <p className="hint" style={{ marginTop: '0.5rem', marginBottom: 0 }}>Max companies matched per partner per run.</p>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -649,30 +673,38 @@ export default function Targets() {
 
           {!selectedRecoProfileId ? (
             <>
-              {recommendationsLoading ? (
+              <input
+                type="text"
+                placeholder="Search name or company..."
+                value={recoSearch}
+                onChange={e => setRecoSearch(e.target.value)}
+                style={{ width: '100%', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '0.9rem' }}
+              />
+              {recommendationsLoading || profilesLoading ? (
                 <p className="empty-state">Loading...</p>
-              ) : Object.keys(recosByProfile).length === 0 ? (
-                <p className="empty-state">
-                  No recommendations yet. Click "Run matching now" above, or wait for the daily schedule (Settings tab).
-                </p>
+              ) : recoCards.length === 0 ? (
+                <p className="empty-state">No partners match your search.</p>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.85rem' }}>
-                  {Object.entries(recosByProfile).map(([profileId, recs]) => {
-                    const p = profilesById[profileId]
+                  {recoCards.map(p => {
+                    const recs = recosByProfile[p.id] || []
                     const stage = recoStage(recs, [])
                     return (
-                      <div
-                        key={profileId}
-                        onClick={() => openRecoProfile(Number(profileId))}
-                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1rem', cursor: 'pointer', background: 'var(--surface)' }}
-                      >
-                        <strong style={{ display: 'block', marginBottom: '0.2rem' }}>{p?.name || `Profile #${profileId}`}</strong>
-                        <span className="hint" style={{ display: 'block', marginBottom: '0.5rem' }}>{p?.company || ''}</span>
-                        <p style={{ fontSize: '0.82rem', margin: '0 0 0.6rem', color: 'var(--text)' }}>
-                          {p?.sells_to ? p.sells_to.slice(0, 90) + (p.sells_to.length > 90 ? '...' : '') : 'No specialty on file'}
+                      <div key={p.id} className={`partner-card stage-${stage.cls}`} onClick={() => openRecoProfile(p.id)}>
+                        <div className="partner-card-header">
+                          <div className="partner-avatar">{initials(p.name)}</div>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="partner-card-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || `Profile #${p.id}`}</div>
+                            <span className="hint" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.company || ''}</span>
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '0.82rem', margin: 0, color: 'var(--text-muted)' }}>
+                          {p.sells_to ? p.sells_to.slice(0, 90) + (p.sells_to.length > 90 ? '...' : '') : 'No specialty on file'}
                         </p>
-                        <span className={`status-pill status-pill-sm ${stage.cls}`}>{stage.label}</span>
-                        <span className="hint" style={{ display: 'block', marginTop: '0.4rem' }}>{recs.length} companies matched</span>
+                        <div>
+                          <span className={`status-pill status-pill-sm ${stage.cls}`}>{stage.label}</span>
+                          {recs.length > 0 && <span className="hint" style={{ marginLeft: '0.5rem' }}>{recs.length} matched</span>}
+                        </div>
                       </div>
                     )
                   })}
@@ -684,20 +716,44 @@ export default function Targets() {
               <button type="button" className="link-button" onClick={() => setSelectedRecoProfileId(null)} style={{ marginBottom: '0.9rem' }}>
                 &larr; Back to all partners
               </button>
-              <h4 style={{ marginBottom: '0.1rem' }}>{selectedProfile?.name || 'Unknown partner'}</h4>
-              <p className="hint" style={{ marginTop: 0, marginBottom: '0.4rem' }}>{selectedProfile?.company}</p>
-              <p style={{ fontSize: '0.85rem', marginBottom: '1.1rem' }}>
-                <strong>Specialty:</strong> {selectedProfile?.sells_to || selectedProfile?.industry || 'Unknown'}
-              </p>
 
-              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.9rem 1rem', marginBottom: '1.25rem' }}>
-                <h5 style={{ marginTop: 0, marginBottom: '0.4rem' }}>Slack identity</h5>
-                {selectedProfile?.slack_user_id ? (
-                  <p className="hint" style={{ margin: 0 }}>
-                    Confirmed: <code>{selectedProfile.slack_user_id}</code> -- messages sent via Slack will DM this person directly.
-                  </p>
-                ) : (
-                  <>
+              <div className="partner-detail-header">
+                <div className="partner-detail-identity">
+                  <div className="partner-avatar partner-avatar-lg">{initials(selectedProfile?.name)}</div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h4 style={{ margin: 0 }}>{selectedProfile?.name || 'Unknown partner'}</h4>
+                      {selectedProfile?.linkedin_url && (
+                        <a href={selectedProfile.linkedin_url} target="_blank" rel="noopener noreferrer" className="linkedin-icon-link" title="View LinkedIn profile">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+                        </a>
+                      )}
+                    </div>
+                    <p className="hint" style={{ margin: '0.1rem 0 0.3rem' }}>{selectedProfile?.company}</p>
+                    <p style={{ fontSize: '0.85rem', margin: 0 }}>
+                      <strong>Specialty:</strong> {selectedProfile?.sells_to || selectedProfile?.industry || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="settings-popover-wrap">
+                  <button type="button" className="icon-button" title="Slack identity settings" onClick={() => setSlackPopoverOpen(v => !v)} style={{ color: 'var(--text-muted)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  </button>
+                  {slackPopoverOpen && (
+                    <>
+                      <div className="settings-popover-backdrop" onClick={() => setSlackPopoverOpen(false)} />
+                      <div className="settings-popover-panel">
+                        <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Slack identity</strong>
+                        {selectedProfile?.slack_user_id ? (
+                          <p className="hint" style={{ margin: 0 }}>
+                            Confirmed: <code>{selectedProfile.slack_user_id}</code> -- messages sent via Slack will DM this person directly.
+                          </p>
+                        ) : (
+                          <>
                     <p className="hint" style={{ marginTop: 0, marginBottom: '0.6rem' }}>
                       No Slack id on file yet -- "mark sent" via Slack will only record intent, not actually send, until this is confirmed.
                       Exact email match only (no name guessing, to avoid ever DMing the wrong person).
@@ -723,11 +779,28 @@ export default function Targets() {
                       />
                       <button type="button" className="secondary btn-small" onClick={() => saveSlackIdManually(selectedRecoProfileId)}>Save</button>
                     </div>
-                  </>
-                )}
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
-              <h5 style={{ marginBottom: '0.5rem' }}>Matched companies</h5>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h5 style={{ margin: 0 }}>Matched companies</h5>
+                <button
+                  type="button" className={selectedRecos.length > 0 ? 'secondary btn-small' : 'btn-small'} disabled={sweepRunning}
+                  onClick={() => runMatchingForProfile(selectedRecoProfileId)}
+                >
+                  {sweepRunning ? 'Matching...' : selectedRecos.length > 0 ? 'Re-run matching' : 'Run matching for this partner'}
+                </button>
+              </div>
+              {sweepResult && (
+                <p className="hint" style={{ marginTop: 0, marginBottom: '0.6rem' }}>
+                  {sweepResult.status === 'paused' ? 'Matching schedule is paused (Settings tab).' : `${sweepResult.recommendations_created} new match(es) found.`}
+                </p>
+              )}
               <div className="table-wrap" style={{ marginBottom: '1.25rem' }}>
                 <table>
                   <thead>
@@ -742,17 +815,16 @@ export default function Targets() {
                         <td><span className={`status-pill status-pill-sm ${r.status === 'approved' ? 'on' : r.status === 'rejected' ? 'off' : 'warn'}`}>{r.status}</span></td>
                         <td>
                           {r.status === 'proposed' && (
-                            <>
-                              <button type="button" className="link-button" onClick={() => updateRecoStatus(r.id, 'approved')}>Approve</button>
-                              {' · '}
-                              <button type="button" className="link-button" onClick={() => updateRecoStatus(r.id, 'rejected')}>Reject</button>
-                            </>
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <button type="button" className="btn-approve btn-small" onClick={() => updateRecoStatus(r.id, 'approved')}>Approve</button>
+                              <button type="button" className="btn-reject btn-small" onClick={() => updateRecoStatus(r.id, 'rejected')}>Reject</button>
+                            </div>
                           )}
                         </td>
                       </tr>
                     ))}
                     {selectedRecos.length === 0 && (
-                      <tr><td colSpan={5} className="empty-state">No companies matched for this partner.</td></tr>
+                      <tr><td colSpan={5} className="empty-state">No companies matched yet for this partner -- click "Run matching for this partner" above.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -780,11 +852,10 @@ export default function Targets() {
                     </div>
                     <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.88rem', marginBottom: '0.75rem' }}>{m.generated_message || '(generation failed)'}</p>
                     {m.status === 'draft' && (
-                      <>
-                        <button type="button" className="secondary btn-small" onClick={() => updateRecoMessageStatus(m.id, 'approved', selectedRecoProfileId)}>Approve</button>
-                        {' '}
-                        <button type="button" className="secondary btn-small" onClick={() => updateRecoMessageStatus(m.id, 'rejected', selectedRecoProfileId)}>Reject</button>
-                      </>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button type="button" className="btn-approve btn-small" onClick={() => updateRecoMessageStatus(m.id, 'approved', selectedRecoProfileId)}>Approve</button>
+                        <button type="button" className="btn-reject btn-small" onClick={() => updateRecoMessageStatus(m.id, 'rejected', selectedRecoProfileId)}>Reject</button>
+                      </div>
                     )}
                     {m.status === 'approved' && (
                       <div>
@@ -799,7 +870,7 @@ export default function Targets() {
                             <option value="email">Email</option>
                           </select>
                           <button
-                            type="button" className="secondary btn-small"
+                            type="button" className={(sendChannelDraft[m.id] || 'slack') === 'slack' && selectedProfile?.slack_user_id ? 'btn-small' : 'secondary btn-small'}
                             disabled={sendResultByMessage[m.id]?.loading}
                             onClick={() => markRecoMessageSent(m.id, selectedRecoProfileId)}
                           >
