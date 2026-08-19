@@ -153,15 +153,20 @@ function AppShell() {
   const { user, logout } = useTenant()
   const { tenantSlug } = useParams()
   const breadcrumbLabel = useBreadcrumbLabel()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <div
+        className={`sidebar-scrim${mobileNavOpen ? ' scrim-visible' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+      />
+      <aside className={`sidebar${mobileNavOpen ? ' sidebar-open' : ''}`}>
         <Link to={tenantSlug ? `/${tenantSlug}` : '/'} className="brand">
           Sales Operating System
         </Link>
         <TenantSwitcher />
-        <nav className="nav-links">
+        <nav className="nav-links" onClick={() => setMobileNavOpen(false)}>
           {tenantSlug === 'elephant-edge' ? (
             <>
               <NavLink to={`/${tenantSlug}`} end>
@@ -220,6 +225,14 @@ function AppShell() {
       <main className="content">
         <header className="content-header">
           <div className="breadcrumb-trail">
+            <button
+              type="button"
+              className="menu-toggle"
+              onClick={() => setMobileNavOpen((o) => !o)}
+              aria-label="Toggle navigation"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             <span className="active-trail">{breadcrumbLabel}</span>
           </div>

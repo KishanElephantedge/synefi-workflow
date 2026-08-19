@@ -16,7 +16,9 @@ import Accounts from './pages/Accounts.jsx'
 import AccountDetail from './pages/AccountDetail.jsx'
 import DemandGrid from './pages/DemandGrid.jsx'
 import MarketIntelligence from './pages/MarketIntelligence.jsx'
+import Network from './pages/Network.jsx'
 import IcpOfferings from './pages/IcpOfferings.jsx'
+import Knowledge from './pages/Knowledge.jsx'
 import Settings from './pages/Settings.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
@@ -35,8 +37,7 @@ export default function V2App() {
     <V2ThemeProvider>
       <Routes>
         <Route element={<V2AppShell />}>
-          {/* Approved decision #12 -- Jobs to Be Done is now the default V2 landing page. */}
-          <Route index element={<Navigate to="jobs" replace />} />
+          <Route index element={<Navigate to="briefing" replace />} />
           <Route path="jobs" element={<JobsToBeDone />} />
           <Route path="briefing" element={<Briefing />} />
           <Route path="briefing/:category" element={<BriefingCategoryDetail />} />
@@ -50,9 +51,11 @@ export default function V2App() {
           <Route path="accounts/:companyId" element={<AccountDetail />} />
           <Route path="demand-grid" element={<DemandGrid />} />
           <Route path="market-intelligence" element={<MarketIntelligence />} />
+          <Route path="network" element={<Network />} />
           <Route path="icps-offerings" element={<IcpOfferings />} />
+          <Route path="knowledge" element={<Knowledge />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="jobs" replace />} />
+          <Route path="*" element={<Navigate to="briefing" replace />} />
         </Route>
       </Routes>
     </V2ThemeProvider>
