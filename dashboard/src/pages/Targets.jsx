@@ -51,9 +51,45 @@ function formatSchedule(days, hours, minutes) {
 // app/phases/linkedin_monitor.py. Three views: the signal feed (what actually matched, most
 // recent first), the profile list (who's being watched), and Settings (keyword taxonomy +
 // profile add/remove -- both editable here, not in code, so this list never needs a deploy).
+// Pipeline stage for one partner's recommendations + messages -- drives the card badge and
+// which controls show in the detail view. Message state always wins once one exists (a partner
+// can have new 'proposed' recommendations sitting alongside an already-sent message from an
+// earlier batch -- the badge should reflect the furthest-along thing happening, not regress).
+function recoStage(recs, messages) {
+  const sent = messages.find(m => m.status === 'sent')
+  if (sent) return { label: 'Sent', cls: 'on' }
+  const approvedMsg = messages.find(m => m.status === 'approved')
+  if (approvedMsg) return { label: 'Message approved -- ready to send', cls: 'on' }
+  const draftMsg = messages.find(m => m.status === 'draft')
+  if (draftMsg) return { label: 'Message drafted -- pending approval', cls: 'warn' }
+  const hasApprovedReco = recs.some(r => r.status === 'approved')
+  if (hasApprovedReco) return { label: 'Companies approved -- ready to draft message', cls: 'warn' }
+  const hasProposed = recs.some(r => r.status === 'proposed')
+  if (hasProposed) return { label: 'Pending review', cls: 'warn' }
+  if (recs.length > 0) return { label: 'No approved matches', cls: 'off' }
+  return { label: 'No matches yet', cls: 'off' }
+}
+
 export default function Targets() {
   const { tenantSlug } = useParams()
-  const [view, setView] = useState('signals') // 'signals' | 'profiles' | 'partners' | 'settings'
+  const [view, setView] = useState('signals') // 'signals' | 'profiles' | 'partners' | 'recommendations' | 'settings'
+
+  const [recommendations, setRecommendations] = useState([])
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true)
+  const [recommendationsError, setRecommendationsError] = useState(null)
+  const [selectedRecoProfileId, setSelectedRecoProfileId] = useState(null)
+  const [recoMessages, setRecoMessages] = useState([])
+  const [recoMessagesLoading, setRecoMessagesLoading] = useState(false)
+  const [sweepRunning, setSweepRunning] = useState(false)
+  const [sweepResult, setSweepResult] = useState(null)
+  const [generatingMessage, setGeneratingMessage] = useState(false)
+  const [matchCap, setMatchCap] = useState(3)
+  const [matchCapSaving, setMatchCapSaving] = useState(false)
+  const [sendChannelDraft, setSendChannelDraft] = useState({})
+  const [sendResultByMessage, setSendResultByMessage] = useState({})
+  const [slackLookupEmail, setSlackLookupEmail] = useState('')
+  const [slackLookupStatus, setSlackLookupStatus] = useState(null)
+  const [slackIdDraft, setSlackIdDraft] = useState('')
 
   const [partnerMatches, setPartnerMatches] = useState(null)
   const [partnerMatchesError, setPartnerMatchesError] = useState(null)
@@ -135,6 +171,20 @@ export default function Targets() {
       .catch(err => setPartnerMatchesError(err.response?.data?.detail || err.message))
   }
 
+  const loadRecommendations = () => {
+    setRecommendationsLoading(true)
+    client.get('/linkedin-monitor/recommendations')
+      .then(res => setRecommendations(res.data))
+      .catch(err => setRecommendationsError(err.response?.data?.detail || err.message))
+      .finally(() => setRecommendationsLoading(false))
+  }
+
+  const loadMatchCap = () => {
+    client.get('/linkedin-monitor/match-cap')
+      .then(res => setMatchCap(res.data.cap))
+      .catch(() => {})
+  }
+
   useEffect(() => {
     if (tenantSlug !== 'elephant-edge') return
     loadSignals()
@@ -142,8 +192,90 @@ export default function Targets() {
     loadKeywords()
     loadPartnerMatches()
     loadSchedule()
+    loadRecommendations()
+    loadMatchCap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantSlug])
+
+  const loadRecoMessages = (profileId) => {
+    setRecoMessagesLoading(true)
+    client.get('/linkedin-monitor/messages', { params: { profile_id: profileId } })
+      .then(res => setRecoMessages(res.data))
+      .catch(() => setRecoMessages([]))
+      .finally(() => setRecoMessagesLoading(false))
+  }
+
+  const openRecoProfile = (profileId) => {
+    setSelectedRecoProfileId(profileId)
+    loadRecoMessages(profileId)
+  }
+
+  const runMatchingSweep = () => {
+    setSweepRunning(true)
+    setSweepResult(null)
+    client.post('/linkedin-monitor/match-companies')
+      .then(res => { setSweepResult(res.data); loadRecommendations() })
+      .catch(err => setRecommendationsError(err.response?.data?.detail || err.message))
+      .finally(() => setSweepRunning(false))
+  }
+
+  const saveMatchCap = (cap) => {
+    setMatchCap(cap)
+    setMatchCapSaving(true)
+    client.put('/linkedin-monitor/match-cap', { cap })
+      .catch(() => {})
+      .finally(() => setMatchCapSaving(false))
+  }
+
+  const updateRecoStatus = (id, status) => {
+    client.patch(`/linkedin-monitor/recommendations/${id}`, { status })
+      .then(() => loadRecommendations())
+      .catch(() => {})
+  }
+
+  const generateRecoMessage = (profileId) => {
+    setGeneratingMessage(true)
+    client.post('/linkedin-monitor/recommendations/generate-message', null, { params: { profile_id: profileId } })
+      .then(() => loadRecoMessages(profileId))
+      .catch(() => {})
+      .finally(() => setGeneratingMessage(false))
+  }
+
+  const updateRecoMessageStatus = (messageId, status, profileId) => {
+    client.patch(`/linkedin-monitor/messages/${messageId}`, { status })
+      .then(() => loadRecoMessages(profileId))
+      .catch(() => {})
+  }
+
+  const markRecoMessageSent = (messageId, profileId) => {
+    const channel = sendChannelDraft[messageId] || 'slack'
+    setSendResultByMessage({ ...sendResultByMessage, [messageId]: { loading: true } })
+    client.patch(`/linkedin-monitor/messages/${messageId}/mark-sent`, { send_channel: channel })
+      .then(res => {
+        setSendResultByMessage(prev => ({ ...prev, [messageId]: { loading: false, autoSent: res.data.auto_sent } }))
+        loadRecoMessages(profileId)
+      })
+      .catch(err => {
+        setSendResultByMessage(prev => ({ ...prev, [messageId]: { loading: false, error: err.response?.data?.detail || err.message } }))
+      })
+  }
+
+  const lookupSlackIdByEmail = (profileId) => {
+    if (!slackLookupEmail.trim()) return
+    setSlackLookupStatus({ loading: true })
+    client.post(`/linkedin-monitor/profiles/${profileId}/slack-lookup`, { email: slackLookupEmail.trim() })
+      .then(res => {
+        setSlackLookupStatus(res.data.found ? { found: true } : { found: false })
+        loadProfiles()
+      })
+      .catch(err => setSlackLookupStatus({ error: err.response?.data?.detail || err.message }))
+  }
+
+  const saveSlackIdManually = (profileId) => {
+    client.patch(`/linkedin-monitor/profiles/${profileId}`, null, { params: { slack_user_id: slackIdDraft.trim() } })
+      .then(() => { setSlackIdDraft(''); loadProfiles() })
+      .catch(() => {})
+  }
 
   const runClassification = (onlyUnclassified) => {
     setClassifying(true)
@@ -226,6 +358,14 @@ export default function Targets() {
       .finally(() => setAddingProfile(false))
   }
 
+  const profilesById = Object.fromEntries(profiles.map(p => [p.id, p]))
+  const recosByProfile = {}
+  for (const r of recommendations) {
+    (recosByProfile[r.profile_id] = recosByProfile[r.profile_id] || []).push(r)
+  }
+  const selectedProfile = selectedRecoProfileId ? profilesById[selectedRecoProfileId] : null
+  const selectedRecos = selectedRecoProfileId ? (recosByProfile[selectedRecoProfileId] || []) : []
+
   return (
     <div className="page page-wide">
       <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
@@ -249,6 +389,7 @@ export default function Targets() {
         <button type="button" className={view === 'signals' ? '' : 'secondary'} onClick={() => setView('signals')}>Signal Feed</button>
         <button type="button" className={view === 'profiles' ? '' : 'secondary'} onClick={() => setView('profiles')}>Watched Profiles</button>
         <button type="button" className={view === 'partners' ? '' : 'secondary'} onClick={() => setView('partners')}>Partner Matches</button>
+        <button type="button" className={view === 'recommendations' ? '' : 'secondary'} onClick={() => setView('recommendations')}>Recommended Companies</button>
         <button type="button" className={view === 'settings' ? '' : 'secondary'} onClick={() => setView('settings')}>Settings</button>
       </div>
 
@@ -468,6 +609,225 @@ export default function Targets() {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {view === 'recommendations' && (
+        <div className="overview-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
+            <div>
+              <h3 className="overview-card-title" style={{ marginBottom: '0.3rem' }}>Recommended Companies</h3>
+              <p className="hint" style={{ margin: 0 }}>
+                For each classified partner, up to {matchCap} Elephant Edge companies matched to their known specialty --
+                identify, approve, draft a message, approve, then mark sent. No auto-send yet.
+              </p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                <label className="hint">Cap per partner</label>
+                <input
+                  type="number" min="1" value={matchCap} disabled={matchCapSaving}
+                  onChange={e => saveMatchCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  style={{ width: 60, padding: '0.35rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                />
+              </div>
+              <button type="button" className="secondary btn-small" disabled={sweepRunning} onClick={runMatchingSweep}>
+                {sweepRunning ? 'Matching...' : 'Run matching now'}
+              </button>
+              {sweepResult && (
+                <p className="hint" style={{ margin: '0.3rem 0 0' }}>
+                  {sweepResult.status === 'paused'
+                    ? 'Matching schedule is paused'
+                    : `${sweepResult.partners_evaluated} partners evaluated, ${sweepResult.recommendations_created} new recommendations`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {recommendationsError && <p className="error">{recommendationsError}</p>}
+
+          {!selectedRecoProfileId ? (
+            <>
+              {recommendationsLoading ? (
+                <p className="empty-state">Loading...</p>
+              ) : Object.keys(recosByProfile).length === 0 ? (
+                <p className="empty-state">
+                  No recommendations yet. Click "Run matching now" above, or wait for the daily schedule (Settings tab).
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.85rem' }}>
+                  {Object.entries(recosByProfile).map(([profileId, recs]) => {
+                    const p = profilesById[profileId]
+                    const stage = recoStage(recs, [])
+                    return (
+                      <div
+                        key={profileId}
+                        onClick={() => openRecoProfile(Number(profileId))}
+                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1rem', cursor: 'pointer', background: 'var(--surface)' }}
+                      >
+                        <strong style={{ display: 'block', marginBottom: '0.2rem' }}>{p?.name || `Profile #${profileId}`}</strong>
+                        <span className="hint" style={{ display: 'block', marginBottom: '0.5rem' }}>{p?.company || ''}</span>
+                        <p style={{ fontSize: '0.82rem', margin: '0 0 0.6rem', color: 'var(--text)' }}>
+                          {p?.sells_to ? p.sells_to.slice(0, 90) + (p.sells_to.length > 90 ? '...' : '') : 'No specialty on file'}
+                        </p>
+                        <span className={`status-pill status-pill-sm ${stage.cls}`}>{stage.label}</span>
+                        <span className="hint" style={{ display: 'block', marginTop: '0.4rem' }}>{recs.length} companies matched</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <div>
+              <button type="button" className="link-button" onClick={() => setSelectedRecoProfileId(null)} style={{ marginBottom: '0.9rem' }}>
+                &larr; Back to all partners
+              </button>
+              <h4 style={{ marginBottom: '0.1rem' }}>{selectedProfile?.name || 'Unknown partner'}</h4>
+              <p className="hint" style={{ marginTop: 0, marginBottom: '0.4rem' }}>{selectedProfile?.company}</p>
+              <p style={{ fontSize: '0.85rem', marginBottom: '1.1rem' }}>
+                <strong>Specialty:</strong> {selectedProfile?.sells_to || selectedProfile?.industry || 'Unknown'}
+              </p>
+
+              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.9rem 1rem', marginBottom: '1.25rem' }}>
+                <h5 style={{ marginTop: 0, marginBottom: '0.4rem' }}>Slack identity</h5>
+                {selectedProfile?.slack_user_id ? (
+                  <p className="hint" style={{ margin: 0 }}>
+                    Confirmed: <code>{selectedProfile.slack_user_id}</code> -- messages sent via Slack will DM this person directly.
+                  </p>
+                ) : (
+                  <>
+                    <p className="hint" style={{ marginTop: 0, marginBottom: '0.6rem' }}>
+                      No Slack id on file yet -- "mark sent" via Slack will only record intent, not actually send, until this is confirmed.
+                      Exact email match only (no name guessing, to avoid ever DMing the wrong person).
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <input
+                        type="email" placeholder="partner@email.com" value={slackLookupEmail}
+                        onChange={e => setSlackLookupEmail(e.target.value)}
+                        style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                      />
+                      <button type="button" className="secondary btn-small" onClick={() => lookupSlackIdByEmail(selectedRecoProfileId)}>
+                        Look up by email
+                      </button>
+                      {slackLookupStatus?.loading && <span className="hint">Looking up...</span>}
+                      {slackLookupStatus?.found === false && <span className="hint">No exact match found in Slack -- enter the id manually instead.</span>}
+                      {slackLookupStatus?.error && <span className="error">{slackLookupStatus.error}</span>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input
+                        type="text" placeholder="Or paste a confirmed Slack user id (U0123ABC456)" value={slackIdDraft}
+                        onChange={e => setSlackIdDraft(e.target.value)}
+                        style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', minWidth: 260 }}
+                      />
+                      <button type="button" className="secondary btn-small" onClick={() => saveSlackIdManually(selectedRecoProfileId)}>Save</button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <h5 style={{ marginBottom: '0.5rem' }}>Matched companies</h5>
+              <div className="table-wrap" style={{ marginBottom: '1.25rem' }}>
+                <table>
+                  <thead>
+                    <tr><th>Company</th><th>Reasoning</th><th>Confidence</th><th>Status</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    {selectedRecos.map(r => (
+                      <tr key={r.id}>
+                        <td>{r.company_name || `#${r.company_id}`}</td>
+                        <td style={{ maxWidth: 320, fontSize: '0.82rem' }}>{r.match_reasoning}</td>
+                        <td>{r.match_confidence || '-'}</td>
+                        <td><span className={`status-pill status-pill-sm ${r.status === 'approved' ? 'on' : r.status === 'rejected' ? 'off' : 'warn'}`}>{r.status}</span></td>
+                        <td>
+                          {r.status === 'proposed' && (
+                            <>
+                              <button type="button" className="link-button" onClick={() => updateRecoStatus(r.id, 'approved')}>Approve</button>
+                              {' · '}
+                              <button type="button" className="link-button" onClick={() => updateRecoStatus(r.id, 'rejected')}>Reject</button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {selectedRecos.length === 0 && (
+                      <tr><td colSpan={5} className="empty-state">No companies matched for this partner.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h5 style={{ margin: 0 }}>Outreach message</h5>
+                <button
+                  type="button" className="secondary btn-small" disabled={generatingMessage}
+                  onClick={() => generateRecoMessage(selectedRecoProfileId)}
+                >
+                  {generatingMessage ? 'Drafting...' : 'Draft message from approved companies'}
+                </button>
+              </div>
+              {recoMessagesLoading ? (
+                <p className="empty-state">Loading...</p>
+              ) : recoMessages.length === 0 ? (
+                <p className="empty-state">No message drafted yet. Approve at least one company above, then click "Draft message."</p>
+              ) : (
+                recoMessages.map(m => (
+                  <div key={m.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1rem', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span className={`status-pill status-pill-sm ${m.status === 'sent' ? 'on' : m.status === 'approved' ? 'on' : m.status === 'rejected' ? 'off' : 'warn'}`}>{m.status}</span>
+                      <span className="hint">{timeAgo(m.generated_at)}</span>
+                    </div>
+                    <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.88rem', marginBottom: '0.75rem' }}>{m.generated_message || '(generation failed)'}</p>
+                    {m.status === 'draft' && (
+                      <>
+                        <button type="button" className="secondary btn-small" onClick={() => updateRecoMessageStatus(m.id, 'approved', selectedRecoProfileId)}>Approve</button>
+                        {' '}
+                        <button type="button" className="secondary btn-small" onClick={() => updateRecoMessageStatus(m.id, 'rejected', selectedRecoProfileId)}>Reject</button>
+                      </>
+                    )}
+                    {m.status === 'approved' && (
+                      <div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
+                          <select
+                            value={sendChannelDraft[m.id] || 'slack'}
+                            onChange={e => setSendChannelDraft({ ...sendChannelDraft, [m.id]: e.target.value })}
+                            style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                          >
+                            <option value="slack">Slack</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="email">Email</option>
+                          </select>
+                          <button
+                            type="button" className="secondary btn-small"
+                            disabled={sendResultByMessage[m.id]?.loading}
+                            onClick={() => markRecoMessageSent(m.id, selectedRecoProfileId)}
+                          >
+                            {sendResultByMessage[m.id]?.loading
+                              ? 'Sending...'
+                              : (sendChannelDraft[m.id] || 'slack') === 'slack' && selectedProfile?.slack_user_id
+                                ? 'Send via Slack DM'
+                                : 'Copy this text, then mark sent'}
+                          </button>
+                        </div>
+                        {sendResultByMessage[m.id]?.error && (
+                          <p className="error" style={{ margin: 0, fontSize: '0.82rem' }}>{sendResultByMessage[m.id].error}</p>
+                        )}
+                        {sendResultByMessage[m.id]?.autoSent === true && (
+                          <p className="hint" style={{ margin: 0, fontSize: '0.82rem' }}>Sent via Slack DM.</p>
+                        )}
+                        {sendResultByMessage[m.id]?.autoSent === false && !sendResultByMessage[m.id]?.error && (
+                          <p className="hint" style={{ margin: 0, fontSize: '0.82rem' }}>Recorded as sent (no Slack id on file, so nothing was auto-sent -- deliver it yourself).</p>
+                        )}
+                      </div>
+                    )}
+                    {m.status === 'sent' && (
+                      <span className="hint">Sent via {m.send_channel} · {timeAgo(m.sent_at)}</span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       )}
