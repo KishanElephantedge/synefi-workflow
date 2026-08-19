@@ -690,7 +690,8 @@ export default function Targets() {
                     const recs = recosByProfile[p.id] || []
                     const stage = recoStage(recs, [])
                     return (
-                      <div key={p.id} className={`partner-card stage-${stage.cls}`} onClick={() => openRecoProfile(p.id)}>
+                      <div key={p.id} className="partner-card" onClick={() => openRecoProfile(p.id)}>
+                        <span className={`partner-card-status-dot stage-${stage.cls}`} title={stage.label} />
                         <div className="partner-card-header">
                           <div className="partner-avatar">{initials(p.name)}</div>
                           <div style={{ minWidth: 0 }}>
@@ -701,10 +702,7 @@ export default function Targets() {
                         <p style={{ fontSize: '0.82rem', margin: 0, color: 'var(--text-muted)' }}>
                           {p.sells_to ? p.sells_to.slice(0, 90) + (p.sells_to.length > 90 ? '...' : '') : 'No specialty on file'}
                         </p>
-                        <div>
-                          <span className={`status-pill status-pill-sm ${stage.cls}`}>{stage.label}</span>
-                          {recs.length > 0 && <span className="hint" style={{ marginLeft: '0.5rem' }}>{recs.length} matched</span>}
-                        </div>
+                        {recs.length > 0 && <span className="hint">{recs.length} matched</span>}
                       </div>
                     )
                   })}
