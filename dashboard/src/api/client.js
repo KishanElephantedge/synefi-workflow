@@ -6,9 +6,16 @@ import axios from 'axios'
 // correct backend server-side before proxying. The frontend never sees or stores a raw
 // backend URL.
 //
-// VITE_GATEWAY_URL is a build-time env var (set in Vercel's project settings for the
-// deployed gateway's real URL); falls back to localhost for local dev.
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:9000'
+// Real bug fix (2026-08-19): the gateway (onrender.com) and this frontend (vercel.app) are
+// different registrable domains, so the session cookie was a cross-site cookie. Safari blocks
+// ALL cross-site cookies by default via Intelligent Tracking Prevention -- a separate
+// mechanism from SameSite, which SameSite=None;Secure does NOT bypass -- so login silently
+// never persisted on iPhone/Safari (worked fine on Chrome, which doesn't block third-party
+// cookies by default). Fixed by routing production API calls through /gw, which vercel.json
+// rewrites (proxies) to the real gateway server-side -- the browser only ever talks to its
+// own origin, so the cookie becomes a normal first-party cookie on every browser. Local dev
+// (Vite dev server, no Vercel proxy in front of it) still talks to the gateway directly.
+const GATEWAY_URL = import.meta.env.DEV ? 'http://localhost:9000' : '/gw'
 
 const client = axios.create({
   baseURL: GATEWAY_URL,
