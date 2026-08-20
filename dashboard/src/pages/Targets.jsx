@@ -34,6 +34,8 @@ const TIER_SHORT = {
 const ACTION_PILL_CLASS = { engage: 'on', monitor: 'warn', ignore: 'off' }
 
 const PROFILES_PAGE_SIZE = 10
+const SIGNALS_PAGE_SIZE = 10
+const RECO_PAGE_SIZE = 12
 
 // "1d 2h 30m" -- compact, real, from the schedule's own days/hours/minutes fields (never
 // re-derived from interval_minutes, which is the backend's OWN pre-computed total, not a
@@ -90,8 +92,9 @@ export default function Targets() {
   const [sweepRunning, setSweepRunning] = useState(false)
   const [sweepResult, setSweepResult] = useState(null)
   const [recoSearch, setRecoSearch] = useState('')
-  const [capPopoverOpen, setCapPopoverOpen] = useState(false)
-  const [slackPopoverOpen, setSlackPopoverOpen] = useState(false)
+  const [recoRoleFilter, setRecoRoleFilter] = useState('all') // 'all' | 'cro' -- bulk matching itself is CRO-only for now (lead's call); this just filters what's browsable
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsSection, setSettingsSection] = useState(null) // null (menu) | 'cap' | 'slack'
   const [generatingMessage, setGeneratingMessage] = useState(false)
   const [matchCap, setMatchCap] = useState(3)
   const [matchCapSaving, setMatchCapSaving] = useState(false)
@@ -116,6 +119,8 @@ export default function Targets() {
   const [profileSearch, setProfileSearch] = useState('')
   const [profilePage, setProfilePage] = useState(1)
   const [signalFilter, setSignalFilter] = useState('relevant') // 'relevant' | 'engage' | 'monitor' | 'ignored' | 'all'
+  const [signalPage, setSignalPage] = useState(1)
+  const [recoPage, setRecoPage] = useState(1)
 
   const [keywords, setKeywords] = useState(null)
   const [keywordsLoading, setKeywordsLoading] = useState(true)
@@ -376,6 +381,15 @@ export default function Targets() {
       .finally(() => setAddingProfile(false))
   }
 
+  const filteredSignals = signals.filter(s => {
+    if (signalFilter === 'all') return true
+    if (signalFilter === 'relevant') return s.recommended_action !== 'ignore'
+    if (signalFilter === 'ignored') return s.recommended_action === 'ignore'
+    return s.recommended_action === signalFilter
+  })
+  const totalSignalPages = Math.max(1, Math.ceil(filteredSignals.length / SIGNALS_PAGE_SIZE))
+  const pagedSignals = filteredSignals.slice((signalPage - 1) * SIGNALS_PAGE_SIZE, signalPage * SIGNALS_PAGE_SIZE)
+
   const profilesById = Object.fromEntries(profiles.map(p => [p.id, p]))
   const recosByProfile = {}
   for (const r of recommendations) {
@@ -385,12 +399,15 @@ export default function Targets() {
   const selectedRecos = selectedRecoProfileId ? (recosByProfile[selectedRecoProfileId] || []) : []
   // The full roster, like GTM University's own marketplace grid -- not just partners who
   // already happen to have recommendations. Active only (paused profiles aren't real targets).
-  const recoCards = profiles.filter(p => {
+  const recoCardsAll = profiles.filter(p => {
     if (!p.active) return false
+    if (recoRoleFilter === 'cro' && !p.is_cro) return false
     const q = recoSearch.trim().toLowerCase()
     if (!q) return true
     return (p.name || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q)
   })
+  const totalRecoPages = Math.max(1, Math.ceil(recoCardsAll.length / RECO_PAGE_SIZE))
+  const recoCards = recoCardsAll.slice((recoPage - 1) * RECO_PAGE_SIZE, recoPage * RECO_PAGE_SIZE)
 
   return (
     <div className="page page-wide">
@@ -434,7 +451,7 @@ export default function Targets() {
                 type="button"
                 className={signalFilter === f.key ? '' : 'secondary'}
                 style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem' }}
-                onClick={() => setSignalFilter(f.key)}
+                onClick={() => { setSignalFilter(f.key); setSignalPage(1) }}
               >
                 {f.label}
               </button>
@@ -447,12 +464,7 @@ export default function Targets() {
             </p>
           )}
           <div className="activity-timeline">
-            {signals.filter(s => {
-              if (signalFilter === 'all') return true
-              if (signalFilter === 'relevant') return s.recommended_action !== 'ignore'
-              if (signalFilter === 'ignored') return s.recommended_action === 'ignore'
-              return s.recommended_action === signalFilter
-            }).map(s => (
+            {pagedSignals.map(s => (
               <div
                 key={s.id}
                 style={{
@@ -497,6 +509,13 @@ export default function Targets() {
               </div>
             ))}
           </div>
+          {totalSignalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <button type="button" className="secondary btn-small" disabled={signalPage <= 1} onClick={() => setSignalPage(p => p - 1)}>&larr; Prev</button>
+              <span className="hint">Page {signalPage} of {totalSignalPages} ({filteredSignals.length} signals)</span>
+              <button type="button" className="secondary btn-small" disabled={signalPage >= totalSignalPages} onClick={() => setSignalPage(p => p + 1)}>Next &rarr;</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -643,24 +662,83 @@ export default function Targets() {
         <div className="overview-card">
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.9rem' }}>
             <div className="settings-popover-wrap">
-              <button type="button" className="icon-button" title="Settings" onClick={() => setCapPopoverOpen(v => !v)} style={{ color: 'var(--text-muted)' }}>
+              <button
+                type="button" className="icon-button" title="Settings" style={{ color: 'var(--text-muted)' }}
+                onClick={() => { setSettingsOpen(v => !v); setSettingsSection(null) }}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
-              {capPopoverOpen && (
+              {settingsOpen && (
                 <>
-                  <div className="settings-popover-backdrop" onClick={() => setCapPopoverOpen(false)} />
+                  <div className="settings-popover-backdrop" onClick={() => setSettingsOpen(false)} />
                   <div className="settings-popover-panel">
-                    <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Matching settings</strong>
-                    <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Cap per partner</label>
-                    <input
-                      type="number" min="1" value={matchCap} disabled={matchCapSaving}
-                      onChange={e => saveMatchCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      style={{ width: 80, padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
-                    />
-                    <p className="hint" style={{ marginTop: '0.5rem', marginBottom: 0 }}>Max companies matched per partner per run.</p>
+                    {settingsSection === null && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <button type="button" className="settings-menu-item" onClick={() => setSettingsSection('cap')}>
+                          Cap per partner <span className="hint">{matchCap}</span>
+                        </button>
+                        {selectedRecoProfileId && (
+                          <button type="button" className="settings-menu-item" onClick={() => setSettingsSection('slack')}>
+                            Slack identity <span className="hint">{selectedProfile?.slack_user_id ? 'Confirmed' : 'Not set'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {settingsSection === 'cap' && (
+                      <>
+                        <button type="button" className="link-button" style={{ marginBottom: '0.6rem', fontSize: '0.8rem' }} onClick={() => setSettingsSection(null)}>&larr; Back</button>
+                        <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Matching settings</strong>
+                        <label className="hint" style={{ display: 'block', marginBottom: '0.3rem' }}>Cap per partner</label>
+                        <input
+                          type="number" min="1" value={matchCap} disabled={matchCapSaving}
+                          onChange={e => saveMatchCap(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          style={{ width: 80, padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                        />
+                        <p className="hint" style={{ marginTop: '0.5rem', marginBottom: 0 }}>Max companies matched per partner per run.</p>
+                      </>
+                    )}
+                    {settingsSection === 'slack' && selectedRecoProfileId && (
+                      <>
+                        <button type="button" className="link-button" style={{ marginBottom: '0.6rem', fontSize: '0.8rem' }} onClick={() => setSettingsSection(null)}>&larr; Back</button>
+                        <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Slack identity</strong>
+                        {selectedProfile?.slack_user_id ? (
+                          <p className="hint" style={{ margin: 0 }}>
+                            Confirmed: <code>{selectedProfile.slack_user_id}</code> -- messages sent via Slack will DM this person directly.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="hint" style={{ marginTop: 0, marginBottom: '0.6rem' }}>
+                              No Slack id on file yet -- "mark sent" via Slack will only record intent, not actually send, until this is confirmed.
+                              Exact email match only (no name guessing, to avoid ever DMing the wrong person).
+                            </p>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <input
+                                type="email" placeholder="partner@email.com" value={slackLookupEmail}
+                                onChange={e => setSlackLookupEmail(e.target.value)}
+                                style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                              />
+                              <button type="button" className="secondary btn-small" onClick={() => lookupSlackIdByEmail(selectedRecoProfileId)}>
+                                Look up by email
+                              </button>
+                              {slackLookupStatus?.loading && <span className="hint">Looking up...</span>}
+                              {slackLookupStatus?.found === false && <span className="hint">No exact match found in Slack -- enter the id manually instead.</span>}
+                              {slackLookupStatus?.error && <span className="error">{slackLookupStatus.error}</span>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                              <input
+                                type="text" placeholder="Or paste a confirmed Slack user id" value={slackIdDraft}
+                                onChange={e => setSlackIdDraft(e.target.value)}
+                                style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', minWidth: 200 }}
+                              />
+                              <button type="button" className="secondary btn-small" onClick={() => saveSlackIdManually(selectedRecoProfileId)}>Save</button>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -671,13 +749,19 @@ export default function Targets() {
 
           {!selectedRecoProfileId ? (
             <>
-              <input
-                type="text"
-                placeholder="Search name or company..."
-                value={recoSearch}
-                onChange={e => setRecoSearch(e.target.value)}
-                style={{ width: '100%', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '0.9rem' }}
-              />
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.9rem' }}>
+                <input
+                  type="text"
+                  placeholder="Search name or company..."
+                  value={recoSearch}
+                  onChange={e => { setRecoSearch(e.target.value); setRecoPage(1) }}
+                  style={{ flex: '1 1 260px', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                />
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button type="button" className={recoRoleFilter === 'all' ? 'btn-small' : 'secondary btn-small'} onClick={() => { setRecoRoleFilter('all'); setRecoPage(1) }}>All</button>
+                  <button type="button" className={recoRoleFilter === 'cro' ? 'btn-small' : 'secondary btn-small'} onClick={() => { setRecoRoleFilter('cro'); setRecoPage(1) }}>CRO</button>
+                </div>
+              </div>
               {recommendationsLoading || profilesLoading ? (
                 <p className="empty-state">Loading...</p>
               ) : recoCards.length === 0 ? (
@@ -706,6 +790,13 @@ export default function Targets() {
                   })}
                 </div>
               )}
+              {totalRecoPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.9rem' }}>
+                  <button type="button" className="secondary btn-small" disabled={recoPage <= 1} onClick={() => setRecoPage(p => p - 1)}>&larr; Prev</button>
+                  <span className="hint">Page {recoPage} of {totalRecoPages} ({recoCardsAll.length} partners)</span>
+                  <button type="button" className="secondary btn-small" disabled={recoPage >= totalRecoPages} onClick={() => setRecoPage(p => p + 1)}>Next &rarr;</button>
+                </div>
+              )}
             </>
           ) : (
             <div>
@@ -721,7 +812,10 @@ export default function Targets() {
                       <h4 style={{ margin: 0 }}>{selectedProfile?.name || 'Unknown partner'}</h4>
                       {selectedProfile?.linkedin_url && (
                         <a href={selectedProfile.linkedin_url} target="_blank" rel="noopener noreferrer" className="linkedin-icon-link" title="View LinkedIn profile">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+                          <svg width="22" height="22" viewBox="0 0 24 24">
+                            <rect width="24" height="24" rx="4" fill="#0A66C2" />
+                            <path fill="#fff" d="M18.335 18.339H15.67v-4.177c0-.996-.02-2.278-1.39-2.278-1.389 0-1.601 1.084-1.601 2.205v4.25h-2.666V9.75h2.56v1.17h.035c.358-.674 1.228-1.387 2.528-1.387 2.7 0 3.2 1.778 3.2 4.091v4.715zM7.003 8.575a1.546 1.546 0 1 1 0-3.091 1.546 1.546 0 0 1 0 3.091zm1.336 9.764H5.666V9.75H8.34v8.589z" />
+                          </svg>
                         </a>
                       )}
                     </div>
@@ -731,64 +825,18 @@ export default function Targets() {
                     </p>
                   </div>
                 </div>
-
-                <div className="settings-popover-wrap">
-                  <button type="button" className="icon-button" title="Slack identity settings" onClick={() => setSlackPopoverOpen(v => !v)} style={{ color: 'var(--text-muted)' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                  </button>
-                  {slackPopoverOpen && (
-                    <>
-                      <div className="settings-popover-backdrop" onClick={() => setSlackPopoverOpen(false)} />
-                      <div className="settings-popover-panel">
-                        <strong style={{ display: 'block', marginBottom: '0.6rem', fontSize: '0.85rem' }}>Slack identity</strong>
-                        {selectedProfile?.slack_user_id ? (
-                          <p className="hint" style={{ margin: 0 }}>
-                            Confirmed: <code>{selectedProfile.slack_user_id}</code> -- messages sent via Slack will DM this person directly.
-                          </p>
-                        ) : (
-                          <>
-                    <p className="hint" style={{ marginTop: 0, marginBottom: '0.6rem' }}>
-                      No Slack id on file yet -- "mark sent" via Slack will only record intent, not actually send, until this is confirmed.
-                      Exact email match only (no name guessing, to avoid ever DMing the wrong person).
-                    </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <input
-                        type="email" placeholder="partner@email.com" value={slackLookupEmail}
-                        onChange={e => setSlackLookupEmail(e.target.value)}
-                        style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
-                      />
-                      <button type="button" className="secondary btn-small" onClick={() => lookupSlackIdByEmail(selectedRecoProfileId)}>
-                        Look up by email
-                      </button>
-                      {slackLookupStatus?.loading && <span className="hint">Looking up...</span>}
-                      {slackLookupStatus?.found === false && <span className="hint">No exact match found in Slack -- enter the id manually instead.</span>}
-                      {slackLookupStatus?.error && <span className="error">{slackLookupStatus.error}</span>}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <input
-                        type="text" placeholder="Or paste a confirmed Slack user id (U0123ABC456)" value={slackIdDraft}
-                        onChange={e => setSlackIdDraft(e.target.value)}
-                        style={{ padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', minWidth: 260 }}
-                      />
-                      <button type="button" className="secondary btn-small" onClick={() => saveSlackIdManually(selectedRecoProfileId)}>Save</button>
-                    </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <h5 style={{ margin: 0 }}>Matched companies</h5>
                 <button
-                  type="button" className={selectedRecos.length > 0 ? 'secondary btn-small' : 'btn-small'} disabled={sweepRunning}
+                  type="button"
+                  className={selectedRecos.length > 0 ? 'btn-soft-primary btn-small' : 'btn-small'}
+                  disabled={sweepRunning}
                   onClick={() => runMatchingForProfile(selectedRecoProfileId)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                 >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                   {sweepRunning ? 'Matching...' : selectedRecos.length > 0 ? 'Re-run matching' : 'Run matching for this partner'}
                 </button>
               </div>
@@ -829,9 +877,11 @@ export default function Targets() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <h5 style={{ margin: 0 }}>Outreach message</h5>
                 <button
-                  type="button" className="secondary btn-small" disabled={generatingMessage}
+                  type="button" className="btn-soft-primary btn-small" disabled={generatingMessage}
                   onClick={() => generateRecoMessage(selectedRecoProfileId)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                 >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
                   {generatingMessage ? 'Drafting...' : 'Draft message from approved companies'}
                 </button>
               </div>

@@ -3940,6 +3940,38 @@ pre {
   padding: 1rem;
 }
 
+button.btn-soft-primary {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid transparent;
+}
+
+button.btn-soft-primary:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+
+.settings-menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  box-shadow: none;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.settings-menu-item:hover:not(:disabled) {
+  background: var(--surface-alt);
+  box-shadow: none;
+}
+
 .settings-popover-backdrop {
   position: fixed;
   inset: 0;
@@ -3972,14 +4004,13 @@ pre {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #0a66c2;
-  color: #fff;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
 }
 
 .linkedin-icon-link:hover {
-  background: #004182;
+  opacity: 1;
 }
