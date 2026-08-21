@@ -271,6 +271,33 @@ export function IconX(props) {
   )
 }
 
+// Not in the reference deck -- own choice for the Network page (watched profiles + partner
+// matches), a connected-nodes glyph, unconfirmed against any reference source.
+export function IconNetwork(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="5" cy="6" r="2.5" />
+      <circle cx="19" cy="6" r="2.5" />
+      <circle cx="12" cy="18" r="2.5" />
+      <path d="M7 7.5 10.2 16" />
+      <path d="M17 7.5 13.8 16" />
+      <path d="M7.5 6h9" />
+    </svg>
+  )
+}
+
+// Not in the reference deck (no "teach the system" screen appears in the 35-page deck) -- own
+// choice for the new Human Knowledge page, unconfirmed against any reference source.
+export function IconLightbulb(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.75.75 1.23 1.5 1.41 2.5" />
+    </svg>
+  )
+}
+
 // Not in the reference deck -- own choice for the Briefing "Refresh now" action (V2 UI audit,
 // 2026-08-18), the standard two-arrow-loop refresh glyph, unconfirmed against any reference source.
 export function IconRefreshCw(props) {
@@ -324,6 +351,38 @@ export function IconPhone(props) {
   return (
     <svg {...base} {...props}>
       <path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />
+    </svg>
+  )
+}
+
+// Not in the reference deck -- own choice for the Demand Grid matched-company row avatar
+// (2026-08-20 visual redesign), a building glyph, unconfirmed against any reference source.
+export function IconBuilding(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect width="16" height="20" x="4" y="2" rx="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01" />
+      <path d="M16 6h.01" />
+      <path d="M12 6h.01" />
+      <path d="M12 10h.01" />
+      <path d="M12 14h.01" />
+      <path d="M16 10h.01" />
+      <path d="M16 14h.01" />
+      <path d="M8 10h.01" />
+      <path d="M8 14h.01" />
+    </svg>
+  )
+}
+
+// Not in the reference deck -- own choice for the Demand Grid evidence panel's "Opportunities"
+// stat (2026-08-20 visual redesign), a target glyph, unconfirmed against any reference source.
+export function IconTarget(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
     </svg>
   )
 }

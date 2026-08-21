@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getEfficiency, formatApiError } from '../api.js'
-import { IconAlertTriangle } from '../icons.jsx'
+import { IconAlertTriangle, IconInfo } from '../icons.jsx'
 
 function formatHours(value) {
-  if (value == null) return 'Not available yet'
+  if (value == null) return '—'
   return `${value.toLocaleString()} hr${value === 1 ? '' : 's'}`
 }
 
-function formatMinutes(value) {
-  if (value == null) return '—'
-  return `${value} min`
+function formatMonthLabel(month) {
+  const [y, m] = month.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-const GAP_REASON_LABEL = {
-  not_automated: 'Not automated',
-  not_instrumented: 'Not instrumented',
+const GAP_REASON = {
+  not_automated: { label: 'Not automated', tone: 'tone-neutral' },
+  not_instrumented: { label: 'Not instrumented', tone: 'tone-info-soft' },
 }
+
+// The five activity types autonomous_orchestrator.py's daily cycle records volume for -- the
+// real "did the pipeline actually process anything" slice. signal_monitoring/message_drafting
+// are excluded deliberately: they come from separate cycles (LinkedIn sweep, message drafting)
+// and a zero there wouldn't mean "the autonomous run processed nothing."
+const PIPELINE_ACTIVITY_TYPES = ['company_discovery', 'dedup_check', 'hiring_signal_check', 'contact_enrichment', 'decision_maker_research']
 
 // "AUTOMATED RUN -> REAL ACTIVITY PERFORMED -> ACTIVITY LEDGER -> MANUAL-TIME BENCHMARK ->
 // HUMAN-EQUIVALENT TIME -> NET TIME SAVED" -- every number on this page comes from that real
@@ -26,132 +32,147 @@ const GAP_REASON_LABEL = {
 export default function Efficiency() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [infoOpen, setInfoOpen] = useState(false)
 
   useEffect(() => {
     getEfficiency().then(setData).catch(err => setError(formatApiError(err)))
   }, [])
 
-  return (
-    <div>
+  if (error) {
+    return (
+      <div className="v2-card">
+        <div className="v2-state v2-state-error">
+          <IconAlertTriangle width={20} height={20} style={{ marginBottom: 8 }} />
+          <div>Couldn't load efficiency: {error}</div>
+        </div>
+      </div>
+    )
+  }
+  if (data === null) {
+    return <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 200 }} />
+  }
 
-      {error ? (
-        <div className="v2-card">
-          <div className="v2-state v2-state-error">
-            <IconAlertTriangle width={20} height={20} style={{ marginBottom: 8 }} />
-            <div>Couldn't load efficiency: {error}</div>
+  // Real, data-driven observation -- only rendered when both facts are actually true this
+  // month, never a static claim. Deliberately doesn't guess why volume is zero.
+  const pipelineVolume = data.breakdown
+    .filter(row => PIPELINE_ACTIVITY_TYPES.includes(row.activity_type))
+    .reduce((sum, row) => sum + row.volume, 0)
+  const showRunInsight = data.runs_counted > 0 && pipelineVolume === 0
+
+  return (
+    <div className="v2-eff-page">
+      <div className="v2-eff-period">{formatMonthLabel(data.month)}</div>
+
+      <div className="v2-eff-hero">
+        <div className="v2-eff-hero-primary">
+          <div className="v2-eff-hero-value">{formatHours(data.net_hours_saved)}</div>
+          <div className="v2-eff-hero-label">
+            Net time saved
+            <span className="v2-eff-info">
+              <button type="button" className="v2-icon-btn" onClick={() => setInfoOpen(o => !o)} aria-label="What do these three numbers mean?">
+                <IconInfo width={13} height={13} />
+              </button>
+              {infoOpen && (
+                <span className="v2-eff-info-bubble">
+                  Automation time is real wall-clock run duration. Human-equivalent time is what the
+                  same real activity volume would take a person, using configured benchmarks only.
+                  Net time saved is the difference -- never automation time itself.
+                </span>
+              )}
+            </span>
           </div>
         </div>
-      ) : data === null ? (
-        <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 200 }} />
-      ) : (
-        <>
-          <div className="v2-card" style={{ marginBottom: '1rem' }}>
-            <div className="v2-config-card-head">
-              <span className="v2-config-card-title">{data.month}</span>
-            </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--v2-text)' }}>
-              {formatHours(data.net_hours_saved)} <span style={{ color: 'var(--v2-text-muted)', fontWeight: 500, fontSize: '1rem' }}>saved this month</span>
-            </div>
-            <p className="v2-placeholder-note" style={{ marginTop: 6, marginBottom: 0 }}>
-              Human-equivalent time and actual automation time are shown separately below -- net
-              time saved is the difference between them, never the two conflated.
-            </p>
+        <div className="v2-eff-hero-support">
+          <div className="v2-eff-hero-stat">
+            <div className="v2-eff-hero-stat-value">{data.runs_counted}</div>
+            <div className="v2-eff-hero-stat-label">Autonomous runs</div>
           </div>
+          <div className="v2-eff-hero-stat">
+            <div className="v2-eff-hero-stat-value">{formatHours(data.actual_automation_hours)}</div>
+            <div className="v2-eff-hero-stat-label">Automation time</div>
+          </div>
+          <div className="v2-eff-hero-stat">
+            <div className="v2-eff-hero-stat-value">{formatHours(data.human_equivalent_hours)}</div>
+            <div className="v2-eff-hero-stat-label">Human-equivalent time</div>
+          </div>
+        </div>
+      </div>
 
-          <div className="v2-stat-row" style={{ marginBottom: '1rem' }}>
-            <div className="v2-stat-tile">
-              <div className="v2-stat-label">Human-equivalent time</div>
-              <div className="v2-stat-value">{formatHours(data.human_equivalent_hours)}</div>
-            </div>
-            <div className="v2-stat-tile">
-              <div className="v2-stat-label">Actual automation time</div>
-              <div className="v2-stat-value">{formatHours(data.actual_automation_hours)}</div>
-            </div>
-            <div className="v2-stat-tile">
-              <div className="v2-stat-label">Net time saved</div>
-              <div className="v2-stat-value">{formatHours(data.net_hours_saved)}</div>
-            </div>
-          </div>
-
-          <div className="v2-card" style={{ marginBottom: '1rem' }}>
-            <div className="v2-config-card-head">
-              <span className="v2-config-card-title">Activity breakdown</span>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="v2-demand-grid">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Volume</th>
-                    <th>Manual benchmark</th>
-                    <th>Human equivalent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.breakdown.map(row => (
-                    <tr key={row.activity_type}>
-                      <th scope="row">{row.label}</th>
-                      <td>{row.volume}</td>
-                      <td>
-                        {row.manual_minutes != null
-                          ? `${formatMinutes(row.manual_minutes)}${row.benchmark_enabled ? '' : ' (disabled)'}`
-                          : <span className="v2-badge v2-badge-neutral">Missing</span>}
-                      </td>
-                      <td>{row.human_equivalent_hours != null ? `${row.human_equivalent_hours} hr` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {data.missing_benchmarks.length > 0 && (
-              <p className="v2-placeholder-note" style={{ marginTop: '0.9rem', marginBottom: 0 }}>
-                {data.missing_benchmarks.length} activit{data.missing_benchmarks.length === 1 ? 'y has' : 'ies have'} real
-                recorded volume this month but no manual-time benchmark configured yet --
-                set one in <Link to="/v2/settings?tab=efficiency">Settings</Link> to include it above.
-              </p>
-            )}
-          </div>
-
-          <div className="v2-card" style={{ marginBottom: '1rem' }}>
-            <div className="v2-config-card-head">
-              <span className="v2-config-card-title">Not available yet</span>
-            </div>
-            <div className="v2-kv-grid">
-              <div>
-                <div className="v2-kv-label">Equivalent SDRs</div>
-                <div className="v2-kv-value">Not available yet</div>
-              </div>
-              <div>
-                <div className="v2-kv-label">Ran outside 9-5</div>
-                <div className="v2-kv-value">Not available yet</div>
-              </div>
-              <div>
-                <div className="v2-kv-label">Admin time cut</div>
-                <div className="v2-kv-value">Not available yet</div>
-              </div>
-            </div>
-            <p className="v2-placeholder-note" style={{ marginTop: '0.9rem', marginBottom: 0 }}>
-              None of these are defensible from real data yet -- shown honestly rather than
-              invented (see the Efficiency feature audit for exactly why).
-            </p>
-          </div>
-
-          <div className="v2-card">
-            <div className="v2-config-card-head">
-              <span className="v2-config-card-title">What's still manual</span>
-            </div>
-            {data.still_manual.map((gap, i) => (
-              <div key={i} style={{ marginBottom: i === data.still_manual.length - 1 ? 0 : '0.7rem', paddingBottom: i === data.still_manual.length - 1 ? 0 : '0.7rem', borderBottom: i === data.still_manual.length - 1 ? 'none' : '1px solid var(--v2-border)' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <span className="v2-badge v2-badge-neutral">{GAP_REASON_LABEL[gap.reason] || gap.reason}</span>
-                  <span style={{ fontWeight: 600, color: 'var(--v2-text)', fontSize: '0.88rem' }}>{gap.activity}</span>
-                </div>
-                <p className="v2-placeholder-note" style={{ marginTop: 4, marginBottom: 0 }}>{gap.detail}</p>
-              </div>
-            ))}
-          </div>
-        </>
+      {showRunInsight && (
+        <div className="v2-eff-insight">
+          <IconInfo width={14} height={14} />
+          {data.runs_counted} autonomous run{data.runs_counted === 1 ? '' : 's'} recorded this month, but no new
+          companies were processed through the measured enrichment activities.
+        </div>
       )}
+
+      <div className="v2-card v2-eff-card">
+        <div className="v2-eff-section-title">Activity breakdown</div>
+        <div className="v2-eff-ledger">
+          <div className="v2-eff-ledger-head">
+            <span>Activity</span>
+            <span>Volume</span>
+            <span>Manual benchmark</span>
+            <span>Human equivalent</span>
+          </div>
+          {data.breakdown.map(row => (
+            <div key={row.activity_type} className={`v2-eff-ledger-row${row.volume > 0 ? ' has-volume' : ''}`}>
+              <span className="v2-eff-ledger-label">{row.label}</span>
+              <span className="v2-eff-ledger-volume">{row.volume}</span>
+              <span className="v2-eff-ledger-benchmark">
+                {row.manual_minutes != null ? (
+                  <>{row.manual_minutes} min{!row.benchmark_enabled && ' (disabled)'}</>
+                ) : (
+                  <span className="v2-eff-benchmark-missing">
+                    <span className="v2-status-pill tone-neutral">Not configured</span>
+                    {row.volume > 0 && (
+                      <Link to="/v2/settings?tab=efficiency" className="v2-eff-configure-link">Configure benchmark →</Link>
+                    )}
+                  </span>
+                )}
+              </span>
+              <span className="v2-eff-ledger-human">{row.human_equivalent_hours != null ? `${row.human_equivalent_hours} hr` : '—'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="v2-card v2-eff-card">
+        <div className="v2-eff-section-title">Not measurable yet</div>
+        <div className="v2-eff-unavailable-row">
+          <div className="v2-eff-unavailable-item">
+            <div className="v2-eff-unavailable-label">Equivalent SDRs</div>
+            <div className="v2-eff-unavailable-value">Not available</div>
+          </div>
+          <div className="v2-eff-unavailable-item">
+            <div className="v2-eff-unavailable-label">Ran outside 9–5</div>
+            <div className="v2-eff-unavailable-value">Not available</div>
+          </div>
+          <div className="v2-eff-unavailable-item">
+            <div className="v2-eff-unavailable-label">Admin time cut</div>
+            <div className="v2-eff-unavailable-value">Not available</div>
+          </div>
+        </div>
+        <p className="v2-eff-caption">These require a defensible baseline that isn't available in the current data.</p>
+      </div>
+
+      <div className="v2-card v2-eff-card">
+        <div className="v2-eff-section-title">What's still manual</div>
+        <div className="v2-eff-manual-list">
+          {data.still_manual.map((gap, i) => {
+            const reason = GAP_REASON[gap.reason] || { label: gap.reason, tone: 'tone-neutral' }
+            return (
+              <div key={i} className="v2-eff-manual-row">
+                <span className={`v2-status-pill ${reason.tone}`}>{reason.label}</span>
+                <div className="v2-eff-manual-text">
+                  <div className="v2-eff-manual-name">{gap.activity}</div>
+                  <div className="v2-eff-manual-detail">{gap.detail}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

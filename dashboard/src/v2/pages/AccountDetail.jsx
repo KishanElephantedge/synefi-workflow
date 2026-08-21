@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getAccountBrief, getAccountMessages, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconChevronLeft } from '../icons.jsx'
 
-const TABS = ['Overview', 'Signals', 'Opportunity & Strategy', 'Contacts', 'Messages']
+const TABS = ['Overview', 'Evidence', 'Opportunity & Strategy', 'Contacts', 'Messages']
 
 // account_status -> badge tone. Mirrors ACCOUNT_STATES_ORDER (Batch 12) exactly -- weakest to
 // strongest -- never a new status invented here.
@@ -25,6 +25,41 @@ const STATUS_LABEL = {
   sales_ready: 'Sales ready',
 }
 
+// Real, complete vocabularies (verified directly against strategy.py/sales_agent.py) --
+// translated so the Opportunity & Strategy tab never shows a raw enum like "consultative" or
+// "problem_validation_required".
+const STRATEGY_TYPE_LABEL = {
+  insufficient_context: 'Insufficient context',
+  diagnostic: 'Diagnostic',
+  consultative: 'Consultative',
+  'execution-led': 'Execution-led',
+  nurture: 'Nurture',
+}
+
+const OFFERING_FIT_LABEL = {
+  candidate_match: 'Candidate match',
+  no_match: 'No match',
+  excluded: 'Excluded',
+  insufficient_offering_context: 'Insufficient context',
+}
+
+const READINESS_LABEL = {
+  insufficient_context: 'Insufficient context',
+  decision_maker_required: 'Decision-maker required',
+  problem_validation_required: 'Problem validation required',
+  demand_validation_required: 'Demand validation required',
+  offering_fit_required: 'Offering fit required',
+  ready_for_message: 'Ready for message',
+}
+
+// Opportunity.VALID_STATUSES, verbatim -- already plain English, just capitalized for display.
+const OPPORTUNITY_STATUS_LABEL = {
+  candidate: 'Candidate',
+  qualified: 'Qualified',
+  dismissed: 'Dismissed',
+  converted: 'Converted',
+}
+
 const TREND_BADGE = {
   emerging: 'v2-badge-info',
   accelerating: 'v2-badge-success',
@@ -34,13 +69,267 @@ const TREND_BADGE = {
   insufficient_evidence: 'v2-badge-neutral',
 }
 
+const TREND_LABEL = {
+  emerging: 'Emerging',
+  accelerating: 'Accelerating',
+  persistent: 'Persistent',
+  stable: 'Stable',
+  declining: 'Declining',
+  insufficient_evidence: 'Insufficient evidence',
+}
+
+// Translates every real backend action-step enum into authored, human-readable copy -- covers
+// the complete real vocabulary both _derive_minimum_next_investigation() (no Opportunity yet)
+// and evaluate_sales_readiness() (an Opportunity/GtmStrategy exists) can actually produce,
+// verified directly against both functions. Never renders a raw enum or backend sentence
+// ("run the Batch 8 ICP matching sweep", "ICPMatch rows") -- if a future value isn't in this
+// map, falls back to a plain de-underscored label rather than crashing or leaking raw text.
+const ACTION_COPY = {
+  identify_decision_maker: {
+    label: 'Find a decision-maker',
+    detail: 'No contact has been identified for this account yet. Finding the right person is required before any outreach can be prepared.',
+  },
+  run_icp_matching: {
+    label: 'Run ICP matching',
+    detail: "This account hasn't been evaluated against an ICP yet. Matching it will determine whether it fits an active ideal customer profile.",
+  },
+  review_offering_fit: {
+    label: 'Review offering fit',
+    detail: 'This account matches an ICP, but no offering has been identified as a fit yet.',
+  },
+  gather_problem_evidence: {
+    label: 'Gather problem evidence',
+    detail: "No documented problem evidence exists for this account yet.",
+  },
+  validate_problem: {
+    label: 'Validate the problem',
+    detail: "The problem hasn't been confirmed directly with the account yet -- current evidence is implied, not declared.",
+  },
+  validate_demand: {
+    label: 'Validate demand',
+    detail: 'Problem evidence exists, but nothing yet confirms the account is genuinely evaluating solutions.',
+  },
+  await_additional_evidence: {
+    label: 'Awaiting more evidence',
+    detail: "Problem and demand evidence both exist, but not enough yet to open an opportunity. No further action to take until more independent evidence accumulates.",
+  },
+  prepare_message: {
+    label: 'Prepare a message',
+    detail: 'Enough is known about this account to prepare outreach.',
+  },
+}
+
+function actionCopy(key) {
+  if (!key) return null
+  return ACTION_COPY[key] || { label: key.replace(/_/g, ' '), detail: null }
+}
+
+// GtmStrategy's own action-plan rationale text (sales_readiness.reason) is otherwise real,
+// authored prose -- but three of its real strings name internal model classes directly
+// ("ProblemHypothesis evidence tier is 'declared'...") rather than a bare enum, so a copy-map
+// lookup doesn't apply cleanly. This targeted cleanup swaps the two known model names for plain
+// English and un-quotes/despaces any embedded enum value, without rewriting the sentence itself.
+function cleanBackendText(s) {
+  if (!s) return s
+  return s
+    .replace(/ProblemHypothesis/g, 'Problem')
+    .replace(/DemandHypothesis/g, 'Demand')
+    .replace(/\boffering_fit_status\b/g, 'offering fit')
+    .replace(/'([a-z_]+)'/g, (_, word) => word.replace(/_/g, ' '))
+    // General fallback: any remaining snake_case token (2+ words joined by "_") is a raw enum
+    // value that slipped through -- de-underscore it rather than leave it verbatim. Safe
+    // because no genuinely authored sentence in this codebase uses snake_case words.
+    .replace(/\b[a-z]+(?:_[a-z]+)+\b/g, (m) => m.replace(/_/g, ' '))
+}
+
 function StatusBadge({ status, labels = STATUS_LABEL, tones = STATUS_BADGE }) {
   if (!status) return null
   return <span className={`v2-badge ${tones[status] || 'v2-badge-neutral'}`}>{labels[status] || status}</span>
 }
 
-function EmptySection({ children }) {
-  return <div className="v2-placeholder-note">{children}</div>
+function EmptyBlock({ title, body }) {
+  return (
+    <div className="v2-agent-empty">
+      <div className="v2-agent-empty-title">{title}</div>
+      {body && <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{body}</p>}
+    </div>
+  )
+}
+
+// The primary hero -- the first thing a sales user should understand about this account.
+// "What we know" prefers the backend's own real strongest_evidence summary; when that's empty
+// (most accounts today), it falls back to other already-real fields (decision-maker on file,
+// hot-lead reasoning, hiring signal) rather than showing nothing. "Recommended next step"
+// always goes through actionCopy() -- never a raw enum.
+function AgentSummary({ brief }) {
+  const { account_summary: summary, decision_maker: dm, company } = brief
+  const copy = actionCopy(summary.next_investigation)
+
+  const knowBullets = summary.strongest_evidence?.length ? [...summary.strongest_evidence] : []
+  if (knowBullets.length === 0) {
+    if (dm.status === 'known' && dm.contacts?.[0]) {
+      const c = dm.contacts[0]
+      knowBullets.push(`Decision-maker on file: ${c.name}${c.title ? `, ${c.title}` : ''}.`)
+    }
+    if (company.hot_lead && company.hot_lead_reasoning) {
+      knowBullets.push(`Flagged as a hot lead: ${company.hot_lead_reasoning}`)
+    }
+    if (company.hiring_signal_role) {
+      knowBullets.push(`Hiring signal: ${company.hiring_signal_role.replace(/_/g, ' ')} (${company.hiring_signal_strength || 'unknown'} strength).`)
+    }
+  }
+
+  return (
+    <div className="v2-agent-hero">
+      <div className="v2-agent-hero-label">Account Agent</div>
+      <div className="v2-agent-hero-grid">
+        <div>
+          <div className="v2-agent-hero-title">What we know</div>
+          {knowBullets.length > 0 ? (
+            <ul className="v2-agent-hero-list">
+              {knowBullets.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
+          ) : (
+            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>No account-level evidence has been gathered yet.</p>
+          )}
+        </div>
+        <div>
+          <div className="v2-agent-hero-title">Recommended next step</div>
+          {copy ? (
+            <>
+              <p className="v2-agent-hero-action">{copy.label}</p>
+              {copy.detail && <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{copy.detail}</p>}
+            </>
+          ) : (
+            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>No further action to recommend right now.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Compact 2x2 "Account Understanding" dashboard -- ICP fit, Signals, Opportunity, Strategy
+// (Offering Fit + Offering Recommendation + GTM Motion consolidated into one card). Every
+// field read verbatim from the brief; nothing computed here.
+function OverviewGrid({ brief }) {
+  const { icp, icp_candidates: icpCandidates, market_context: signals, opportunities, offerings, offering_recommendation: offeringRec, gtm_motion: motion } = brief
+
+  return (
+    <div className="v2-agent-grid">
+      <div className="v2-agent-card">
+        <div className="v2-agent-card-title">ICP fit</div>
+        {icp.status === 'matched' ? (
+          icp.matches.map(m => (
+            <div key={m.icp_id} className="v2-agent-fact">
+              <div className="v2-agent-fact-title">{m.icp_name}</div>
+              <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{(m.reasons || []).join(' · ')}</p>
+            </div>
+          ))
+        ) : (
+          <EmptyBlock title="Not matched yet" body="This account hasn't been evaluated against an ICP." />
+        )}
+        {icpCandidates?.primary && (
+          <div className="v2-agent-fact">
+            <div className="v2-agent-fact-title">
+              {icpCandidates.primary.icp_name} <span className="v2-badge v2-badge-success">Primary candidate</span>
+            </div>
+            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{(icpCandidates.primary.reasons || []).join(' · ')}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="v2-agent-card">
+        <div className="v2-agent-card-title">Signals</div>
+        {signals.length > 0 ? (
+          signals.map(s => (
+            <div key={s.content_topic_id} className="v2-agent-fact">
+              <div className="v2-agent-fact-title">
+                {s.topic_name} <StatusBadge status={s.trend_state} labels={TREND_LABEL} tones={TREND_BADGE} />
+              </div>
+              <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{s.account_link_reason}</p>
+            </div>
+          ))
+        ) : (
+          <EmptyBlock title="No account signals yet" body="No account-level signals have been recorded for this company." />
+        )}
+      </div>
+
+      <div className="v2-agent-card">
+        <div className="v2-agent-card-title">Opportunity</div>
+        {opportunities.length > 0 ? (
+          opportunities.map(o => (
+            <div key={o.id} className="v2-agent-fact">
+              <div className="v2-agent-fact-title">
+                {o.affected_function} <span className="v2-badge v2-badge-neutral">{OPPORTUNITY_STATUS_LABEL[o.status] || o.status}</span>
+              </div>
+              <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{o.opportunity_statement}</p>
+            </div>
+          ))
+        ) : (
+          <EmptyBlock title="No opportunity identified yet" body="Problem and demand evidence haven't reached the threshold to open an opportunity." />
+        )}
+      </div>
+
+      <div className="v2-agent-card">
+        <div className="v2-agent-card-title">Strategy</div>
+        {offeringRec?.primary_recommendation ? (
+          <div className="v2-agent-fact">
+            <div className="v2-agent-fact-title">{offeringRec.primary_recommendation.offering}</div>
+            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{offeringRec.primary_recommendation.explanation}</p>
+          </div>
+        ) : offerings.best_fit ? (
+          <div className="v2-agent-fact">
+            <div className="v2-agent-fact-title">{offerings.best_fit.offering}</div>
+          </div>
+        ) : (
+          <EmptyBlock title="No offering recommendation yet" body="Not enough is known about this account to recommend an offering." />
+        )}
+        {motion.status === 'recommended' && (
+          <div className="v2-agent-fact">
+            <div className="v2-agent-fact-title">GTM motion: {motion.primary_motion}</div>
+            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{motion.reason}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Unified evidence feed -- market signals, problem/demand evidence, and ICP reasoning as one
+// list of title + human explanation + type badge. Never Object.entries() over a raw object,
+// never a field-name dump. `triggers` folds in here too (currently always empty in production,
+// same real field the old page rendered raw).
+function EvidenceTab({ brief }) {
+  const items = []
+  brief.market_context.forEach(s => items.push({ title: s.topic_name, body: s.trend_explanation, type: 'Market signal' }))
+  brief.problems.forEach(p => items.push({ title: p.affected_function, body: p.problem_statement, type: 'Problem evidence' }))
+  brief.demand.forEach(d => items.push({ title: d.affected_function, body: d.demand_statement, type: 'Demand evidence' }))
+  if (brief.icp.matches?.length) {
+    brief.icp.matches.forEach(m => items.push({ title: m.icp_name, body: (m.reasons || []).join(' · '), type: 'ICP reasoning' }))
+  }
+  ;(brief.triggers || []).forEach((t, i) => {
+    const body = cleanBackendText(Object.values(t || {}).filter(Boolean).join(' · '))
+    if (body) items.push({ title: 'Trigger', body, type: 'Trigger evidence' })
+  })
+
+  if (items.length === 0) {
+    return <div className="v2-card"><EmptyBlock title="No account-level evidence recorded yet." /></div>
+  }
+
+  return (
+    <div className="v2-evidence-list">
+      {items.map((it, i) => (
+        <div key={i} className="v2-evidence-item">
+          <div className="v2-evidence-item-head">
+            <span className="v2-evidence-item-title">{it.title}</span>
+            <span className="v2-badge v2-badge-neutral">{it.type}</span>
+          </div>
+          <div className="v2-evidence-item-body">{it.body}</div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function KV({ label, value }) {
@@ -52,206 +341,52 @@ function KV({ label, value }) {
   )
 }
 
-function OverviewTab({ brief }) {
-  const { icp, offerings, gtm_motion: motion, triggers } = brief
+function OpportunityStrategyTab({ brief }) {
+  const { opportunities } = brief
+
+  if (opportunities.length === 0) {
+    return <div className="v2-card"><EmptyBlock title="No opportunity identified yet" body="Problem and Demand evidence haven't reached the eligibility bar yet." /></div>
+  }
 
   return (
     <>
-      <div className="v2-section">
-        <div className="v2-section-title">ICP match</div>
-        <div className="v2-card">
-          {icp.status !== 'matched' ? (
-            <EmptySection>No ICP match yet for this account.</EmptySection>
-          ) : (
-            <div className="v2-evidence-list">
-              {icp.matches.map(m => (
-                <div key={m.icp_id} className="v2-evidence-item">
-                  <div className="v2-evidence-item-head">
-                    <span className="v2-evidence-item-title">{m.icp_name}</span>
-                  </div>
-                  <div className="v2-evidence-item-body">{(m.reasons || []).join(' · ')}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="v2-section">
-        <div className="v2-section-title">Trigger evidence</div>
-        <div className="v2-card">
-          {triggers.length === 0 ? (
-            <EmptySection>No trigger evidence recorded for this account.</EmptySection>
-          ) : (
-            <div className="v2-kv-grid">
-              {triggers.map((t, i) => Object.entries(t || {}).map(([k, v]) => (
-                <KV key={`${i}-${k}`} label={k.replace(/_/g, ' ')} value={typeof v === 'object' ? JSON.stringify(v) : String(v)} />
-              )))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="v2-section">
-        <div className="v2-section-title">Offering fit</div>
-        <div className="v2-card">
-          {offerings.status === 'insufficient_context' ? (
-            <EmptySection>{offerings.best_fit_reason}</EmptySection>
-          ) : (
-            <>
-              {offerings.best_fit && (
-                <p style={{ marginTop: 0 }}>Best fit: <strong>{offerings.best_fit.offering}</strong></p>
-              )}
-              <div className="v2-evidence-list">
-                {offerings.matches.flatMap(icpEntry => icpEntry.offerings.map(o => (
-                  <div key={`${icpEntry.icp_id}-${o.offering}`} className="v2-evidence-item">
-                    <div className="v2-evidence-item-head">
-                      <span className="v2-evidence-item-title">{o.offering}</span>
-                      <StatusBadge
-                        status={o.status}
-                        labels={{ candidate_match: 'Candidate match', no_match: 'No match', excluded: 'Excluded' }}
-                        tones={{ candidate_match: 'v2-badge-success', no_match: 'v2-badge-neutral', excluded: 'v2-badge-danger' }}
-                      />
-                    </div>
-                    <div className="v2-evidence-item-body">{o.reason}</div>
-                  </div>
-                )))}
-              </div>
-              {offerings.unconfigured_offerings.length > 0 && (
-                <p className="v2-placeholder-note" style={{ marginTop: '0.9rem', marginBottom: 0 }}>
-                  Not yet configured for any ICP: {offerings.unconfigured_offerings.join(', ')}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="v2-section">
-        <div className="v2-section-title">GTM motion</div>
-        <div className="v2-card">
-          {motion.status !== 'recommended' ? (
-            <EmptySection>{motion.reason || 'No GTM motion recommendation yet.'}</EmptySection>
-          ) : (
-            <>
-              <p style={{ marginTop: 0 }}>Recommended: <strong>{motion.primary_motion}</strong></p>
-              <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{motion.reason}</p>
-            </>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
-
-function SignalsTab({ brief }) {
-  const signals = brief.market_context
-  if (signals.length === 0) {
-    return <div className="v2-card"><EmptySection>No company-linked market signals yet. This is never inferred from a general market trend -- only signals directly tied to this account count here.</EmptySection></div>
-  }
-  return (
-    <div className="v2-evidence-list">
-      {signals.map(s => (
-        <div key={s.content_topic_id} className="v2-card">
+      {opportunities.map(o => (
+        <div key={o.id} className="v2-card" style={{ marginBottom: '1rem' }}>
           <div className="v2-evidence-item-head">
-            <span className="v2-evidence-item-title">{s.topic_name}</span>
-            <StatusBadge status={s.trend_state} labels={{}} tones={TREND_BADGE} />
+            <span className="v2-evidence-item-title">{o.affected_function}</span>
+            <span className="v2-badge v2-badge-neutral">{OPPORTUNITY_STATUS_LABEL[o.status] || o.status}</span>
           </div>
-          <p className="v2-placeholder-note">{s.trend_explanation}</p>
-          <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{s.account_link_reason}</p>
+          <p className="v2-placeholder-note">{o.opportunity_statement}</p>
+
+          {o.strategy ? (
+            <>
+              <div className="v2-kv-grid" style={{ marginBottom: '0.9rem' }}>
+                <KV label="Strategy type" value={STRATEGY_TYPE_LABEL[o.strategy.strategy_type] || o.strategy.strategy_type} />
+                <KV label="Offering fit" value={OFFERING_FIT_LABEL[o.strategy.offering_fit_status] || o.strategy.offering_fit_status} />
+                <KV
+                  label="Readiness"
+                  value={o.sales_readiness ? (READINESS_LABEL[o.sales_readiness.status] || o.sales_readiness.status) : '—'}
+                />
+              </div>
+              {o.strategy.action_plan?.length > 0 && (
+                <div className="v2-action-chain">
+                  {o.strategy.action_plan.map((step, i) => (
+                    <div key={step.action_type} className="v2-action-step">
+                      <span className="v2-action-step-index">{i + 1}</span>
+                      <span className="v2-action-step-label">{step.objective}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {o.sales_readiness && o.sales_readiness.status !== 'ready_for_message' && (
+                <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{cleanBackendText(o.sales_readiness.reason)}</p>
+              )}
+            </>
+          ) : (
+            <EmptyBlock title="No strategy generated yet for this opportunity." />
+          )}
         </div>
       ))}
-    </div>
-  )
-}
-
-function OpportunityStrategyTab({ brief }) {
-  const { problems, demand, opportunities } = brief
-
-  return (
-    <>
-      <div className="v2-section">
-        <div className="v2-section-title">Problem evidence</div>
-        {problems.length === 0 ? (
-          <div className="v2-card"><EmptySection>No problem evidence recorded yet.</EmptySection></div>
-        ) : (
-          <div className="v2-evidence-list">
-            {problems.map(p => (
-              <div key={p.id} className="v2-evidence-item">
-                <div className="v2-evidence-item-head">
-                  <span className="v2-evidence-item-title">{p.affected_function}</span>
-                  <span className="v2-badge v2-badge-neutral">{p.confidence?.best_evidence_tier}</span>
-                </div>
-                <div className="v2-evidence-item-body">{p.problem_statement}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="v2-section">
-        <div className="v2-section-title">Demand evidence</div>
-        {demand.length === 0 ? (
-          <div className="v2-card"><EmptySection>No demand evidence recorded yet.</EmptySection></div>
-        ) : (
-          <div className="v2-evidence-list">
-            {demand.map(d => (
-              <div key={d.id} className="v2-evidence-item">
-                <div className="v2-evidence-item-head">
-                  <span className="v2-evidence-item-title">{d.affected_function}</span>
-                  <span className="v2-badge v2-badge-neutral">{d.confidence?.best_evidence_tier}</span>
-                </div>
-                <div className="v2-evidence-item-body">{d.demand_statement}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="v2-section">
-        <div className="v2-section-title">Opportunities</div>
-        {opportunities.length === 0 ? (
-          <div className="v2-card"><EmptySection>No Opportunity has been opened for this account yet -- Problem and Demand evidence haven't reached the eligibility bar (Batch 4).</EmptySection></div>
-        ) : (
-          opportunities.map(o => (
-            <div key={o.id} className="v2-card" style={{ marginBottom: '1rem' }}>
-              <div className="v2-evidence-item-head">
-                <span className="v2-evidence-item-title">{o.affected_function}</span>
-                <span className="v2-badge v2-badge-neutral">{o.status}</span>
-              </div>
-              <p className="v2-placeholder-note">{o.opportunity_statement}</p>
-
-              {o.strategy ? (
-                <>
-                  <div className="v2-kv-grid" style={{ marginBottom: '0.9rem' }}>
-                    <KV label="Strategy type" value={o.strategy.strategy_type} />
-                    <KV label="Offering fit" value={o.strategy.offering_fit_status} />
-                    <KV
-                      label="Readiness"
-                      value={o.sales_readiness ? (STATUS_LABEL[o.sales_readiness.status] || o.sales_readiness.status) : '—'}
-                    />
-                  </div>
-                  {o.strategy.action_plan?.length > 0 && (
-                    <div className="v2-action-chain">
-                      {o.strategy.action_plan.map((step, i) => (
-                        <div key={step.action_type} className="v2-action-step">
-                          <span className="v2-action-step-index">{i + 1}</span>
-                          <span className="v2-action-step-label">{step.objective}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {o.sales_readiness && o.sales_readiness.status !== 'ready_for_message' && (
-                    <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>{o.sales_readiness.reason}</p>
-                  )}
-                </>
-              ) : (
-                <EmptySection>No GtmStrategy has been generated yet for this Opportunity.</EmptySection>
-              )}
-            </div>
-          ))
-        )}
-      </div>
     </>
   )
 }
@@ -260,13 +395,17 @@ function ContactsTab({ brief }) {
   const { contacts, decision_maker: decisionMaker } = brief
   return (
     <>
+      <div className="v2-section-title">Who we need to reach</div>
       {decisionMaker.status !== 'known' && (
         <div className="v2-card" style={{ marginBottom: '1rem' }}>
-          <EmptySection>Decision maker required — {decisionMaker.reason === 'no_relevant_contact_available' ? 'no relevant contact is available for this account yet.' : 'no company identity to search against.'}</EmptySection>
+          <EmptyBlock
+            title="Decision-maker required"
+            body={decisionMaker.reason === 'no_relevant_contact_available' ? 'No relevant contact is available for this account yet.' : 'No company identity to search against.'}
+          />
         </div>
       )}
       {contacts.length === 0 ? (
-        <div className="v2-card"><EmptySection>No known contacts for this account.</EmptySection></div>
+        <div className="v2-card"><EmptyBlock title="No known contacts for this account." /></div>
       ) : (
         <div className="v2-evidence-list">
           {contacts.map(c => (
@@ -282,6 +421,14 @@ function ContactsTab({ brief }) {
       )}
     </>
   )
+}
+
+// A couple of real channel values are proper nouns that plain capitalization gets wrong
+// ("linkedin" -> "Linkedin" instead of "LinkedIn").
+const CHANNEL_LABEL = { linkedin: 'LinkedIn', email: 'Email' }
+function channelLabel(channel) {
+  if (!channel) return 'Channel undetermined'
+  return CHANNEL_LABEL[channel] || channel[0].toUpperCase() + channel.slice(1)
 }
 
 const MESSAGE_STATUS_LABEL = {
@@ -325,11 +472,10 @@ function MessagesTab({ companyId }) {
   if (messages.length === 0) {
     return (
       <div className="v2-card">
-        <EmptySection>
-          No message drafts exist yet for this account. A draft becomes available once an Opportunity's
-          strategy and readiness reach ready_for_message (Batch 6/13) -- Phase 3 only displays drafts that
-          already exist, it never generates one from this page.
-        </EmptySection>
+        <EmptyBlock
+          title="No message drafts yet"
+          body="A draft becomes available once an opportunity's strategy and readiness are ready for a message. This page only displays drafts that already exist -- it never generates one."
+        />
       </div>
     )
   }
@@ -339,7 +485,7 @@ function MessagesTab({ companyId }) {
       {messages.map(m => (
         <div key={m.id} className="v2-card">
           <div className="v2-evidence-item-head">
-            <span className="v2-evidence-item-title">{m.channel ? m.channel[0].toUpperCase() + m.channel.slice(1) : 'Channel undetermined'}</span>
+            <span className="v2-evidence-item-title">{channelLabel(m.channel)}</span>
             <span className={`v2-badge ${MESSAGE_STATUS_BADGE[m.status] || 'v2-badge-neutral'}`}>
               {MESSAGE_STATUS_LABEL[m.status] || m.status}
             </span>
@@ -347,7 +493,7 @@ function MessagesTab({ companyId }) {
           {m.message_text ? (
             <p style={{ color: 'var(--v2-text)', fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{m.message_text}</p>
           ) : (
-            <EmptySection>No usable message was produced. {(m.missing_information || []).join(' · ')}</EmptySection>
+            <EmptyBlock title="No usable message was produced." body={cleanBackendText((m.missing_information || []).join(' · ')) || null} />
           )}
           {m.quality_gate_reasons?.length > 0 && (
             <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
@@ -424,7 +570,7 @@ export default function AccountDetail() {
     )
   }
 
-  const { company, account_status: accountStatus, account_summary: summary } = brief
+  const { company, account_status: accountStatus } = brief
 
   return (
     <div>
@@ -437,29 +583,12 @@ export default function AccountDetail() {
             <StatusBadge status={accountStatus} />
           </div>
           <div className="v2-account-header-meta">
-            {[company.domain, company.industry, company.location].filter(Boolean).join(' · ') || 'No firmographic data on file'}
+            {[company.domain, company.industry].filter(Boolean).join(' · ') || 'No firmographic data on file'}
           </div>
         </div>
       </div>
 
-      {summary.next_investigation && (
-        <div className="v2-needs-you-banner">
-          <div className="v2-banner-label">Next investigation</div>
-          <div className="v2-banner-body">
-            {summary.next_investigation.replace(/_/g, ' ')}
-            {summary.current_blocker && <> — {summary.current_blocker}</>}
-          </div>
-        </div>
-      )}
-
-      {summary.strongest_evidence.length > 0 && (
-        <div className="v2-card" style={{ marginBottom: '1.5rem' }}>
-          <div className="v2-section-title" style={{ marginBottom: '0.6rem' }}>Strongest evidence</div>
-          <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'var(--v2-text-muted)', fontSize: '0.88rem' }}>
-            {summary.strongest_evidence.map((e, i) => <li key={i}>{e}</li>)}
-          </ul>
-        </div>
-      )}
+      <AgentSummary brief={brief} />
 
       <div className="v2-tabs">
         {TABS.map(tab => (
@@ -474,8 +603,8 @@ export default function AccountDetail() {
         ))}
       </div>
 
-      {activeTab === 'Overview' && <OverviewTab brief={brief} />}
-      {activeTab === 'Signals' && <SignalsTab brief={brief} />}
+      {activeTab === 'Overview' && <OverviewGrid brief={brief} />}
+      {activeTab === 'Evidence' && <EvidenceTab brief={brief} />}
       {activeTab === 'Opportunity & Strategy' && <OpportunityStrategyTab brief={brief} />}
       {activeTab === 'Contacts' && <ContactsTab brief={brief} />}
       {activeTab === 'Messages' && <MessagesTab companyId={companyId} />}

@@ -36,6 +36,21 @@ def _set_statement_timeout(dbapi_connection, connection_record):
     cursor.close()
 
 
+# Found live (2026-08-21, Neon project migration) -- a pooled ("-pooler") connection can come
+# back with search_path effectively empty, making unqualified table references fail with
+# "relation does not exist" even though the tables exist in the public schema. Same
+# "unsupported startup parameter" class of restriction as statement_timeout above -- fixed the
+# same way, via a normal post-connect query instead of relying on the startup packet or the
+# database's own default (an ALTER DATABASE-level default does not reliably apply to pooled
+# connections). See elephantedge-abm/app/db/session.py for the same fix, applied there too
+# since both backends share this database through the same pooled endpoint.
+@event.listens_for(engine, "connect")
+def _set_search_path(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("SET search_path TO public")
+    cursor.close()
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

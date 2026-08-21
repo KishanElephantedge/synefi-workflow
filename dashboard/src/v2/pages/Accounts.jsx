@@ -29,63 +29,117 @@ const SUMMARY_TILES = [
   ['sales_ready', 'Sales ready'],
 ]
 
+const STATE_LABEL = Object.fromEntries(SUMMARY_TILES)
+
+// Progressive visual weight, weakest -> strongest -- same six real states, no new state
+// invented, no rainbow of unrelated colors. Every state is now a real chip (never plain
+// uppercase text) -- intensity escalates from a neutral gray chip through a subtle blue
+// ("identified"), into the brand accent ("icp_matched"/"opportunity_identified"), then
+// warning/success for the two states that mean real sales readiness -- the same hues already
+// established for badges elsewhere in this app (AccountDetail.jsx's STATUS_BADGE), just with
+// increasing fill intensity rather than six unrelated colors.
+const STATE_TIER = {
+  insufficient_context: 'neutral',
+  identified: 'info-soft',
+  icp_matched: 'accent-soft',
+  opportunity_identified: 'accent-solid',
+  strategy_ready: 'warning-solid',
+  sales_ready: 'success-solid',
+}
+
+// "Actionable" tier gates whether a row shows the colored left accent + intelligence stats --
+// the two weakest states have no real GTM-OS progress yet (see list_account_states()), so they
+// stay visually quiet even though they now get a real (muted) chip like every other state.
+const QUIET_STATES = new Set(['insufficient_context', 'identified'])
+
+function StatusMark({ status }) {
+  const tier = STATE_TIER[status] || 'neutral'
+  const label = STATE_LABEL[status] || status
+  return <span className={`v2-account-status v2-status-pill tone-${tier}`}>{label}</span>
+}
+
+// Renders the real six-state funnel as a left-to-right progression (weakest -> strongest).
+// Non-zero stages get real typographic weight; zero stages recede -- same real numbers, never a
+// re-derived count, just unequal visual treatment so 2 real ICP matches don't read as equal in
+// importance to 593 accounts with no evidence yet.
 function SummaryStrip({ summary }) {
   if (!summary) return null
   return (
-    <div className="v2-stat-row">
-      <div className="v2-stat-tile">
+    <div className="v2-account-funnel">
+      <div className="v2-account-funnel-total">
+        <div className="v2-account-funnel-total-value">{summary.total_accounts}</div>
         <div className="v2-stat-label">Total accounts</div>
-        <div className="v2-stat-value">{summary.total_accounts}</div>
       </div>
-      {SUMMARY_TILES.map(([key, label]) => (
-        <div className="v2-stat-tile" key={key}>
-          <div className="v2-stat-label">{label}</div>
-          <div className="v2-stat-value">{summary.account_states[key] ?? 0}</div>
-        </div>
-      ))}
+      <div className="v2-account-funnel-track">
+        {SUMMARY_TILES.map(([key, label], i) => {
+          const count = summary.account_states[key] ?? 0
+          return (
+            <div className={`v2-account-funnel-step${count > 0 ? ' has-count' : ''}`} key={key}>
+              <div className="v2-account-funnel-chip">
+                <span className="v2-account-funnel-step-value">{count}</span>
+                <span className="v2-account-funnel-step-label">{label}</span>
+              </div>
+              {i < SUMMARY_TILES.length - 1 && <IconChevronRight width={11} height={11} className="v2-account-funnel-arrow" />}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-// Hiring-signal strength -> the same three-tier vocabulary hiring_signal.py already uses
-// (strong | medium | weak) -- never re-derived, just colored.
-const STRENGTH_BADGE = {
-  strong: 'v2-badge-success',
-  medium: 'v2-badge-warning',
-  weak: 'v2-badge-neutral',
-}
+// Every row shares the SAME structural grid (company / intelligence / action) regardless of
+// state -- hierarchy comes from chip intensity, accent color, and which cells have content,
+// never from switching between a "plain row" and a "boxed card" per tier. Consistent column
+// alignment means every status chip and every CTA lines up down the page.
+function AccountCard({ company }) {
+  // account_status defaults to 'insufficient_context' when absent (e.g. an older backend
+  // that hasn't deployed list_account_states() yet) rather than rendering a blank badge --
+  // the safest, least-alarming fallback, matching how every account starts out anyway.
+  const accountStatus = company.account_status || 'insufficient_context'
+  const isQuiet = QUIET_STATES.has(accountStatus)
+  const hasEvidence = !isQuiet && ((company.signal_count > 0) || (company.opportunity_count > 0))
+  const secondaryText = [
+    company.hot_lead && 'Hot lead',
+    company.hiring_signal_role && `hiring: ${company.hiring_signal_role.replace(/_/g, ' ')}`,
+  ].filter(Boolean).join(' · ')
 
-function AccountRow({ company }) {
   return (
-    <Link to={`/v2/accounts/${company.id}`} className="v2-account-row">
-      <div className="v2-account-identity">
-        <div className="v2-account-name">
-          {company.name}
-          {company.hot_lead && <span className="v2-badge v2-badge-danger">Hot lead</span>}
-        </div>
+    <Link to={`/v2/accounts/${company.id}`} className={`v2-account-row-grid v2-account-state-${accountStatus}`}>
+      <div className="v2-ar-company">
+        <div className="v2-account-name">{company.name}</div>
         <div className="v2-account-meta">
           {[company.domain, company.industry].filter(Boolean).join(' · ') || 'No domain or industry on file'}
         </div>
+        {secondaryText && <div className="v2-account-secondary">{secondaryText}</div>}
       </div>
-      <div className="v2-account-tags">
-        {company.qualified && <span className="v2-badge v2-badge-info">Qualified</span>}
-        {company.hiring_signal_role && (
-          <span className={`v2-badge ${STRENGTH_BADGE[company.hiring_signal_strength] || 'v2-badge-neutral'}`}>
-            {company.hiring_signal_role.replace(/_/g, ' ')}
-          </span>
+
+      <div className="v2-ar-intel">
+        <StatusMark status={accountStatus} />
+        {hasEvidence && (
+          <div className="v2-account-evidence">
+            <span className="v2-account-evidence-stat">{company.signal_count} signal{company.signal_count === 1 ? '' : 's'}</span>
+            <span className="v2-account-evidence-stat">{company.opportunity_count} opportunit{company.opportunity_count === 1 ? 'y' : 'ies'}</span>
+          </div>
         )}
+      </div>
+
+      <div className="v2-account-cta">
+        <span>Open Account Agent</span>
+        <IconChevronRight width={14} height={14} />
       </div>
     </Link>
   )
 }
 
-// Answers "which accounts should I look at" -- not "show me every database field." Columns are
-// deliberately limited to what's real, already computed server-side, and decision-relevant
-// (name/domain/industry identity, qualified gate, hiring signal, hot-lead flag). ICP match,
-// offering fit, and GTM motion are real GTM-OS concepts but are NOT in this list response (see
-// api.js) -- they only become available per-account on Account 360, where the cost of computing
-// them for one company is trivial; computing them for every row of a 25-company page would mean
-// 25x the backend work per list view, which this endpoint doesn't do and Phase 2 doesn't add.
+// Answers "which accounts should I look at, and where is each one in the GTM-OS journey" --
+// not "show me every database field." account_status/signal_count/opportunity_count come from
+// list_account_states() (app/gtm_os/account_agent/account_agent.py), scoped per-page via the
+// same bulk-query pattern summarize_account_states() already uses for the funnel strip -- never
+// one build_account_brief() call per row. Hot lead/hiring-role are real V1 signals, kept as
+// secondary context, not the row's primary identity. "Qualified" (a V1 pipeline-eligibility
+// gate, unrelated to GTM-OS state) is deliberately not shown here -- still present in the raw
+// API response for the detail view if needed, just not surfaced on this list.
 export default function Accounts() {
   const [searchParams, setSearchParams] = useSearchParams()
   const accountFilter = searchParams.get('filter') || ''
@@ -134,7 +188,9 @@ export default function Accounts() {
   }, [page, search, accountFilter])
 
   return (
-    <div>
+    <div className="v2-accounts-page">
+      <p className="v2-accounts-subtitle">Your account intelligence workspace</p>
+
       <SummaryStrip summary={summary} />
 
       {accountFilter && FILTER_LABEL[accountFilter] && (
@@ -146,11 +202,12 @@ export default function Accounts() {
         </div>
       )}
 
-      <div className="v2-toolbar">
+      <div className="v2-accounts-toolbar">
+        <span className="v2-accounts-count">{total || summary?.total_accounts || 0} accounts</span>
         <input
           type="text"
-          className="v2-search-input"
-          placeholder="Search name, domain, industry..."
+          className="v2-accounts-search"
+          placeholder="Search accounts, domains, industries..."
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
         />
@@ -164,8 +221,8 @@ export default function Accounts() {
           </div>
         </div>
       ) : loading ? (
-        <div className="v2-account-list">
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="v2-skeleton-row" />)}
+        <div className="v2-accounts-grid">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="v2-skeleton-row" style={{ height: 96, borderRadius: 'var(--v2-radius)' }} />)}
         </div>
       ) : companies.length === 0 ? (
         <div className="v2-card">
@@ -175,8 +232,8 @@ export default function Accounts() {
         </div>
       ) : (
         <>
-          <div className="v2-account-list">
-            {companies.map(c => <AccountRow key={c.id} company={c} />)}
+          <div className="v2-accounts-grid">
+            {companies.map(c => <AccountCard key={c.id} company={c} />)}
           </div>
           {totalPages > 1 && (
             <div className="v2-pagination">

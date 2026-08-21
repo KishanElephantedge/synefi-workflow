@@ -210,3 +210,17 @@ export function dismissPattern(category, confirmedBy) {
   return client.post(`/gtm-os/patterns/${encodeURIComponent(category)}/dismiss`, { confirmed_by: confirmedBy }).then(res => res.data)
 }
 
+// V2 Settings Performance tab -- real message-funnel/reply-outcome/strategy-type readout
+// (app/gtm_os/learning/evaluation.py), the same computation governance.py's own Briefing
+// snapshot already uses internally. No accuracy/hit-rate is computed anywhere in this readout.
+export function getLearningReadout() {
+  return client.get('/gtm-os/learning-readout').then(res => res.data)
+}
+
+// V2 Settings Connections tab -- real per-tenant credential presence (name/is_set/updated_at),
+// same generic route V1's Settings page already uses; V2 simply hadn't been wired to it yet.
+// Read-only here by design -- credential values are never returned or editable from V2.
+export function getCredentials() {
+  return client.get('/credentials').then(res => res.data)
+}
+

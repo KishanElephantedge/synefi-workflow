@@ -17,6 +17,8 @@ import {
   IconRadio,
   IconLayers,
   IconSettings,
+  IconLightbulb,
+  IconNetwork,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -43,12 +45,14 @@ export const V2_NAV_GROUPS = [
       { path: 'accounts', label: 'Accounts', icon: IconUsers },
       { path: 'demand-grid', label: 'Demand Grid', icon: IconGrid },
       { path: 'market-intelligence', label: 'Market Intelligence', icon: IconRadio },
+      { path: 'network', label: 'Network', icon: IconNetwork },
     ],
   },
   {
     label: 'Configure',
     items: [
       { path: 'icps-offerings', label: 'ICPs & Offerings', icon: IconLayers },
+      { path: 'knowledge', label: 'Knowledge', icon: IconLightbulb },
       { path: 'settings', label: 'Settings', icon: IconSettings },
     ],
   },

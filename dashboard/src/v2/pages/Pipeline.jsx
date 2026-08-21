@@ -54,7 +54,7 @@ const RUN_STATUS_BADGE = {
 const FUNNEL_STEPS = [
   { key: 'total', label: 'Accounts' },
   { key: 'identified', label: 'Identified' },
-  { key: 'icp_matched', label: 'ICP-matched' },
+  { key: 'icp_matched', label: 'ICP matched' },
   { key: 'opportunity_identified', label: 'Opportunities' },
 ]
 
@@ -69,19 +69,38 @@ function SystemStatusPanel({ summary, latestRun }) {
   const stages = latestRun?.stage_results
   const icpStage = stages?.icp_matching
   const opportunityStage = stages?.opportunity
+  const icpMatched = icpStage ? icpStage.matches_recorded + icpStage.matches_updated : null
 
   return (
-    <div className="v2-card" style={{ marginBottom: '1rem' }}>
-      <div className="v2-state">
-        No Opportunities exist yet for this tenant. Opportunities are opened automatically once Problem
-        and Demand evidence for an account reach the eligibility bar -- this list will populate as that
-        evidence accumulates.
+    <div className="v2-card v2-pipeline-empty">
+      <div className="v2-pipeline-empty-head">
+        <h2>Pipeline is clear</h2>
+        <p className="v2-pipeline-empty-sub">No opportunities have qualified yet.</p>
+        <p className="v2-placeholder-note">
+          The system automatically evaluates accounts and opens an opportunity when the required
+          Problem + Demand evidence meets the eligibility threshold.
+        </p>
       </div>
 
+      {funnelValues && (
+        <div className="v2-pipeline-empty-section">
+          <div className="v2-kv-label">Account funnel</div>
+          <div className="v2-pipeline-funnel-row">
+            {FUNNEL_STEPS.map(step => (
+              <div key={step.key} className="v2-pipeline-funnel-stat">
+                <div className="v2-pipeline-funnel-value">{funnelValues[step.key] ?? 0}</div>
+                <div className="v2-placeholder-note">{step.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {latestRun && (
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--v2-border)' }}>
-          <div className="v2-evidence-item-head">
-            <span className="v2-kv-label" style={{ marginBottom: 0 }}>Last sweep</span>
+        <div className="v2-pipeline-empty-section">
+          <div className="v2-kv-label">Latest system run</div>
+          <div className="v2-evidence-item-head" style={{ marginTop: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--v2-text)' }}>Last sweep</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--v2-text-muted)' }}>{timeAgo(latestRun.started_at)}</span>
               <span className={`v2-badge ${RUN_STATUS_BADGE[latestRun.status] || 'v2-badge-neutral'}`}>
@@ -93,26 +112,13 @@ function SystemStatusPanel({ summary, latestRun }) {
             <p className="v2-placeholder-note" style={{ marginTop: '0.5rem', marginBottom: 0 }}>{latestRun.error_summary}</p>
           )}
           {(icpStage || opportunityStage) && (
-            <p className="v2-placeholder-note" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-              {icpStage && `Checked ${icpStage.companies_evaluated} companies for ICP fit (${icpStage.matches_recorded + icpStage.matches_updated} matched)`}
-              {icpStage && opportunityStage && ' · '}
-              {opportunityStage && `Evaluated ${opportunityStage.evaluated} for a new opportunity (${opportunityStage.created} created)`}
-            </p>
+            <ul className="v2-pipeline-run-detail">
+              {icpStage && <li>{icpStage.companies_evaluated} accounts evaluated for ICP fit</li>}
+              {icpStage && <li>{icpMatched} matched ICP</li>}
+              {opportunityStage && <li>{opportunityStage.evaluated} evaluated for opportunity</li>}
+              {opportunityStage && <li>{opportunityStage.created} opportunities created</li>}
+            </ul>
           )}
-        </div>
-      )}
-
-      {funnelValues && (
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--v2-border)' }}>
-          <div className="v2-kv-label">Account funnel</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginTop: '0.5rem' }}>
-            {FUNNEL_STEPS.map(step => (
-              <div key={step.key}>
-                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--v2-text)' }}>{funnelValues[step.key] ?? 0}</div>
-                <div className="v2-placeholder-note" style={{ marginBottom: 0 }}>{step.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

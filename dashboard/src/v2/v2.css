@@ -554,44 +554,199 @@
   margin-top: 2px;
 }
 
-.v2-account-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--v2-border);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
-  overflow: hidden;
+/* ---------- Accounts page (redesigned 2026-08-20) ---------- */
+
+.v2-accounts-page {
+  max-width: 1240px;
 }
 
-.v2-account-row {
+.v2-accounts-subtitle {
+  margin: -6px 0 var(--v2-space-4);
+  font-size: 0.88rem;
+  color: var(--v2-text-muted);
+}
+
+/* Funnel: one cohesive component (bordered container), not floating text -- non-zero stages
+   get a real chip with accent numeral weight, zero stages stay flat/muted, connected by
+   subtle chevrons so it reads as a progression, not six independent stats. */
+.v2-account-funnel {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-5);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  margin-bottom: var(--v2-space-4);
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  flex-wrap: wrap;
+}
+
+.v2-account-funnel-total {
+  padding-right: var(--v2-space-5);
+  border-right: 1px solid var(--v2-border);
+}
+
+.v2-account-funnel-total-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.v2-account-funnel-track {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--v2-space-1);
+  flex: 1;
+}
+
+.v2-account-funnel-step {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-1);
+}
+
+.v2-account-funnel-arrow {
+  color: var(--v2-text-faint);
+  opacity: 0.45;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Compact chip per stage -- non-zero stages get a real background + accent numeral, zero
+   stages stay flat/muted with no background, so the eye lands on real progress immediately. */
+.v2-account-funnel-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--v2-radius-sm);
+}
+
+.v2-account-funnel-step.has-count .v2-account-funnel-chip {
+  background: var(--v2-accent-soft);
+}
+
+.v2-account-funnel-step-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--v2-text-faint);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.v2-account-funnel-step.has-count .v2-account-funnel-step-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--v2-accent);
+}
+
+.v2-account-funnel-step-label {
+  font-size: 0.76rem;
+  color: var(--v2-text-faint);
+  opacity: 0.8;
+}
+
+.v2-account-funnel-step.has-count .v2-account-funnel-step-label {
+  color: var(--v2-text-muted);
+  opacity: 1;
+}
+
+/* Toolbar: integrated bar (not bare floating elements) -- real (filtered) account count on
+   the left, constrained search on the right. No Filters control -- none of the current
+   filters are backend-supported beyond search, and an inert button would be worse than none. */
+.v2-accounts-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--v2-space-4);
+  gap: var(--v2-space-3);
+  padding: var(--v2-space-2) var(--v2-space-3);
+  margin-bottom: var(--v2-space-3);
   background: var(--v2-surface);
-  padding: var(--v2-space-4);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+}
+
+.v2-accounts-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  padding-left: 6px;
+}
+
+.v2-accounts-search {
+  width: 100%;
+  max-width: 380px;
+  background: var(--v2-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.86rem;
+  font-family: inherit;
+}
+
+.v2-accounts-search:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 1px;
+}
+
+.v2-accounts-search::placeholder {
+  color: var(--v2-text-faint);
+}
+
+/* Flat, uniform list -- every row shares the same structure and hairline separator, never
+   switching between a "plain row" and a "boxed card" per state. Wrapped in one bordered
+   container so the list itself reads as a single component. */
+.v2-accounts-grid {
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  overflow: hidden;
+}
+
+.v2-account-row-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 230px) 150px;
+  align-items: center;
+  gap: var(--v2-space-4);
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: background 0.12s ease;
+  padding: var(--v2-space-3) var(--v2-space-4);
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--v2-border);
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.v2-account-row:hover {
+.v2-accounts-grid .v2-account-row-grid:last-child {
+  border-bottom: none;
+}
+
+.v2-account-row-grid:hover {
   background: var(--v2-surface-elevated);
 }
 
-.v2-account-identity {
+.v2-account-state-icp_matched,
+.v2-account-state-opportunity_identified { border-left-color: var(--v2-accent); }
+.v2-account-state-strategy_ready { border-left-color: var(--v2-warning); }
+.v2-account-state-sales_ready { border-left-color: var(--v2-success); }
+
+.v2-ar-company {
   min-width: 0;
 }
 
 .v2-account-name {
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-weight: 700;
+  font-size: 1.02rem;
   color: var(--v2-text);
-  display: flex;
-  align-items: center;
-  gap: var(--v2-space-2);
+  letter-spacing: -0.008em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .v2-account-meta {
@@ -603,10 +758,67 @@
   white-space: nowrap;
 }
 
-.v2-account-tags {
+.v2-account-secondary {
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Intelligence column -- status chip + evidence stats, aligned identically across every row. */
+.v2-ar-intel {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* Progressive status treatment -- see STATE_TIER in Accounts.jsx. Every state is a real chip;
+   hierarchy comes from fill intensity, not from switching between text and a pill. */
+.v2-status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.v2-status-pill.tone-neutral { background: var(--v2-surface-elevated); color: var(--v2-text-muted); }
+.v2-status-pill.tone-info-soft { background: var(--v2-info-soft); color: var(--v2-info); }
+.v2-status-pill.tone-accent-soft { background: var(--v2-accent-soft); color: var(--v2-accent); }
+.v2-status-pill.tone-accent-solid { background: var(--v2-accent); color: #fff; }
+.v2-status-pill.tone-warning-soft { background: var(--v2-warning-soft); color: var(--v2-warning); }
+.v2-status-pill.tone-warning-solid { background: var(--v2-warning); color: #1a1200; }
+.v2-status-pill.tone-success-solid { background: var(--v2-success); color: #001a10; }
+
+.v2-account-evidence {
+  display: flex;
+  align-items: center;
   gap: var(--v2-space-2);
-  flex-shrink: 0;
+}
+
+.v2-account-evidence-stat {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-account-cta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--v2-accent);
+  white-space: nowrap;
 }
 
 .v2-pagination {
@@ -645,6 +857,65 @@
 
 .v2-state-error {
   color: var(--v2-danger);
+}
+
+.v2-pipeline-empty-head {
+  padding: var(--v2-space-5) var(--v2-space-4) var(--v2-space-4);
+  text-align: center;
+}
+
+.v2-pipeline-empty-head h2 {
+  margin: 0 0 var(--v2-space-1);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.v2-pipeline-empty-sub {
+  margin: 0 0 var(--v2-space-3);
+  color: var(--v2-text-muted);
+  font-size: 0.92rem;
+}
+
+.v2-pipeline-empty-head .v2-placeholder-note {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.v2-pipeline-empty-section {
+  padding: var(--v2-space-4);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-pipeline-funnel-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--v2-space-6);
+  margin-top: var(--v2-space-3);
+  text-align: center;
+}
+
+.v2-pipeline-funnel-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-pipeline-run-detail {
+  list-style: none;
+  margin: var(--v2-space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-1);
+}
+
+.v2-pipeline-run-detail li {
+  font-size: 0.85rem;
+  color: var(--v2-text-muted);
 }
 
 .v2-skeleton-row {
@@ -813,6 +1084,104 @@
   gap: var(--v2-space-4);
 }
 
+/* ---------- Account Agent hero (2026-08-20) ---------- */
+
+.v2-agent-hero {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-accent);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-agent-hero-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-accent);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-agent-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--v2-space-5);
+}
+
+.v2-agent-hero-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  margin-bottom: 6px;
+}
+
+.v2-agent-hero-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--v2-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.v2-agent-hero-list li {
+  margin-bottom: 4px;
+}
+
+.v2-agent-hero-action {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin: 0 0 4px;
+}
+
+/* ---------- Account Understanding overview grid ---------- */
+
+.v2-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--v2-space-4);
+}
+
+.v2-agent-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-4);
+}
+
+.v2-agent-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-agent-fact + .v2-agent-fact {
+  margin-top: var(--v2-space-3);
+  padding-top: var(--v2-space-3);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-agent-fact-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--v2-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.v2-agent-empty-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  margin-bottom: 3px;
+}
+
 .v2-kv-label {
   font-size: 0.7rem;
   color: var(--v2-text-faint);
@@ -865,115 +1234,1676 @@
 }
 
 /* ---------- Demand Grid ---------- */
+/* A real ICP x Offering matrix, deliberately -- but every cell carries a status dot + label
+   (never just fill color alone), a shared legend explains the six real states up front, and the
+   evidence panel below reads as an intelligence brief, not another table row. Every icon-only
+   round control uses .v2-icon-btn, which explicitly zeroes the global `button` padding
+   (App.css) so a fixed-size circular hit target can't get squished into an invisible pill. */
 
-.v2-grid-scroll {
-  overflow-x: auto;
+.v2-dg-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-5);
+}
+
+.v2-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text-faint);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.v2-demand-grid {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.84rem;
+.v2-icon-btn:hover,
+.v2-icon-btn:focus-visible {
+  color: var(--v2-accent);
+  border-color: var(--v2-accent);
+  outline: none;
 }
 
-.v2-demand-grid th,
-.v2-demand-grid td {
+.v2-dg-summary-row {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-4);
+  flex-wrap: wrap;
+}
+
+.v2-dg-summary-tile {
+  min-width: 220px;
+}
+
+.v2-dg-summary-total {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--v2-text-faint);
+}
+
+.v2-dg-summary-caption {
+  font-size: 0.72rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+}
+
+.v2-dg-info {
+  position: relative;
+  display: inline-flex;
+}
+
+.v2-dg-info-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  width: 280px;
   padding: var(--v2-space-3) var(--v2-space-4);
-  text-align: left;
-  border-bottom: 1px solid var(--v2-border);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  box-shadow: var(--v2-shadow);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--v2-text-muted);
+}
+
+.v2-dg-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--v2-space-4);
+  margin-left: auto;
+}
+
+.v2-dg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--v2-text-muted);
   white-space: nowrap;
 }
 
-.v2-demand-grid thead th {
+.v2-dg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.v2-dg-dot.dot-unconfigured { background: var(--v2-border); }
+.v2-dg-dot.dot-excluded { background: var(--v2-danger); }
+.v2-dg-dot.dot-no-accounts { background: var(--v2-text-faint); }
+.v2-dg-dot.dot-configured { background: var(--v2-warning); }
+.v2-dg-dot.dot-thin { background: var(--v2-success); opacity: 0.55; }
+.v2-dg-dot.dot-sufficient { background: var(--v2-success); }
+
+/* The matrix. Real cell borders (not the border-as-shared-gridline trick), a sticky header row
+   and first column, generous cell padding, and a hover/selected state per cell -- a matrix done
+   with real visual care, not a bare HTML table. */
+.v2-dg-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+}
+
+.v2-dg-table {
+  display: grid;
+  min-width: 720px;
+}
+
+.v2-dg-th {
+  padding: 0.5rem 0.75rem;
   background: var(--v2-surface-elevated);
+  border-bottom: 1px solid var(--v2-border);
+  border-left: 1px solid var(--v2-border);
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.v2-dg-th-corner {
+  border-left: none;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+.v2-dg-th-sub {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  font-weight: 500;
   color: var(--v2-text-faint);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.v2-dg-row-head {
+  padding: 0.5rem 0.75rem;
+  background: var(--v2-surface);
+  border-bottom: 1px solid var(--v2-border);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.v2-dg-row-name {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-dg-row-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--v2-text-faint);
+  white-space: nowrap;
+}
+
+.v2-dg-row-empty {
+  padding: 0.5rem 0.75rem;
+  background: var(--v2-surface);
+  border-bottom: 1px solid var(--v2-border);
+  border-left: 1px solid var(--v2-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  font-style: italic;
+}
+
+.v2-dg-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  padding: 0.4rem 0.75rem;
+  min-height: 40px;
+  background: var(--v2-surface);
+  border-bottom: 1px solid var(--v2-border);
+  border-left: 1px solid var(--v2-border);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.v2-dg-cell-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--v2-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-dg-cell-sub {
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--v2-text-faint);
+}
+
+.v2-dg-cell-dash {
+  font-size: 0.86rem;
+  color: var(--v2-text-faint);
+}
+
+/* Tiers -- visual weight increases progressively: unconfigured fades to near-nothing; excluded
+   stays equally quiet but reads as a distinct color (never bold text -- both are configuration
+   facts, not demand); configured/no_accounts are real facts shown via the number itself (0 vs a
+   real count already tells them apart, no extra label needed); thin/sufficient are the only
+   tiers that earn a tinted surface, scaled honestly to how much evidence actually exists. */
+.v2-dg-cell.tier-unconfigured .v2-dg-cell-dash {
+  color: var(--v2-text-faint);
+  opacity: 0.6;
+}
+
+.v2-dg-cell.tier-excluded .v2-dg-cell-dash {
+  color: var(--v2-danger);
+  opacity: 0.55;
+}
+
+.v2-dg-cell.tier-configured .v2-dg-cell-main {
+  color: var(--v2-text);
+}
+
+.v2-dg-cell.tier-thin {
+  background: var(--v2-info-soft);
+}
+
+.v2-dg-cell.tier-thin .v2-dg-cell-main {
+  color: var(--v2-text);
+}
+
+.v2-dg-cell.tier-sufficient {
+  background: var(--v2-success-soft);
+}
+
+.v2-dg-cell.tier-sufficient .v2-dg-cell-main {
+  color: var(--v2-text);
+  font-weight: 700;
+}
+
+.v2-dg-cell:not(:disabled) {
+  cursor: pointer;
+}
+
+.v2-dg-cell:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px var(--v2-accent);
+}
+
+.v2-dg-cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--v2-accent);
+}
+
+.v2-dg-cell:disabled {
+  cursor: default;
+}
+
+/* Mobile stacked list -- hidden by default, swaps in for .v2-dg-table-wrap below the breakpoint
+   so mobile never relies on horizontal scroll. */
+.v2-dg-mobile-list {
+  display: none;
+}
+
+.v2-dg-mobile-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+}
+
+.v2-dg-mobile-empty {
+  margin-top: 6px;
+  border: 1px dashed var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+  background: none;
+  padding: 0.4rem 0.6rem;
+}
+
+.v2-dg-mobile-cells {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.v2-dg-mobile-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--v2-radius-sm);
+  border: 1px solid var(--v2-border);
+  background: none;
+  text-align: left;
+  font: inherit;
+}
+
+.v2-dg-mobile-cell-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-dg-mobile-cell .v2-dg-cell-main {
+  font-size: 0.82rem;
+}
+
+.v2-dg-mobile-cell.tier-unconfigured .v2-dg-cell-dash { color: var(--v2-text-faint); opacity: 0.6; }
+.v2-dg-mobile-cell.tier-excluded .v2-dg-cell-dash { color: var(--v2-danger); opacity: 0.55; }
+.v2-dg-mobile-cell.tier-configured { background: var(--v2-warning-soft); }
+.v2-dg-mobile-cell.tier-thin { background: var(--v2-info-soft); }
+.v2-dg-mobile-cell.tier-sufficient { background: var(--v2-success-soft); }
+
+@media (max-width: 720px) {
+  .v2-dg-legend {
+    margin-left: 0;
+  }
+  .v2-dg-table-wrap {
+    display: none;
+  }
+  .v2-dg-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v2-space-3);
+  }
+}
+
+/* ---------- Demand Grid: evidence panel (dark-spotlight context, see .v2-spotlight) ---------- */
+
+.v2-dg-panel {
+  position: relative;
+  animation: v2-dg-panel-in 0.18s ease;
+  border-top-width: 3px;
+}
+
+/* The panel's top edge picks up the selected cell's tier color -- the one deliberate visual
+   thread connecting "which cell did I pick" to "what I'm now looking at". */
+.v2-dg-panel.accent-configured,
+.v2-dg-panel.accent-no_accounts { border-top-color: var(--v2-warning); }
+.v2-dg-panel.accent-thin { border-top-color: var(--v2-info); }
+.v2-dg-panel.accent-sufficient { border-top-color: var(--v2-success); }
+
+@keyframes v2-dg-panel-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.v2-dg-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--v2-space-4);
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-dg-panel-eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--v2-accent);
+  margin-bottom: 4px;
+}
+
+.v2-dg-panel-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--v2-space-2);
+}
+
+.v2-dg-panel-title {
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--v2-spot-text);
+  text-wrap: balance;
+}
+
+.v2-dg-panel-title-x {
+  color: var(--v2-spot-text-faint);
+  font-weight: 400;
+}
+
+.v2-dg-panel-pill {
+  flex-shrink: 0;
+}
+
+.v2-dg-panel-subtitle {
+  font-size: 0.78rem;
+  color: var(--v2-spot-text-muted);
+  margin-top: 4px;
+}
+
+/* Single responsive row of evidence blocks -- market/account/opportunity/commercial (or one wide
+   "not available yet" block) read together as one intelligence strip, not a detached grid. */
+.v2-dg-evidence-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v2-space-3);
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-dg-evidence-block {
+  flex: 1 1 150px;
+  background: var(--v2-spot-surface);
+  border: 1px solid var(--v2-spot-border);
+  border-radius: var(--v2-radius);
+  padding: var(--v2-space-3) var(--v2-space-4);
+}
+
+.v2-dg-evidence-block.is-empty {
+  color: var(--v2-spot-text-faint);
+}
+
+.v2-dg-evidence-block-wide {
+  flex-basis: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+}
+
+.v2-dg-evidence-block-icon-lead {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--v2-accent-soft);
+  color: var(--v2-accent);
+}
+
+.v2-dg-evidence-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.v2-dg-evidence-block-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--v2-spot-text-faint);
+}
+
+.v2-dg-evidence-block-icon {
+  color: var(--v2-spot-text-faint);
+  display: flex;
+}
+
+.v2-dg-evidence-block-value {
+  font-size: 1.25rem;
+  font-weight: 650;
+  color: var(--v2-spot-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-dg-evidence-block.is-empty .v2-dg-evidence-block-value {
+  color: var(--v2-spot-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.v2-dg-evidence-block-note {
+  font-size: 0.74rem;
+  color: var(--v2-spot-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.v2-dg-panel-empty-title {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--v2-spot-text);
+  margin-bottom: 4px;
+}
+
+.v2-dg-panel-empty-body {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--v2-spot-text-muted);
+}
+
+.v2-dg-companies {
+  margin-top: var(--v2-space-4);
+  padding-top: var(--v2-space-4);
+  border-top: 1px solid var(--v2-spot-border);
+}
+
+.v2-dg-companies-head {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--v2-spot-text-faint);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-dg-company-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-2);
+}
+
+.v2-dg-company-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  background: var(--v2-spot-surface);
+  border: 1px solid var(--v2-spot-border);
+  border-radius: var(--v2-radius);
+  text-decoration: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.v2-dg-company-row:hover {
+  background: #22243480;
+  border-color: var(--v2-spot-text-faint);
+}
+
+.v2-dg-company-avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--v2-radius-sm);
+  background: var(--v2-accent-soft);
+  color: var(--v2-accent);
+}
+
+.v2-dg-company-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.v2-dg-company-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+}
+
+.v2-dg-company-name {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--v2-spot-text);
+}
+
+.v2-dg-company-cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--v2-accent);
+  white-space: nowrap;
+}
+
+.v2-dg-company-headline {
+  font-size: 0.8rem;
+  color: var(--v2-spot-text-muted);
+  margin-top: 3px;
+}
+
+.v2-dg-company-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.v2-dg-company-chip {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--v2-spot-text-muted);
+  background: var(--v2-spot-border);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+}
+
+@media (max-width: 560px) {
+  .v2-dg-company-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+/* ---------- Demand Grid: view switcher + Analytics ---------- */
+
+/* .v2-config-tabs is `display: inline-flex`, which only controls how ITS OWN children lay out --
+   as a direct child of .v2-dg-page (a column flex container), it still stretches to the full
+   cross-axis width under the container's default `align-items: stretch`. align-self overrides
+   that so the control takes only the width its two buttons need. */
+.v2-dg-view-tabs {
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+
+/* ---------- Demand Grid: Analytics (bars, grouped by ICP) ---------- */
+
+.v2-da {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-5);
+}
+
+.v2-da-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--v2-space-4);
+  flex-wrap: wrap;
+}
+
+.v2-da-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-da-subtitle {
+  font-size: 0.82rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+}
+
+.v2-da-metric-tabs {
+  margin-bottom: 0;
+}
+
+/* Only scrolls internally if a tenant genuinely has enough ICPs to need it -- .v2-da-chart-plot's
+   own min-width (below) is what triggers that, never a fixed min-width on the whole card, so a
+   handful of bars (the common case) always fits the viewport with no scroll at all. */
+.v2-da-chart-card {
+  overflow-x: auto;
+}
+
+.v2-da-chart-title {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-da-chart-body {
+  display: flex;
+  gap: var(--v2-space-2);
+}
+
+/* Real Y-axis: numeric ticks, positioned to align with the gridlines in the plot area next to
+   them (both measured off the same CHART_HEIGHT constant in JS). */
+.v2-da-chart-yaxis {
+  position: relative;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.v2-da-chart-ytick {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  color: var(--v2-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-da-chart-plot {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+  border-left: 1px solid var(--v2-border);
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-da-chart-gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--v2-border);
+  opacity: 0.6;
+}
+
+.v2-da-chart-bars {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.v2-da-chart-col {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  align-items: flex-end;
+}
+
+.v2-da-chart-bar-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.v2-da-chart-bar {
+  width: 44px;
+  max-width: 60%;
+  border-radius: 4px 4px 0 0;
+  border: none;
+  background: var(--v2-accent);
+  cursor: pointer;
+  transition: filter 0.12s ease, height 0.25s ease;
+  padding: 0;
+}
+
+.v2-da-chart-bar:hover {
+  filter: brightness(1.12);
+}
+
+.v2-da-chart-bar.not-clickable {
+  cursor: default;
+}
+
+.v2-da-chart-bar.tier-thin { background: var(--v2-success); opacity: 0.6; }
+.v2-da-chart-bar.tier-sufficient { background: var(--v2-success); }
+
+/* `bottom` is set inline (per-bar, from the same pixel height the bar itself uses) so the
+   tooltip sits just above the actual bar top, not the top of the full-height column. */
+.v2-da-chart-tooltip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+  box-shadow: var(--v2-shadow);
+  padding: 0.4rem 0.65rem;
+  white-space: nowrap;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.v2-da-chart-tooltip-name {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-da-chart-tooltip-value {
+  font-size: 0.7rem;
+  color: var(--v2-text-muted);
+  margin-top: 1px;
+}
+
+.v2-da-chart-xaxis {
+  display: flex;
+  margin-top: var(--v2-space-2);
+}
+
+.v2-da-chart-xlabel {
+  flex: 1;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  padding: 0 4px;
+}
+
+/* ---------- Efficiency ---------- */
+/* Purpose-built for this page's own shape (a hero + a ledger + two honest-gap lists) -- reuses
+   shared primitives (.v2-card, .v2-status-pill, .v2-icon-btn) but no Demand Grid markup/classes. */
+
+.v2-eff-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-4);
+}
+
+.v2-eff-period {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text-faint);
+}
+
+.v2-eff-hero {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-5);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--v2-space-5);
+}
+
+.v2-eff-hero-primary {
+  flex: 1 1 200px;
+}
+
+.v2-eff-hero-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-eff-hero-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  margin-top: 4px;
+}
+
+.v2-eff-info {
+  position: relative;
+  display: inline-flex;
+}
+
+.v2-eff-info-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  width: 280px;
+  padding: var(--v2-space-3) var(--v2-space-4);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  box-shadow: var(--v2-shadow);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--v2-text-muted);
+}
+
+.v2-eff-hero-support {
+  display: flex;
+  gap: var(--v2-space-5);
+  padding-left: var(--v2-space-5);
+  border-left: 1px solid var(--v2-border);
+  flex-wrap: wrap;
+}
+
+.v2-eff-hero-stat-value {
+  font-size: 1.3rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-eff-hero-stat-label {
+  font-size: 0.72rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* A quiet, real observation -- never styled as a warning/error (no danger tokens here). */
+.v2-eff-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0.7rem var(--v2-space-4);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius);
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  line-height: 1.5;
+}
+
+.v2-eff-insight svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--v2-text-faint);
+}
+
+.v2-eff-card {
+  padding: var(--v2-space-4) var(--v2-space-5);
+}
+
+.v2-eff-section-title {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--v2-text);
+  margin-bottom: var(--v2-space-3);
+}
+
+/* Ledger -- a real 4-column grid, hairline rows (same restrained-matrix discipline as Demand
+   Grid's own matrix, without reusing its markup/classes). */
+.v2-eff-ledger {
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-eff-ledger-head {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) 90px 1.4fr 130px;
+  gap: var(--v2-space-3);
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--v2-border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+}
+
+.v2-eff-ledger-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) 90px 1.4fr 130px;
+  gap: var(--v2-space-3);
+  align-items: center;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--v2-border);
+  font-size: 0.84rem;
+  color: var(--v2-text-faint);
+}
+
+.v2-eff-ledger-row:last-child {
+  border-bottom: none;
+}
+
+.v2-eff-ledger-row.has-volume {
+  color: var(--v2-text);
+}
+
+.v2-eff-ledger-label {
+  font-weight: 600;
+  color: inherit;
+}
+
+.v2-eff-ledger-volume {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: inherit;
+}
+
+.v2-eff-ledger-row:not(.has-volume) .v2-eff-ledger-volume {
+  font-weight: 500;
+}
+
+.v2-eff-ledger-benchmark {
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-eff-benchmark-missing {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+}
+
+.v2-eff-configure-link {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--v2-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.v2-eff-configure-link:hover {
+  text-decoration: underline;
+}
+
+.v2-eff-ledger-human {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Not-measurable-yet -- three quiet items, one shared caption (never repeated per item). */
+.v2-eff-unavailable-row {
+  display: flex;
+  gap: var(--v2-space-5);
+  flex-wrap: wrap;
+}
+
+.v2-eff-unavailable-item {
+  flex: 1 1 140px;
+}
+
+.v2-eff-unavailable-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+}
+
+.v2-eff-unavailable-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  margin-top: 2px;
+}
+
+.v2-eff-caption {
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  margin: var(--v2-space-3) 0 0;
+}
+
+/* What's still manual -- a compact status-pill + name/detail list. */
+.v2-eff-manual-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-eff-manual-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-space-3);
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-eff-manual-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.v2-eff-manual-row .v2-status-pill {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Without this, a flex item's default min-width:auto sizes it to its longest unbroken token
+   (e.g. "GtmSignal/InterpretedSignal") instead of the row's available width, overflowing the
+   page horizontally on narrow screens. */
+.v2-eff-manual-text {
+  min-width: 0;
+}
+
+.v2-eff-manual-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-eff-manual-detail {
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .v2-eff-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  /* .v2-eff-hero switches to a COLUMN flex container here, which flips what `flex: 1 1 200px`
+     (set for the desktop ROW layout) means -- its flex-basis becomes a target HEIGHT instead of
+     width, forcing a tall empty box. Reset it explicitly for the column layout. */
+  .v2-eff-hero-primary {
+    flex: none;
+    width: 100%;
+  }
+  .v2-eff-hero-support {
+    padding-left: 0;
+    border-left: none;
+    padding-top: var(--v2-space-4);
+    border-top: 1px solid var(--v2-border);
+    width: 100%;
+  }
+  .v2-eff-ledger-head {
+    display: none;
+  }
+  .v2-eff-ledger-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 0.7rem 0;
+  }
+  .v2-eff-ledger-volume::before { content: 'Volume: '; color: var(--v2-text-faint); font-weight: 400; }
+  .v2-eff-ledger-benchmark::before { content: 'Benchmark: '; color: var(--v2-text-faint); font-weight: 400; }
+  .v2-eff-ledger-human::before { content: 'Human equivalent: '; color: var(--v2-text-faint); font-weight: 400; }
+}
+
+/* ---------- Overrides & Evals ---------- */
+/* Candidate patterns get the strongest presence (the one place this page asks for a real human
+   decision); confirmed/dismissed/recent-overrides/recent-losses stay compact and only take space
+   when they have real content -- an empty production state should read as intentional, not
+   unfinished. Reuses .v2-status-pill/tone-*, .v2-stat-tile, .v2-btn -- no new design system. */
+
+.v2-oe-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-5);
+}
+
+.v2-oe-accuracy {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+}
+
+.v2-oe-accuracy-reason {
+  font-size: 0.8rem;
+  color: var(--v2-text-faint);
+  line-height: 1.5;
+}
+
+.v2-oe-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-3);
+}
+
+.v2-oe-section.quiet {
+  opacity: 0.9;
+}
+
+.v2-oe-section-title {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-oe-quiet-empty {
+  padding: 0.6rem var(--v2-space-4);
+  border: 1px dashed var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.82rem;
+  color: var(--v2-text-faint);
+  font-style: italic;
+}
+
+/* Candidate patterns -- the most actionable section, given real card + accent presence. */
+.v2-oe-candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-3);
+}
+
+.v2-oe-candidate {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-left: 3px solid var(--v2-warning);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+}
+
+.v2-oe-candidate-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.v2-oe-candidate-name {
+  font-size: 0.96rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-oe-candidate-desc {
+  font-size: 0.86rem;
+  color: var(--v2-text-muted);
+  line-height: 1.5;
+  margin: 0 0 var(--v2-space-4);
+}
+
+.v2-oe-evidence-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v2-space-4);
+  padding-bottom: var(--v2-space-4);
+  margin-bottom: var(--v2-space-4);
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-oe-evidence-eyebrow {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
-  position: sticky;
-  top: 0;
+  color: var(--v2-text-faint);
+  margin-bottom: 4px;
 }
 
-.v2-demand-grid tbody th {
-  background: var(--v2-surface);
-  color: var(--v2-text);
+.v2-oe-evidence-value {
+  font-size: 0.9rem;
   font-weight: 600;
-  position: sticky;
-  left: 0;
+  color: var(--v2-text);
 }
 
-.v2-demand-grid tbody tr:last-child td,
-.v2-demand-grid tbody tr:last-child th {
+.v2-oe-evidence-value.small {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.v2-oe-candidate-refs {
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-oe-candidate-refs ul {
+  margin: 4px 0 0;
+  padding-left: 1.1rem;
+  color: var(--v2-text);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.v2-oe-note {
+  font-size: 0.8rem;
+  color: var(--v2-text-faint);
+  font-style: italic;
+  margin: 0 0 var(--v2-space-3);
+}
+
+/* Confirmed/dismissed -- compact rows, not another card-per-item; confirmed carries real (but
+   not overstated) presence, dismissed stays quieter -- neither implies any effect on autonomous
+   behavior, they're a human record only. */
+.v2-oe-decided-row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-oe-decided-row:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
-.v2-grid-cell {
+/* Recent overrides / recent losses -- same compact row language so the two sections read as
+   related, not as two more independent card stacks. */
+.v2-oe-event-list {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  background: none;
-  border: none;
-  font: inherit;
-  cursor: default;
-  padding: 0;
+  gap: 2px;
 }
 
-.v2-grid-cell.clickable {
-  cursor: pointer;
+.v2-oe-event-row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--v2-border);
 }
 
-.v2-grid-cell.clickable:hover .v2-badge {
-  filter: brightness(1.15);
+.v2-oe-event-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
-.v2-grid-cell-count {
-  font-size: 0.72rem;
+.v2-oe-event-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+}
+
+.v2-oe-event-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.v2-oe-event-reason {
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  line-height: 1.5;
+  margin: 4px 0 0;
+  overflow-wrap: break-word;
+}
+
+.v2-oe-event-meta {
+  font-size: 0.74rem;
   color: var(--v2-text-faint);
+  margin-top: 3px;
+}
+
+.v2-oe-event-status {
+  text-transform: capitalize;
+}
+
+@media (max-width: 640px) {
+  .v2-oe-evidence-row {
+    grid-template-columns: 1fr;
+    gap: var(--v2-space-3);
+  }
+  .v2-oe-candidate {
+    padding: var(--v2-space-4);
+  }
+  .v2-oe-candidate-head .v2-status-pill {
+    white-space: normal;
+  }
 }
 
 /* ---------- Market Intelligence ---------- */
+/* An intelligence/evidence surface, not a matrix -- deliberately not Demand Grid's grid layout.
+   Topics are tiered by their own real state (see TIER_RANK in MarketIntelligence.jsx): quiet,
+   single-line-weight rows for insufficient_evidence, real card presence for anything with actual
+   signal. Reuses .v2-status-pill/tone-*, .v2-card-family spacing/radius/border tokens -- no new
+   design system. */
 
-.v2-trend-card-head {
+.v2-mi-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-4);
+}
+
+.v2-mi-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.v2-mi-summary-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.v2-mi-summary-label {
+  font-size: 0.84rem;
+  color: var(--v2-text-faint);
+}
+
+.v2-mi-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-3);
+}
+
+.v2-mi-row {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-left: 3px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-4) var(--v2-space-5);
+}
+
+/* Progressive presence -- insufficient_evidence recedes (not an error state, just quiet);
+   declining/some/strong pick up real color weight on the left edge, scaled to how much real
+   signal actually exists, same discipline established on Demand Grid's cell tiers. */
+.v2-mi-row.tier-insufficient {
+  opacity: 0.72;
+}
+
+.v2-mi-row.tier-some {
+  border-left-color: var(--v2-info);
+}
+
+.v2-mi-row.tier-declining {
+  border-left-color: var(--v2-warning);
+}
+
+.v2-mi-row.tier-strong {
+  border-left-color: var(--v2-success);
+}
+
+.v2-mi-row-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--v2-space-3);
-  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
 }
 
-.v2-trend-card-title {
+.v2-mi-row-title {
   display: flex;
   align-items: center;
   gap: var(--v2-space-2);
+}
+
+.v2-mi-row-name {
   font-size: 1rem;
   font-weight: 650;
   color: var(--v2-text);
 }
 
-.v2-evidence-split {
+.v2-mi-explanation {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--v2-text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.v2-mi-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-mi-chip {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--v2-text-muted);
+  background: var(--v2-surface-elevated);
+  border: 1px solid var(--v2-border);
+  border-radius: 999px;
+  padding: 0.18rem 0.65rem;
+}
+
+.v2-mi-evidence-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--v2-space-4);
-  margin-top: var(--v2-space-4);
   padding-top: var(--v2-space-4);
   border-top: 1px solid var(--v2-border);
 }
 
-.v2-evidence-split-block .v2-kv-label {
-  margin-bottom: 4px;
-}
-
-.v2-evidence-split-block.account-evidence {
+.v2-mi-evidence-block {
   border-left: 2px solid var(--v2-border);
   padding-left: var(--v2-space-4);
 }
 
-.v2-evidence-split-block.account-evidence.has-evidence {
+.v2-mi-evidence-block.has-evidence {
   border-left-color: var(--v2-success);
+}
+
+.v2-mi-evidence-eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--v2-text-faint);
+  margin-bottom: 4px;
+}
+
+.v2-mi-evidence-value {
+  font-size: 0.94rem;
+  font-weight: 650;
+  color: var(--v2-text);
+}
+
+.v2-mi-evidence-note {
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.v2-mi-meta {
+  font-size: 0.74rem;
+  color: var(--v2-text-faint);
+  margin-top: var(--v2-space-3);
+}
+
+@media (max-width: 640px) {
+  .v2-mi-row {
+    padding: var(--v2-space-4);
+  }
+  .v2-mi-evidence-row {
+    grid-template-columns: 1fr;
+    gap: var(--v2-space-3);
+  }
+  .v2-mi-evidence-block {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--v2-border);
+    padding-top: var(--v2-space-3);
+  }
+  .v2-mi-evidence-block:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+/* ---------- Settings ---------- */
+/* Purpose-built for this page's own shape (tabbed config cards) -- reuses .v2-card,
+   .v2-status-pill/tone-*, .v2-kv-grid, .v2-config-tabs; no new design system. */
+
+.v2-set-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-4);
+}
+
+.v2-set-card {
+  margin-bottom: var(--v2-space-4);
+}
+
+.v2-set-card:last-child {
+  margin-bottom: 0;
+}
+
+.v2-set-note {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.v2-set-kv-small {
+  font-size: 0.82rem;
+}
+
+.v2-set-head-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Marks a field as a real, live input into another real system -- distinct from the quieter
+   reference-only note style, so real backend-connectedness is visible at a glance. */
+.v2-set-consumed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-set-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--v2-text);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+/* Connections -- compact rows, not one card per integration. */
+.v2-set-conn-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-set-conn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-3);
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--v2-border);
+  flex-wrap: wrap;
+}
+
+.v2-set-conn-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.v2-set-conn-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-set-conn-hint {
+  font-size: 0.76rem;
+  color: var(--v2-text-faint);
+  margin-top: 2px;
+}
+
+.v2-set-conn-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v2-set-conn-updated {
+  font-size: 0.74rem;
+  color: var(--v2-text-faint);
+}
+
+/* Performance -- real counts as tags, never a score. */
+.v2-set-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Efficiency benchmarks ledger -- same compact real-grid language as the standalone Efficiency
+   page's own ledger (.v2-eff-ledger), distinct class family since this is a different page. */
+.v2-set-ledger {
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-set-ledger-head {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) 1fr 1fr;
+  gap: var(--v2-space-3);
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--v2-border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-faint);
+}
+
+.v2-set-ledger-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) 1fr 1fr;
+  gap: var(--v2-space-3);
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--v2-border);
+  font-size: 0.86rem;
+  color: var(--v2-text);
+}
+
+.v2-set-ledger-row:last-child {
+  border-bottom: none;
+}
+
+.v2-set-ledger-label {
+  font-weight: 600;
+}
+
+.v2-set-ledger-input {
+  max-width: 100px;
+}
+
+.v2-set-hidden-checkbox {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .v2-set-ledger-head {
+    display: none;
+  }
+  .v2-set-ledger-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 0.7rem 0;
+  }
+  .v2-set-conn-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* ---------- ICPs & Offerings configuration ---------- */
@@ -1186,6 +3116,23 @@
   border-radius: var(--v2-radius-lg);
   padding: var(--v2-space-5);
   color: var(--v2-spot-text);
+}
+
+/* A close/dismiss control that belongs inside .v2-spotlight -- sizing/hit-target comes from the
+   shared .v2-icon-btn (see Demand Grid section); this just swaps in the panel's own fixed-dark
+   --v2-spot-* tokens instead of the theme-adaptive tokens .v2-theme-toggle uses, so it doesn't
+   turn into a light-colored button inside a permanently-dark card when the site is in light mode. */
+.v2-spotlight-close {
+  border-color: var(--v2-spot-border);
+  background: var(--v2-spot-surface);
+  color: var(--v2-spot-text-muted);
+}
+
+.v2-spotlight-close:hover,
+.v2-spotlight-close:focus-visible {
+  background: var(--v2-spot-border);
+  color: var(--v2-spot-text);
+  outline: none;
 }
 
 .v2-readiness-hero {
@@ -1857,34 +3804,54 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
     display: none;
   }
 
-  .v2-account-row {
-    flex-direction: column;
-    /* NOT align-items: flex-start -- that lets a flex-column child size to its own content
-       instead of the row's width, which silently defeats .v2-account-meta's
-       overflow/text-overflow/white-space truncation (found via a real mobile screenshot: text
-       was overflowing the card uncropped instead of ellipsizing). `stretch` (the flex default)
-       keeps children full-width so truncation actually has a boundary to truncate against. */
-    align-items: stretch;
+  .v2-account-row-grid {
+    grid-template-columns: 1fr;
     gap: var(--v2-space-2);
   }
 
-  .v2-account-tags {
+  .v2-ar-intel {
+    flex-direction: row;
+    align-items: center;
     flex-wrap: wrap;
+  }
+
+  .v2-account-funnel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--v2-space-3);
+  }
+
+  .v2-account-funnel-total {
+    padding-right: 0;
+    padding-bottom: var(--v2-space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--v2-border);
+  }
+
+  .v2-account-cta {
+    justify-content: flex-start;
+  }
+
+  .v2-accounts-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .v2-accounts-count {
+    padding-left: 0;
+  }
+
+  .v2-accounts-search {
+    max-width: none;
   }
 
   .v2-account-header {
     flex-direction: column;
   }
 
-  .v2-evidence-split {
+  .v2-agent-grid,
+  .v2-agent-hero-grid {
     grid-template-columns: 1fr;
-  }
-
-  .v2-evidence-split-block.account-evidence {
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid var(--v2-border);
-    padding-top: var(--v2-space-3);
   }
 
   .v2-kv-grid {
