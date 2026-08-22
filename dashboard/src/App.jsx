@@ -10,6 +10,7 @@ import BatchDetail from './pages/BatchDetail'
 import Autonomous from './pages/Autonomous'
 import Outcomes from './pages/Outcomes'
 import Targets from './pages/Targets'
+import Inbound from './pages/Inbound'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import NotificationBell from './components/NotificationBell'
@@ -144,6 +145,7 @@ function useBreadcrumbLabel() {
     notifications: 'Notifications',
     calendar: 'Review',
     targets: 'Targets',
+    inbound: 'Inbound',
     settings: 'Settings',
   }
   return labels[segment] || 'Batch Detail'
@@ -196,6 +198,10 @@ function AppShell() {
               <NavLink to={`/${tenantSlug}/targets`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                 Targets
+              </NavLink>
+              <NavLink to={`/${tenantSlug}/inbound`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.1-2.8-2.8L7 14"></path></svg>
+                Inbound
               </NavLink>
             </>
           ) : (
@@ -256,6 +262,7 @@ function AppShell() {
             <Route path="notifications" element={<TenantScope><Notifications /></TenantScope>} />
             <Route path="calendar" element={<TenantScope><Calendar /></TenantScope>} />
             <Route path="targets" element={<TenantScope><Targets /></TenantScope>} />
+            <Route path="inbound" element={<TenantScope><Inbound /></TenantScope>} />
             <Route path="settings" element={<TenantScope><Settings /></TenantScope>} />
           </Routes>
         </div>
