@@ -46,6 +46,7 @@ export const V2_NAV_GROUPS = [
       { path: 'demand-grid', label: 'Demand Grid', icon: IconGrid },
       { path: 'market-intelligence', label: 'Market Intelligence', icon: IconRadio },
       { path: 'network', label: 'Network', icon: IconNetwork },
+      { path: 'inbound', label: 'Inbound', icon: IconTrendingUp },
     ],
   },
   {

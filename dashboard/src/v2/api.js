@@ -224,3 +224,30 @@ export function getCredentials() {
   return client.get('/credentials').then(res => res.data)
 }
 
+// V2 Inbound page -- same backend routes V1's Inbound page already uses (app/google_analytics_client.py,
+// app/google_search_console_client.py, app/website_visitor_tracking.py). No second implementation,
+// just a V2-styled read of the same data.
+export function getInboundAnalyticsOverview(params = {}) {
+  return client.get('/inbound/analytics/overview', { params }).then(res => res.data)
+}
+
+export function getInboundAnalyticsTopPages(params = {}) {
+  return client.get('/inbound/analytics/top-pages', { params }).then(res => res.data)
+}
+
+export function getInboundAnalyticsTrend(params = {}) {
+  return client.get('/inbound/analytics/trend', { params }).then(res => res.data)
+}
+
+export function getInboundSearchConsoleTopQueries(params = {}) {
+  return client.get('/inbound/search-console/top-queries', { params }).then(res => res.data)
+}
+
+export function getInboundSearchConsoleTopPages(params = {}) {
+  return client.get('/inbound/search-console/top-pages', { params }).then(res => res.data)
+}
+
+export function getInboundVisitors(params = {}) {
+  return client.get('/inbound/visitors', { params }).then(res => res.data)
+}
+

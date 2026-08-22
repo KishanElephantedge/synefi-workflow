@@ -18,6 +18,7 @@ import DemandGrid from './pages/DemandGrid.jsx'
 import MarketIntelligence from './pages/MarketIntelligence.jsx'
 import IcpOfferings from './pages/IcpOfferings.jsx'
 import Settings from './pages/Settings.jsx'
+import Inbound from './pages/Inbound.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
 // Reuses the existing auth gate (a user must already be logged in to reach here, same as V1) but
@@ -49,6 +50,7 @@ export default function V2App() {
           <Route path="accounts/:companyId" element={<AccountDetail />} />
           <Route path="demand-grid" element={<DemandGrid />} />
           <Route path="market-intelligence" element={<MarketIntelligence />} />
+          <Route path="inbound" element={<Inbound />} />
           <Route path="icps-offerings" element={<IcpOfferings />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="briefing" replace />} />
