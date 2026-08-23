@@ -128,6 +128,21 @@ export function reviewMessageDraft(messageDraftId, action, reviewedBy, note) {
   return client.post(`/gtm-os/messages/${messageDraftId}/review`, { action, reviewed_by: reviewedBy, note }).then(res => res.data)
 }
 
+// V2 Frontend Phase (Message Workspace, inline in AccountDetail's Messages tab) -- backed by the
+// new POST /gtm-os/messages/{id}/regenerate, itself a controlled re-invocation of the existing,
+// unmodified generate_message_draft(). `contactId` is optional -- omit to regenerate for the
+// same contact/decision-maker resolution as before, or pass one of getEligibleContacts()'s real
+// ids to re-target. The backend itself re-validates eligibility -- this is not the only guard.
+export function regenerateMessageDraft(messageDraftId, contactId) {
+  return client.post(`/gtm-os/messages/${messageDraftId}/regenerate`, { contact_id: contactId ?? null }).then(res => res.data)
+}
+
+// Backed by the new GET /gtm-os/opportunities/{id}/eligible-contacts, a thin wrapper over the
+// existing get_eligible_contacts() -- real, non-suppressed contacts only (Contact.excluded_from_push).
+export function getEligibleContacts(opportunityId) {
+  return client.get(`/gtm-os/opportunities/${opportunityId}/eligible-contacts`).then(res => res.data)
+}
+
 // Phase 9 -- backed by the pre-existing GET/PUT /gtm-os/business-context (app/gtm_os/context/
 // business_context.py), the only gtm_os route that predates Phase 2. PUT has no field-level
 // validation of its own (set_business_context() stores whatever dict it's given), so
@@ -249,5 +264,115 @@ export function getInboundSearchConsoleTopPages(params = {}) {
 
 export function getInboundVisitors(params = {}) {
   return client.get('/inbound/visitors', { params }).then(res => res.data)
+}
+
+// V2 Autonomous page -- thin wrappers over the existing, real, already-deployed control-plane
+// routes (app/gtm_os/orchestration/control.py). No new backend routes -- these are the exact
+// endpoints confirmed in the Phase-0-frontend-audit: GET/PUT /gtm-os/control (full config: state,
+// limits, business_hours, discovery, retry, investigation, apify, outbound),
+// GET /gtm-os/control/status (current state + latest GtmIntelligenceRun in one call), and
+// POST /gtm-os/intelligence-runs/trigger (manual run, dry_run supported, blocked with a 409 if
+// paused/stopped or another run is already in progress -- same guard as the scheduled tick).
+export function getControlConfig() {
+  return client.get('/gtm-os/control').then(res => res.data)
+}
+export function putControlConfig(config) {
+  return client.put('/gtm-os/control', config).then(res => res.data)
+}
+export function getControlStatus() {
+  return client.get('/gtm-os/control/status').then(res => res.data)
+}
+export function triggerIntelligenceRun(dryRun = false) {
+  return client.post('/gtm-os/intelligence-runs/trigger', null, { params: { dry_run: dryRun } }).then(res => res.data)
+}
+
+// Fixed daily UTC time the sensing cycle fires at (changed from hourly to once-daily,
+// 2026-08-23, to match V1's own daily autonomous cycle) -- app/gtm_os/orchestration/control.py's
+// get_intelligence_schedule_utc/set_intelligence_schedule_utc.
+export function getIntelligenceSchedule() {
+  return client.get('/gtm-os/intelligence-schedule').then(res => res.data)
+}
+export function putIntelligenceSchedule(hour, minute) {
+  return client.put('/gtm-os/intelligence-schedule', { hour, minute }).then(res => res.data)
+}
+
+// V2 Network page -- V1's Targets page ported onto the SAME real backend (app/phases/
+// linkedin_monitor.py for the signal feed/watched profiles/keyword taxonomy/schedule, and
+// app/phases/gtm_partner_classification.py for cross-industry partner matches). No new routes.
+export function getNetworkSignals(limit = 50) {
+  return client.get('/linkedin-monitor/signals', { params: { limit } }).then(res => res.data)
+}
+export function getNetworkProfiles() {
+  return client.get('/linkedin-monitor/profiles').then(res => res.data)
+}
+export function addNetworkProfile({ name, company, linkedin_url }) {
+  return client.post('/linkedin-monitor/profiles', null, { params: { name: name || undefined, company: company || undefined, linkedin_url } }).then(res => res.data)
+}
+export function removeNetworkProfile(profileId) {
+  return client.delete(`/linkedin-monitor/profiles/${profileId}`).then(res => res.data)
+}
+export function toggleNetworkProfileActive(profileId, active) {
+  return client.patch(`/linkedin-monitor/profiles/${profileId}`, null, { params: { active } }).then(res => res.data)
+}
+export function setNetworkProfileSlackId(profileId, slackUserId) {
+  return client.patch(`/linkedin-monitor/profiles/${profileId}`, null, { params: { slack_user_id: slackUserId } }).then(res => res.data)
+}
+export function lookupNetworkProfileSlackId(profileId, email) {
+  return client.post(`/linkedin-monitor/profiles/${profileId}/slack-lookup`, { email }).then(res => res.data)
+}
+export function getNetworkKeywords() {
+  return client.get('/linkedin-monitor/keywords').then(res => res.data)
+}
+export function putNetworkKeywords(tiers) {
+  return client.put('/linkedin-monitor/keywords', tiers).then(res => res.data)
+}
+export function getNetworkSchedule() {
+  return client.get('/linkedin-monitor/schedule').then(res => res.data)
+}
+export function putNetworkSchedule(schedule) {
+  return client.put('/linkedin-monitor/schedule', schedule).then(res => res.data)
+}
+export function runNetworkClassification(onlyUnclassified = true) {
+  return client.post('/linkedin-monitor/classify', null, { params: { only_unclassified: onlyUnclassified } }).then(res => res.data)
+}
+export function getNetworkPartnerMatches() {
+  return client.get('/linkedin-monitor/partner-matches').then(res => res.data)
+}
+
+// V2 Network > Recommended Companies -- V1's partner-referral matching pipeline, backed by
+// app/phases/gtm_partner_matching.py (company matching, cap/schedule) and
+// app/phases/gtm_partner_messaging.py (outreach drafting/send). No new routes.
+export function runNetworkPartnerMatching({ onlyNewProfiles = true, profileId = null } = {}) {
+  return client.post('/linkedin-monitor/match-companies', null, { params: { only_new_profiles: onlyNewProfiles, profile_id: profileId ?? undefined } }).then(res => res.data)
+}
+export function getNetworkMatchCap() {
+  return client.get('/linkedin-monitor/match-cap').then(res => res.data)
+}
+export function putNetworkMatchCap(cap) {
+  return client.put('/linkedin-monitor/match-cap', { cap }).then(res => res.data)
+}
+export function getNetworkMatchSchedule() {
+  return client.get('/linkedin-monitor/match-schedule').then(res => res.data)
+}
+export function putNetworkMatchSchedule(schedule) {
+  return client.put('/linkedin-monitor/match-schedule', schedule).then(res => res.data)
+}
+export function getNetworkRecommendations({ status = '', profileId = null } = {}) {
+  return client.get('/linkedin-monitor/recommendations', { params: { status, profile_id: profileId ?? undefined } }).then(res => res.data)
+}
+export function updateNetworkRecommendation(recommendationId, status) {
+  return client.patch(`/linkedin-monitor/recommendations/${recommendationId}`, { status }).then(res => res.data)
+}
+export function generateNetworkRecommendationMessage(profileId) {
+  return client.post('/linkedin-monitor/recommendations/generate-message', null, { params: { profile_id: profileId } }).then(res => res.data)
+}
+export function getNetworkRecommendationMessages(profileId) {
+  return client.get('/linkedin-monitor/messages', { params: { profile_id: profileId } }).then(res => res.data)
+}
+export function updateNetworkRecommendationMessage(messageId, status) {
+  return client.patch(`/linkedin-monitor/messages/${messageId}`, { status }).then(res => res.data)
+}
+export function markNetworkRecommendationMessageSent(messageId, sendChannel) {
+  return client.patch(`/linkedin-monitor/messages/${messageId}/mark-sent`, { send_channel: sendChannel }).then(res => res.data)
 }
 

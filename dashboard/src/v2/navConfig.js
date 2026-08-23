@@ -19,6 +19,7 @@ import {
   IconSettings,
   IconLightbulb,
   IconNetwork,
+  IconActivity,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -37,6 +38,7 @@ export const V2_NAV_GROUPS = [
       { path: 'revenue-pace', label: 'Revenue Pace', icon: IconBarChart },
       { path: 'efficiency', label: 'Efficiency', icon: IconZap },
       { path: 'overrides-evals', label: 'Overrides & Evals', icon: IconScale, countKey: 'overridesEvals' },
+      { path: 'autonomous', label: 'Autonomous', icon: IconActivity },
     ],
   },
   {

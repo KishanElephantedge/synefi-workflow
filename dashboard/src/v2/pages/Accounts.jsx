@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { listAccounts, getAccountsSummary, formatApiError } from '../api.js'
+import { formatRecency } from '../format.js'
 import { IconAlertTriangle, IconChevronLeft, IconChevronRight, IconX } from '../icons.jsx'
 
 // Real, plain-English label for each ?filter= value Jobs to Be Done can link here with -- see
@@ -103,6 +104,7 @@ function AccountCard({ company }) {
     company.hot_lead && 'Hot lead',
     company.hiring_signal_role && `hiring: ${company.hiring_signal_role.replace(/_/g, ' ')}`,
   ].filter(Boolean).join(' · ')
+  const added = formatRecency(company.created_at)
 
   return (
     <Link to={`/v2/accounts/${company.id}`} className={`v2-account-row-grid v2-account-state-${accountStatus}`}>
@@ -110,6 +112,7 @@ function AccountCard({ company }) {
         <div className="v2-account-name">{company.name}</div>
         <div className="v2-account-meta">
           {[company.domain, company.industry].filter(Boolean).join(' · ') || 'No domain or industry on file'}
+          {added && <span title={added.exact}> · Added {added.label}</span>}
         </div>
         {secondaryText && <div className="v2-account-secondary">{secondaryText}</div>}
       </div>

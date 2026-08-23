@@ -19,6 +19,8 @@ import MarketIntelligence from './pages/MarketIntelligence.jsx'
 import IcpOfferings from './pages/IcpOfferings.jsx'
 import Settings from './pages/Settings.jsx'
 import Inbound from './pages/Inbound.jsx'
+import Autonomous from './pages/Autonomous.jsx'
+import Network from './pages/Network.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
 // Reuses the existing auth gate (a user must already be logged in to reach here, same as V1) but
@@ -45,6 +47,8 @@ export default function V2App() {
           <Route path="revenue-pace" element={<RevenuePace />} />
           <Route path="efficiency" element={<Efficiency />} />
           <Route path="overrides-evals" element={<OverridesEvals />} />
+          <Route path="autonomous" element={<Autonomous />} />
+          <Route path="network" element={<Network />} />
           <Route path="pipeline/:opportunityId" element={<OpportunityDetail />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="accounts/:companyId" element={<AccountDetail />} />

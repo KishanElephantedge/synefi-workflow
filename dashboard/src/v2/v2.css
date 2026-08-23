@@ -3959,3 +3959,201 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   white-space: nowrap;
   max-width: 220px;
 }
+
+/* ---------- Autonomous operations (P0.1) ---------- */
+/* Reuses .v2-card, .v2-status-pill/tone-*, .v2-badge/*, .v2-btn/*, .v2-kv-label/.v2-kv-value,
+   .v2-section-title, .v2-state/.v2-state-error -- no new design system, per Part 5's rule. */
+
+.v2-auto-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-2);
+}
+
+.v2-auto-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-4);
+  margin-bottom: var(--v2-space-2);
+}
+
+.v2-auto-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--v2-space-3);
+}
+
+.v2-auto-hero-state {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  color: var(--v2-text-muted);
+}
+
+.v2-auto-action-message {
+  font-size: 0.82rem;
+  color: var(--v2-warning);
+  background: var(--v2-warning-soft);
+  border-radius: var(--v2-radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+.v2-auto-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: var(--v2-space-4);
+  padding-top: var(--v2-space-3);
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-auto-hero-stat .v2-kv-value {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  flex-wrap: wrap;
+}
+
+.v2-auto-safety-note {
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  background: var(--v2-surface-elevated);
+  border-radius: var(--v2-radius-sm);
+  padding: 0.6rem 0.85rem;
+}
+
+.v2-auto-runs-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.v2-auto-run {
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-auto-run:last-child { border-bottom: none; }
+
+.v2-auto-run-summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--v2-space-3);
+  background: none;
+  border: none;
+  font-family: inherit;
+  color: var(--v2-text);
+  padding: var(--v2-space-3) var(--v2-space-4);
+  cursor: pointer;
+  text-align: left;
+}
+
+.v2-auto-run-summary:hover { background: var(--v2-surface-elevated); }
+
+.v2-auto-run-summary-main {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  min-width: 0;
+}
+
+.v2-auto-run-time {
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.v2-auto-run-duration {
+  font-size: 0.78rem;
+  color: var(--v2-text-faint);
+  white-space: nowrap;
+}
+
+.v2-auto-run-summary-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-3);
+  flex-wrap: wrap;
+  color: var(--v2-text-muted);
+}
+
+.v2-auto-run-stat {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.v2-auto-run-chevron {
+  transition: transform 0.12s ease;
+  flex-shrink: 0;
+}
+
+.v2-auto-run-chevron.open { transform: rotate(90deg); }
+
+.v2-auto-run-detail {
+  padding: 0 var(--v2-space-4) var(--v2-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-space-2);
+}
+
+.v2-auto-run-error {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  font-size: 0.82rem;
+  color: var(--v2-danger);
+  background: var(--v2-danger-soft);
+  border-radius: var(--v2-radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+.v2-auto-stage {
+  background: var(--v2-surface-elevated);
+  border-radius: var(--v2-radius-sm);
+  padding: var(--v2-space-3);
+}
+
+.v2-auto-stage-empty { opacity: 0.6; }
+
+.v2-auto-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v2-space-2);
+}
+
+.v2-auto-stage-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-auto-stage-detail, .v2-auto-stage-reason {
+  font-size: 0.76rem;
+  color: var(--v2-text-muted);
+  margin-top: 4px;
+}
+
+.v2-auto-stage-reason { color: var(--v2-warning); }
+
+@media (max-width: 640px) {
+  .v2-auto-hero-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .v2-auto-run-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .v2-auto-run-summary-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .v2-auto-hero-stats {
+    grid-template-columns: 1fr;
+  }
+}

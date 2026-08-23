@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getAccountBrief, getAccountMessages, formatApiError } from '../api.js'
-import { IconAlertTriangle, IconChevronLeft } from '../icons.jsx'
+import { useTenant } from '../../context/TenantContext.jsx'
+import { getAccountBrief, getAccountMessages, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, formatApiError } from '../api.js'
+import { IconAlertTriangle, IconChevronLeft, IconRefreshCw } from '../icons.jsx'
+import { formatRecency } from '../format.js'
 
 const TABS = ['Overview', 'Evidence', 'Opportunity & Strategy', 'Contacts', 'Messages']
 
@@ -431,11 +433,14 @@ function channelLabel(channel) {
   return CHANNEL_LABEL[channel] || channel[0].toUpperCase() + channel.slice(1)
 }
 
+// Real, complete vocabulary -- MessageDraft.status (message_draft.py:58), never a paraphrase.
 const MESSAGE_STATUS_LABEL = {
   insufficient_context: 'Insufficient context',
   draft: 'Draft (needs review)',
   ready_for_review: 'Ready for review',
   approved: 'Approved',
+  rejected: 'Rejected',
+  changes_requested: 'Changes requested',
 }
 
 const MESSAGE_STATUS_BADGE = {
@@ -443,23 +448,180 @@ const MESSAGE_STATUS_BADGE = {
   draft: 'v2-badge-warning',
   ready_for_review: 'v2-badge-info',
   approved: 'v2-badge-success',
+  rejected: 'v2-badge-danger',
+  changes_requested: 'v2-badge-warning',
 }
 
-// Phase 3 -- consumes GET /gtm-os/accounts/{id}/messages (list_messages_for_company(), Batch 7's
-// MessageDraft, read-only). Deliberately no Send and no Approve button here: Part 7's own
-// instruction is to add an Approve action only if a safe, frontend-intended approval API already
-// exists, and this phase doesn't add one -- so the lifecycle is shown, never advanced, from V2.
-function MessagesTab({ companyId }) {
-  const [messages, setMessages] = useState(null)
+// V2 Frontend Phase (Message Workspace, inline) -- approve/reject/request-changes, same real
+// lifecycle OpportunityDetail's own ReviewActions already uses (reviewMessageDraft(), Phase 7's
+// one human-approval-boundary write route). Duplicated here deliberately rather than extracted
+// into a shared file, to avoid touching OpportunityDetail.jsx while this inline placement is
+// still being proven -- same "do not remove/disturb the existing working review UI" caution the
+// approved plan already called for.
+function MessageReviewActions({ draft, onChanged, userEmail }) {
+  const [note, setNote] = useState('')
+  const [showNote, setShowNote] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const act = async (action) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await reviewMessageDraft(draft.id, action, userEmail, note || null)
+      onChanged()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.75rem' }}>
+      {error && <div className="v2-form-message error">{error}</div>}
+      {showNote && (
+        <div className="v2-field">
+          <label className="v2-field-label">Note (optional)</label>
+          <textarea className="v2-textarea" value={note} onChange={e => setNote(e.target.value)} placeholder="What needs to change?" />
+        </div>
+      )}
+      <div className="v2-btn-row">
+        <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={() => act('approve')}>Approve</button>
+        <button type="button" className="v2-btn" disabled={busy} onClick={() => (showNote ? act('request_changes') : setShowNote(true))}>
+          {showNote ? 'Submit change request' : 'Request changes'}
+        </button>
+        <button type="button" className="v2-btn v2-btn-danger" disabled={busy} onClick={() => act('reject')}>Reject</button>
+      </div>
+    </div>
+  )
+}
+
+// Regenerate + "change recipient" -- backed by the new POST /gtm-os/messages/{id}/regenerate and
+// GET /gtm-os/opportunities/{id}/eligible-contacts (real, additive routes; see message_draft.py's
+// regenerate_message_draft()). Eligible contacts are fetched lazily, only when the picker is
+// opened, never preloaded for every draft card.
+function RegenerateControl({ draft, onChanged }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const [contacts, setContacts] = useState(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const regenerate = async (contactId) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await regenerateMessageDraft(draft.id, contactId)
+      setPickerOpen(false)
+      onChanged()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const openPicker = () => {
+    setPickerOpen(o => !o)
+    if (!contacts) {
+      getEligibleContacts(draft.opportunity_id).then(data => setContacts(data.contacts)).catch(err => setError(formatApiError(err)))
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      {error && <div className="v2-form-message error">{error}</div>}
+      <div className="v2-btn-row">
+        <button type="button" className="v2-btn" disabled={busy} onClick={() => regenerate(null)}>
+          <IconRefreshCw width={13} height={13} /> Regenerate
+        </button>
+        <button type="button" className="v2-btn" disabled={busy} onClick={openPicker}>Change recipient</button>
+      </div>
+      {pickerOpen && (
+        <div className="v2-card" style={{ marginTop: '0.5rem', padding: 'var(--v2-space-3)' }}>
+          {contacts === null ? (
+            <div className="v2-placeholder-note">Loading eligible contacts…</div>
+          ) : contacts.length === 0 ? (
+            <div className="v2-placeholder-note">No other eligible contacts exist for this company.</div>
+          ) : (
+            contacts.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                className="v2-btn"
+                style={{ width: '100%', textAlign: 'left', marginBottom: '4px' }}
+                disabled={busy || c.id === draft.contact_id}
+                onClick={() => regenerate(c.id)}
+              >
+                {c.first_name} {c.last_name}{c.title ? ` — ${c.title}` : ''}{c.id === draft.contact_id ? ' (current)' : ''}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MessageDraftCard({ draft, onChanged, userEmail }) {
+  const isEmail = draft.channel === 'email'
+  return (
+    <div className="v2-card">
+      <div className="v2-evidence-item-head">
+        <span className="v2-evidence-item-title">{channelLabel(draft.channel)}</span>
+        <span className={`v2-badge ${MESSAGE_STATUS_BADGE[draft.status] || 'v2-badge-neutral'}`}>
+          {MESSAGE_STATUS_LABEL[draft.status] || draft.status}
+        </span>
+      </div>
+      {isEmail && draft.subject && (
+        <div style={{ marginBottom: '0.4rem' }}>
+          <div className="v2-kv-label">Subject</div>
+          <div className="v2-kv-value">{draft.subject}</div>
+        </div>
+      )}
+      {draft.message_text ? (
+        <p style={{ color: 'var(--v2-text)', fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{draft.message_text}</p>
+      ) : (
+        <EmptyBlock title="No usable message was produced." body={cleanBackendText((draft.missing_information || []).join(' · ')) || null} />
+      )}
+      {draft.quality_gate_reasons?.length > 0 && (
+        <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
+          Needs review: {draft.quality_gate_reasons.join(' · ')}
+        </p>
+      )}
+      {draft.status === 'approved' && (
+        <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
+          Approved by {draft.approved_by || 'a reviewer'}
+        </p>
+      )}
+      {draft.status === 'ready_for_review' && <MessageReviewActions draft={draft} onChanged={onChanged} userEmail={userEmail} />}
+      {draft.status !== 'approved' && <RegenerateControl draft={draft} onChanged={onChanged} />}
+    </div>
+  )
+}
+
+const MESSAGE_CHANNEL_TABS = ['Message', 'Email']
+
+// Phase 3 -- consumes GET /gtm-os/accounts/{id}/messages (list_messages_for_company(), Batch 7's
+// MessageDraft). V2 Frontend Phase (Message Workspace): split into a Message (LinkedIn-channel
+// drafts) / Email (email-channel drafts) sub-tab, matching each draft's own real `channel` field
+// -- never fabricated, since a MessageDraft is generated for exactly one channel at a time (no V1-
+// style dual LinkedIn+email content on one row). Now actionable (approve/reject/request-changes/
+// regenerate/change-recipient), reusing the exact same real lifecycle OpportunityDetail's Message
+// Review tab already established -- that tab is left untouched.
+function MessagesTab({ companyId }) {
+  const { user } = useTenant()
+  const [messages, setMessages] = useState(null)
+  const [error, setError] = useState(null)
+  const [channelTab, setChannelTab] = useState('Message')
+
+  const load = () => {
     getAccountMessages(companyId)
-      .then(data => { if (!cancelled) setMessages(data.messages) })
-      .catch(err => { if (!cancelled) setError(formatApiError(err)) })
-    return () => { cancelled = true }
-  }, [companyId])
+      .then(data => setMessages(data.messages))
+      .catch(err => setError(formatApiError(err)))
+  }
+
+  useEffect(load, [companyId])
 
   if (error) {
     return <div className="v2-card"><div className="v2-state v2-state-error">Couldn't load messages: {error}</div></div>
@@ -480,34 +642,29 @@ function MessagesTab({ companyId }) {
     )
   }
 
+  const filtered = messages.filter(m => (channelTab === 'Email' ? m.channel === 'email' : m.channel !== 'email'))
+
   return (
-    <div className="v2-evidence-list">
-      {messages.map(m => (
-        <div key={m.id} className="v2-card">
-          <div className="v2-evidence-item-head">
-            <span className="v2-evidence-item-title">{channelLabel(m.channel)}</span>
-            <span className={`v2-badge ${MESSAGE_STATUS_BADGE[m.status] || 'v2-badge-neutral'}`}>
-              {MESSAGE_STATUS_LABEL[m.status] || m.status}
-            </span>
-          </div>
-          {m.message_text ? (
-            <p style={{ color: 'var(--v2-text)', fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{m.message_text}</p>
-          ) : (
-            <EmptyBlock title="No usable message was produced." body={cleanBackendText((m.missing_information || []).join(' · ')) || null} />
-          )}
-          {m.quality_gate_reasons?.length > 0 && (
-            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
-              Needs review: {m.quality_gate_reasons.join(' · ')}
-            </p>
-          )}
-          {m.status === 'approved' && (
-            <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
-              Approved by {m.approved_by || 'a reviewer'}
-            </p>
-          )}
+    <>
+      <div className="v2-config-tabs">
+        {MESSAGE_CHANNEL_TABS.map(tab => (
+          <button key={tab} type="button" className={`v2-config-tab${channelTab === tab ? ' active' : ''}`} onClick={() => setChannelTab(tab)}>
+            {tab}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 ? (
+        <div className="v2-card">
+          <EmptyBlock title={`No ${channelTab.toLowerCase()} drafts`} body={`No draft with channel="${channelTab === 'Email' ? 'email' : 'linkedin (or another non-email channel)'}" exists for this company yet.`} />
         </div>
-      ))}
-    </div>
+      ) : (
+        <div className="v2-evidence-list">
+          {filtered.map(m => (
+            <MessageDraftCard key={m.id} draft={m} onChanged={load} userEmail={user?.email} />
+          ))}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -571,6 +728,7 @@ export default function AccountDetail() {
   }
 
   const { company, account_status: accountStatus } = brief
+  const added = formatRecency(company.created_at)
 
   return (
     <div>
@@ -584,6 +742,7 @@ export default function AccountDetail() {
           </div>
           <div className="v2-account-header-meta">
             {[company.domain, company.industry].filter(Boolean).join(' · ') || 'No firmographic data on file'}
+            {added && <span title={added.exact}> · Added {added.label}</span>}
           </div>
         </div>
       </div>

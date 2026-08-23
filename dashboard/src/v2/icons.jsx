@@ -386,3 +386,40 @@ export function IconTarget(props) {
     </svg>
   )
 }
+
+// Not in the reference deck -- own choice for the new Autonomous nav item (a pulse/activity
+// glyph), unconfirmed against any reference source. Same base stroke convention as every icon
+// above.
+export function IconActivity(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </svg>
+  )
+}
+
+export function IconPlay(props) {
+  return (
+    <svg {...base} {...props}>
+      <polygon points="6 3 20 12 6 21 6 3" />
+    </svg>
+  )
+}
+
+export function IconPause(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </svg>
+  )
+}
+
+export function IconStopCircle(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <rect x="9" y="9" width="6" height="6" rx="1" />
+    </svg>
+  )
+}
