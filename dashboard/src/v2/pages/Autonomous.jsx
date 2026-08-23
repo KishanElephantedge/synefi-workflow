@@ -41,6 +41,15 @@ function formatExact(iso) {
   return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
+// UTC-explicit, to sit next to "Runs daily at (UTC)" without contradicting it -- formatExact()
+// above renders in the browser's LOCAL timezone (right for a "when did this actually happen"
+// hover), which previously made "Next run" silently disagree with the adjacent UTC schedule
+// fields whenever the viewer wasn't in UTC themselves (e.g. a 10:00 UTC schedule showing as
+// "15:30" for an IST browser, no indication why).
+function formatExactUtc(date) {
+  return date.toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' UTC'
+}
+
 // Next real UTC fire time for a fixed daily hour:minute -- today if that time hasn't passed yet
 // (UTC "now"), otherwise tomorrow. Mirrors exactly what the CronTrigger itself will do.
 function nextDailyFireUtc(hour, minute) {
@@ -295,10 +304,10 @@ export default function Autonomous() {
             </div>
           </div>
           <div className="v2-auto-hero-stat">
-            <div className="v2-kv-label">Next run</div>
+            <div className="v2-kv-label">Next run (UTC)</div>
             <div className="v2-kv-value">
               {status.state === 'running'
-                ? formatExact(nextDailyFireUtc(schedule.hour, schedule.minute).toISOString())
+                ? formatExactUtc(nextDailyFireUtc(schedule.hour, schedule.minute))
                 : 'Paused — no autonomous ticks'}
             </div>
           </div>
