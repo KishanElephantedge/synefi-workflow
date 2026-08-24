@@ -376,3 +376,24 @@ export function markNetworkRecommendationMessageSent(messageId, sendChannel) {
   return client.patch(`/linkedin-monitor/messages/${messageId}/mark-sent`, { send_channel: sendChannel }).then(res => res.data)
 }
 
+// V2 CRM -- direct HubSpot read/edit/delete (app/hubspot_client.py's CRM section), separate
+// from V1's one-way push-only sync in app/phases/hubspot_sync.py. Every call hits HubSpot live.
+export function listCrmCompanies({ limit = 25, after = null, search = null } = {}) {
+  return client.get('/crm/companies', { params: { limit, after: after ?? undefined, search: search || undefined } }).then(res => res.data)
+}
+export function listCrmContacts({ limit = 25, after = null, search = null } = {}) {
+  return client.get('/crm/contacts', { params: { limit, after: after ?? undefined, search: search || undefined } }).then(res => res.data)
+}
+export function updateCrmCompany(companyId, properties) {
+  return client.patch(`/crm/companies/${companyId}`, properties).then(res => res.data)
+}
+export function updateCrmContact(contactId, properties) {
+  return client.patch(`/crm/contacts/${contactId}`, properties).then(res => res.data)
+}
+export function deleteCrmCompany(companyId) {
+  return client.delete(`/crm/companies/${companyId}`).then(res => res.data)
+}
+export function deleteCrmContact(contactId) {
+  return client.delete(`/crm/contacts/${contactId}`).then(res => res.data)
+}
+

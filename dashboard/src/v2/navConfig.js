@@ -20,6 +20,7 @@ import {
   IconLightbulb,
   IconNetwork,
   IconActivity,
+  IconDatabase,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -49,6 +50,7 @@ export const V2_NAV_GROUPS = [
       { path: 'market-intelligence', label: 'Market Intelligence', icon: IconRadio },
       { path: 'network', label: 'Network', icon: IconNetwork },
       { path: 'inbound', label: 'Inbound', icon: IconTrendingUp },
+      { path: 'crm', label: 'CRM', icon: IconDatabase },
     ],
   },
   {
