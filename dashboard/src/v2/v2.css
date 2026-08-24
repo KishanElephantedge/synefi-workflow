@@ -4228,3 +4228,27 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 .v2-crm-edit-back:hover {
   color: var(--v2-accent);
 }
+
+.v2-crm-edit-card {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  padding: var(--v2-space-6) var(--v2-space-6);
+  width: 100%;
+}
+
+.v2-crm-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--v2-space-5);
+}
+
+.v2-crm-edit-grid .v2-field {
+  margin-bottom: var(--v2-space-5);
+}
+
+@media (max-width: 720px) {
+  .v2-crm-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}

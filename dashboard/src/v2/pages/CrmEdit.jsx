@@ -56,7 +56,7 @@ export default function CrmEdit() {
       </button>
 
       <div className="v2-page-head">
-        <div className="v2-page-eyebrow">Edit {config.label.slice(0, -1).toLowerCase()}</div>
+        <div className="v2-page-eyebrow">Edit {config.singular}</div>
         <h1 className="v2-page-title">
           {loading ? 'Loading…' : (values ? (values.name || values.email || [values.firstname, values.lastname].filter(Boolean).join(' ')) || id : id)}
         </h1>
@@ -69,16 +69,18 @@ export default function CrmEdit() {
       {loading && !loadError && <div className="v2-state">Loading…</div>}
 
       {values && !loading && (
-        <div className="v2-card" style={{ maxWidth: '520px' }}>
-          {config.columns.map(col => (
-            <div className="v2-field" key={col.key}>
-              <label className="v2-field-label">{col.label}</label>
-              <input
-                type="text" className="v2-input" value={values[col.key]}
-                onChange={e => setValues(v => ({ ...v, [col.key]: e.target.value }))}
-              />
-            </div>
-          ))}
+        <div className="v2-crm-edit-card">
+          <div className="v2-crm-edit-grid">
+            {config.columns.map(col => (
+              <div className="v2-field" key={col.key}>
+                <label className="v2-field-label">{col.label}</label>
+                <input
+                  type="text" className="v2-input" value={values[col.key]}
+                  onChange={e => setValues(v => ({ ...v, [col.key]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
 
           {saveError && (
             <p className="v2-state v2-state-error" style={{ padding: 0, background: 'none', textAlign: 'left' }}>

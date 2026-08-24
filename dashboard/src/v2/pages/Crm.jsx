@@ -13,6 +13,7 @@ import { IconAlertTriangle, IconEdit, IconTrash } from '../icons.jsx'
 export const OBJECT_TYPES = {
   companies: {
     label: 'Companies',
+    singular: 'company',
     list: listCrmCompanies,
     remove: deleteCrmCompany,
     columns: [
@@ -27,6 +28,7 @@ export const OBJECT_TYPES = {
   },
   contacts: {
     label: 'Contacts',
+    singular: 'contact',
     list: listCrmContacts,
     remove: deleteCrmContact,
     columns: [
@@ -57,7 +59,7 @@ function ConfirmDeleteModal({ objectType, record, onClose, onConfirm, deleting }
     >
       <div className="v2-card" style={{ width: '380px', maxWidth: '92vw' }} onClick={e => e.stopPropagation()}>
         <div className="v2-section-title" style={{ marginBottom: '0.6rem' }}>
-          Delete {config.label.slice(0, -1).toLowerCase()}?
+          Delete {config.singular}?
         </div>
         <p style={{ fontSize: '0.86rem', color: 'var(--v2-text-muted)', marginBottom: '1.2rem' }}>
           This permanently deletes <strong>{objectTitle(objectType, record)}</strong> from HubSpot. This can't be undone here.
