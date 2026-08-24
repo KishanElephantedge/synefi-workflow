@@ -384,6 +384,12 @@ export function listCrmCompanies({ limit = 25, after = null, search = null } = {
 export function listCrmContacts({ limit = 25, after = null, search = null } = {}) {
   return client.get('/crm/contacts', { params: { limit, after: after ?? undefined, search: search || undefined } }).then(res => res.data)
 }
+export function getCrmCompany(companyId) {
+  return client.get(`/crm/companies/${companyId}`).then(res => res.data)
+}
+export function getCrmContact(contactId) {
+  return client.get(`/crm/contacts/${contactId}`).then(res => res.data)
+}
 export function updateCrmCompany(companyId, properties) {
   return client.patch(`/crm/companies/${companyId}`, properties).then(res => res.data)
 }

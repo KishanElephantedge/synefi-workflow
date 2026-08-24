@@ -4157,3 +4157,74 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- CRM: table list + dedicated edit page. Reuses .v2-card/.v2-btn/.v2-input/
+   .v2-state/.v2-pagination -- this block only adds what a real data table needs (a scrolling
+   HTML table, per explicit request instead of the row-list pattern other V2 pages use). */
+
+.v2-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+}
+
+.v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.v2-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--v2-text-faint);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--v2-border);
+  background: var(--v2-surface-elevated);
+}
+
+.v2-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--v2-border);
+  color: var(--v2-text);
+}
+
+.v2-table tr:last-child td {
+  border-bottom: none;
+}
+
+.v2-table tr:hover td {
+  background: var(--v2-surface-elevated);
+}
+
+.v2-table td.v2-table-muted {
+  color: var(--v2-text-muted);
+}
+
+.v2-table-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.v2-crm-edit-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: var(--v2-space-3);
+}
+
+.v2-crm-edit-back:hover {
+  color: var(--v2-accent);
+}

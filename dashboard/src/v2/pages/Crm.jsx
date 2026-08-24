@@ -1,24 +1,21 @@
 import { useEffect, useState } from 'react'
-import {
-  listCrmCompanies, listCrmContacts, updateCrmCompany, updateCrmContact,
-  deleteCrmCompany, deleteCrmContact, formatApiError,
-} from '../api.js'
-import { IconAlertTriangle, IconEdit, IconTrash, IconX } from '../icons.jsx'
+import { Link, useSearchParams } from 'react-router-dom'
+import { listCrmCompanies, listCrmContacts, deleteCrmCompany, deleteCrmContact, formatApiError } from '../api.js'
+import { IconAlertTriangle, IconEdit, IconTrash } from '../icons.jsx'
 
 // V2 CRM -- direct read/edit/delete against the real HubSpot account already connected in V1
 // (app/hubspot_client.py's CRM section). V1's existing HubSpot sync (app/phases/hubspot_sync.py)
 // only pushes new companies/contacts one-way after Decision Maker succeeds; this page is the
 // first place either object type can be read back, edited, or deleted. Curated property sets
 // only, matching the backend's own deliberate scope decision -- not every HubSpot field is
-// editable here.
-const OBJECT_TYPES = {
+// editable here. Table layout (not V2's usual row-list pattern) and a dedicated edit page
+// (not a modal) per explicit request, so this section's shape differs from other V2 pages.
+export const OBJECT_TYPES = {
   companies: {
     label: 'Companies',
-    idLabel: 'name',
     list: listCrmCompanies,
-    update: updateCrmCompany,
     remove: deleteCrmCompany,
-    fields: [
+    columns: [
       { key: 'name', label: 'Name' },
       { key: 'domain', label: 'Domain' },
       { key: 'industry', label: 'Industry' },
@@ -30,11 +27,9 @@ const OBJECT_TYPES = {
   },
   contacts: {
     label: 'Contacts',
-    idLabel: 'email',
     list: listCrmContacts,
-    update: updateCrmContact,
     remove: deleteCrmContact,
-    fields: [
+    columns: [
       { key: 'firstname', label: 'First name' },
       { key: 'lastname', label: 'Last name' },
       { key: 'email', label: 'Email' },
@@ -47,80 +42,7 @@ const OBJECT_TYPES = {
 function objectTitle(objectType, record) {
   const p = record.properties || {}
   if (objectType === 'companies') return p.name || p.domain || record.id
-  const name = [p.firstname, p.lastname].filter(Boolean).join(' ')
-  return name || p.email || record.id
-}
-
-function objectSubtitle(objectType, record) {
-  const p = record.properties || {}
-  if (objectType === 'companies') return p.domain || p.industry || ''
-  return p.email || p.jobtitle || ''
-}
-
-function EditModal({ objectType, record, onClose, onSaved }) {
-  const config = OBJECT_TYPES[objectType]
-  const [values, setValues] = useState(() => {
-    const initial = {}
-    config.fields.forEach(f => { initial[f.key] = record.properties?.[f.key] || '' })
-    return initial
-  })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
-  const save = () => {
-    setSaving(true)
-    setError(null)
-    config.update(record.id, values)
-      .then(updated => onSaved(updated))
-      .catch(err => setError(formatApiError(err)))
-      .finally(() => setSaving(false))
-  }
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
-        alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="v2-card"
-        style={{ width: '440px', maxWidth: '92vw', maxHeight: '86vh', overflowY: 'auto' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div className="v2-section-title">Edit {config.label.slice(0, -1)}</div>
-          <button type="button" className="v2-btn" onClick={onClose} style={{ padding: '0.3rem 0.5rem' }}>
-            <IconX />
-          </button>
-        </div>
-
-        {config.fields.map(f => (
-          <div className="v2-field" key={f.key}>
-            <label className="v2-field-label">{f.label}</label>
-            <input
-              type="text" className="v2-input" value={values[f.key]}
-              onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
-            />
-          </div>
-        ))}
-
-        {error && (
-          <p className="v2-state v2-state-error" style={{ padding: 0, background: 'none', textAlign: 'left' }}>
-            <IconAlertTriangle /> {error}
-          </p>
-        )}
-
-        <div className="v2-btn-row">
-          <button type="button" className="v2-btn-primary v2-btn" disabled={saving} onClick={save}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </button>
-          <button type="button" className="v2-btn" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  )
+  return [p.firstname, p.lastname].filter(Boolean).join(' ') || p.email || record.id
 }
 
 function ConfirmDeleteModal({ objectType, record, onClose, onConfirm, deleting }) {
@@ -160,7 +82,6 @@ function ObjectTab({ objectType }) {
   const [afterStack, setAfterStack] = useState([null])
   const [nextAfter, setNextAfter] = useState(null)
 
-  const [editing, setEditing] = useState(null)
   const [deletingRecord, setDeletingRecord] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -200,11 +121,6 @@ function ObjectTab({ objectType }) {
     load(stack[stack.length - 1])
   }
 
-  const handleSaved = (updated) => {
-    setRecords(rows => rows.map(r => (r.id === updated.id ? updated : r)))
-    setEditing(null)
-  }
-
   const handleDelete = () => {
     setDeleting(true)
     config.remove(deletingRecord.id)
@@ -238,34 +154,43 @@ function ObjectTab({ objectType }) {
       )}
 
       {records !== null && records.length > 0 && (
-        <div className="v2-card" style={{ padding: 0 }}>
-          {records.map((record, i) => (
-            <div
-              key={record.id}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0.85rem 1.1rem', borderBottom: i === records.length - 1 ? 'none' : '1px solid var(--v2-border)',
-                gap: '1rem',
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--v2-text)' }}>
-                  {objectTitle(objectType, record)}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--v2-text-muted)' }}>
-                  {objectSubtitle(objectType, record)}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-                <button type="button" className="v2-btn" title="Edit" onClick={() => setEditing(record)} style={{ padding: '0.4rem 0.6rem' }}>
-                  <IconEdit />
-                </button>
-                <button type="button" className="v2-btn-danger v2-btn" title="Delete" onClick={() => setDeletingRecord(record)} style={{ padding: '0.4rem 0.6rem' }}>
-                  <IconTrash />
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="v2-table-wrap">
+          <table className="v2-table">
+            <thead>
+              <tr>
+                {config.columns.map(col => <th key={col.key}>{col.label}</th>)}
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map(record => (
+                <tr key={record.id}>
+                  {config.columns.map(col => {
+                    const value = record.properties?.[col.key]
+                    return (
+                      <td key={col.key} className={value ? '' : 'v2-table-muted'}>{value || '—'}</td>
+                    )
+                  })}
+                  <td>
+                    <div className="v2-table-actions">
+                      <Link
+                        to={`/v2/crm/${objectType}/${record.id}`}
+                        className="v2-btn" title="Edit" style={{ padding: '0.35rem 0.55rem' }}
+                      >
+                        <IconEdit />
+                      </Link>
+                      <button
+                        type="button" className="v2-btn-danger v2-btn" title="Delete"
+                        onClick={() => setDeletingRecord(record)} style={{ padding: '0.35rem 0.55rem' }}
+                      >
+                        <IconTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -277,9 +202,6 @@ function ObjectTab({ objectType }) {
         </div>
       )}
 
-      {editing && (
-        <EditModal objectType={objectType} record={editing} onClose={() => setEditing(null)} onSaved={handleSaved} />
-      )}
       {deletingRecord && (
         <ConfirmDeleteModal
           objectType={objectType} record={deletingRecord} deleting={deleting}
@@ -291,7 +213,8 @@ function ObjectTab({ objectType }) {
 }
 
 export default function Crm() {
-  const [tab, setTab] = useState('companies')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'contacts' ? 'contacts' : 'companies'
 
   return (
     <div>
@@ -304,7 +227,7 @@ export default function Crm() {
         {Object.entries(OBJECT_TYPES).map(([key, cfg]) => (
           <button
             key={key} type="button" className={`v2-config-tab${tab === key ? ' active' : ''}`}
-            onClick={() => setTab(key)}
+            onClick={() => setSearchParams({ tab: key })}
           >
             {cfg.label}
           </button>

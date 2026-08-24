@@ -22,6 +22,7 @@ import Inbound from './pages/Inbound.jsx'
 import Autonomous from './pages/Autonomous.jsx'
 import Network from './pages/Network.jsx'
 import Crm from './pages/Crm.jsx'
+import CrmEdit from './pages/CrmEdit.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
 // Reuses the existing auth gate (a user must already be logged in to reach here, same as V1) but
@@ -57,6 +58,7 @@ export default function V2App() {
           <Route path="market-intelligence" element={<MarketIntelligence />} />
           <Route path="inbound" element={<Inbound />} />
           <Route path="crm" element={<Crm />} />
+          <Route path="crm/:objectType/:id" element={<CrmEdit />} />
           <Route path="icps-offerings" element={<IcpOfferings />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="briefing" replace />} />
