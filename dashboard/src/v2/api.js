@@ -417,3 +417,19 @@ export function deleteCrmContact(contactId) {
   return client.delete(`/crm/contacts/${contactId}`).then(res => res.data)
 }
 
+// V2 Proposals -- the imported 2025 Sales Progress backlog + wherever future proposals land
+// (see Proposal's own docstring in app/db/models.py). Manual browse/edit/remove only for now;
+// no re-engagement/send logic wired yet.
+export function listProposals({ page = 1, pageSize = 25, search = '', status = '' } = {}) {
+  return client.get('/proposals', { params: { page, page_size: pageSize, search, status } }).then(res => res.data)
+}
+export function getProposal(proposalId) {
+  return client.get(`/proposals/${proposalId}`).then(res => res.data)
+}
+export function updateProposal(proposalId, fields) {
+  return client.patch(`/proposals/${proposalId}`, fields).then(res => res.data)
+}
+export function deleteProposal(proposalId) {
+  return client.delete(`/proposals/${proposalId}`).then(res => res.data)
+}
+

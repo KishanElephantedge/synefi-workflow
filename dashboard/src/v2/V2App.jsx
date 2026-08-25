@@ -23,6 +23,8 @@ import Autonomous from './pages/Autonomous.jsx'
 import Network from './pages/Network.jsx'
 import Crm from './pages/Crm.jsx'
 import CrmEdit from './pages/CrmEdit.jsx'
+import Proposals from './pages/Proposals.jsx'
+import ProposalEdit from './pages/ProposalEdit.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
 // Reuses the existing auth gate (a user must already be logged in to reach here, same as V1) but
@@ -46,6 +48,8 @@ export default function V2App() {
           <Route path="briefing/:category" element={<BriefingCategoryDetail />} />
           <Route path="meetings" element={<Meetings />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="proposals" element={<Proposals />} />
+          <Route path="proposals/:id" element={<ProposalEdit />} />
           <Route path="revenue-pace" element={<RevenuePace />} />
           <Route path="efficiency" element={<Efficiency />} />
           <Route path="overrides-evals" element={<OverridesEvals />} />

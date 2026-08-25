@@ -21,6 +21,7 @@ import {
   IconNetwork,
   IconActivity,
   IconDatabase,
+  IconFileText,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -36,6 +37,7 @@ export const V2_NAV_GROUPS = [
       { path: 'jobs', label: 'Jobs to be done', icon: IconListChecks, countKey: 'jobs' },
       { path: 'meetings', label: 'Meetings', icon: IconCalendar },
       { path: 'pipeline', label: 'Pipeline', icon: IconTrendingUp },
+      { path: 'proposals', label: 'Proposals', icon: IconFileText },
       { path: 'revenue-pace', label: 'Revenue Pace', icon: IconBarChart },
       { path: 'efficiency', label: 'Efficiency', icon: IconZap },
       { path: 'overrides-evals', label: 'Overrides & Evals', icon: IconScale, countKey: 'overridesEvals' },

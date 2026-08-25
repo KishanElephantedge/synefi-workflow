@@ -796,6 +796,7 @@
 .v2-status-pill.tone-warning-soft { background: var(--v2-warning-soft); color: var(--v2-warning); }
 .v2-status-pill.tone-warning-solid { background: var(--v2-warning); color: #1a1200; }
 .v2-status-pill.tone-success-solid { background: var(--v2-success); color: #001a10; }
+.v2-status-pill.tone-danger-soft { background: var(--v2-danger-soft); color: var(--v2-danger); }
 
 .v2-account-evidence {
   display: flex;
