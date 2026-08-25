@@ -1030,7 +1030,9 @@
 
 .v2-tab.active {
   color: #fff;
-  background: var(--v2-accent);
+  /* Fixed black, matching .v2-btn-primary -- not var(--v2-accent) (purple), replaced per
+     explicit instruction. */
+  background: #15161f;
 }
 
 .v2-section {
@@ -2938,7 +2940,9 @@
 
 .v2-config-tab.active {
   color: #fff;
-  background: var(--v2-accent);
+  /* Fixed black, matching .v2-btn-primary -- not var(--v2-accent) (purple), replaced per
+     explicit instruction. */
+  background: #15161f;
 }
 
 .v2-config-card-head {
