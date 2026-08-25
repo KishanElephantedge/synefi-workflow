@@ -143,6 +143,20 @@ export function getEligibleContacts(opportunityId) {
   return client.get(`/gtm-os/opportunities/${opportunityId}/eligible-contacts`).then(res => res.data)
 }
 
+// 2026-08-25 -- real editing of AI-generated message content before approval. Backed by the new
+// PATCH /gtm-os/messages/{id} (update_message_draft_content()). Either field may be omitted to
+// leave it unchanged; the backend itself rejects editing an already-approved draft.
+export function updateMessageDraft(messageDraftId, { subject, messageText } = {}) {
+  return client.patch(`/gtm-os/messages/${messageDraftId}`, { subject: subject ?? null, message_text: messageText ?? null }).then(res => res.data)
+}
+
+// 2026-08-25 -- adds/corrects a contact's email directly from the Message Workspace (e.g. no
+// email is on file yet, blocking an email draft). Backed by the new
+// PATCH /gtm-os/contacts/{id}/email (update_contact_email()).
+export function updateContactEmail(contactId, email) {
+  return client.patch(`/gtm-os/contacts/${contactId}/email`, { email }).then(res => res.data)
+}
+
 // Phase 9 -- backed by the pre-existing GET/PUT /gtm-os/business-context (app/gtm_os/context/
 // business_context.py), the only gtm_os route that predates Phase 2. PUT has no field-level
 // validation of its own (set_business_context() stores whatever dict it's given), so

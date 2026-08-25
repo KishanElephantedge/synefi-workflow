@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTenant } from '../../context/TenantContext.jsx'
-import { getAccountBrief, getAccountMessages, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, formatApiError } from '../api.js'
+import { getAccountBrief, getAccountMessages, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, updateMessageDraft, updateContactEmail, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconChevronLeft, IconRefreshCw } from '../icons.jsx'
 import { formatRecency } from '../format.js'
 
@@ -563,8 +563,103 @@ function RegenerateControl({ draft, onChanged }) {
   )
 }
 
+// Fixed, real sending mailbox (app/smtp_client.py hardcodes smtp.gmail.com for this exact
+// address; app/gtm_os/send/channels.py's send_via_smtp() reads it from the smtp_email
+// Credential at send time). Display-only here -- never editable, since editing this value would
+// require rotating the actual SMTP credential, not a per-message choice.
+const SMTP_FROM_ADDRESS = 'majjiinspires@gmail.com'
+
+// 2026-08-25 -- lets a human add/correct a contact's email inline, right where it's needed (an
+// email draft with no recipient address is otherwise a dead end). Backed by the new
+// PATCH /gtm-os/contacts/{id}/email (updateContactEmail()).
+function EditableRecipientEmail({ contactId, currentEmail, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(currentEmail || '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  if (!editing) {
+    return (
+      <span>
+        {currentEmail || <span className="v2-placeholder-note" style={{ display: 'inline' }}>No email on file</span>}{' '}
+        <button
+          type="button"
+          className="v2-btn"
+          style={{ padding: '2px 8px', fontSize: '0.78rem' }}
+          onClick={() => { setValue(currentEmail || ''); setEditing(true) }}
+        >
+          {currentEmail ? 'Change' : 'Add email'}
+        </button>
+      </span>
+    )
+  }
+
+  const save = async () => {
+    if (!value.trim()) { setError('Email is required.'); return }
+    setBusy(true)
+    setError(null)
+    try {
+      await updateContactEmail(contactId, value.trim())
+      setEditing(false)
+      onSaved()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+      <input
+        type="email"
+        className="v2-input"
+        style={{ width: 220 }}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        placeholder="name@company.com"
+        disabled={busy}
+      />
+      <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={save}>Save</button>
+      <button type="button" className="v2-btn" disabled={busy} onClick={() => setEditing(false)}>Cancel</button>
+      {error && <span className="v2-form-message error">{error}</span>}
+    </span>
+  )
+}
+
 function MessageDraftCard({ draft, onChanged, userEmail }) {
   const isEmail = draft.channel === 'email'
+  const editable = draft.status !== 'approved'
+
+  const [subject, setSubject] = useState(draft.subject || '')
+  const [messageText, setMessageText] = useState(draft.message_text || '')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  // Re-sync local edit state whenever the underlying draft changes (regenerate, review action,
+  // or another save) -- otherwise stale local edits would linger after the server's own data
+  // moved on.
+  useEffect(() => {
+    setSubject(draft.subject || '')
+    setMessageText(draft.message_text || '')
+    setSaveError(null)
+  }, [draft.id, draft.subject, draft.message_text, draft.last_updated_at])
+
+  const dirty = editable && (subject !== (draft.subject || '') || messageText !== (draft.message_text || ''))
+
+  const save = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateMessageDraft(draft.id, { subject: isEmail ? subject : undefined, messageText })
+      onChanged()
+    } catch (err) {
+      setSaveError(formatApiError(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="v2-card">
       <div className="v2-evidence-item-head">
@@ -573,17 +668,64 @@ function MessageDraftCard({ draft, onChanged, userEmail }) {
           {MESSAGE_STATUS_LABEL[draft.status] || draft.status}
         </span>
       </div>
-      {isEmail && draft.subject && (
-        <div style={{ marginBottom: '0.4rem' }}>
-          <div className="v2-kv-label">Subject</div>
-          <div className="v2-kv-value">{draft.subject}</div>
+
+      {isEmail && (
+        <div className="v2-field" style={{ marginBottom: '0.5rem' }}>
+          <label className="v2-field-label">From</label>
+          <div className="v2-kv-value">{SMTP_FROM_ADDRESS}</div>
         </div>
       )}
-      {draft.message_text ? (
-        <p style={{ color: 'var(--v2-text)', fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{draft.message_text}</p>
-      ) : (
-        <EmptyBlock title="No usable message was produced." body={cleanBackendText((draft.missing_information || []).join(' · ')) || null} />
+
+      <div className="v2-field" style={{ marginBottom: '0.5rem' }}>
+        <label className="v2-field-label">To</label>
+        <div className="v2-kv-value">
+          {draft.contact_name || 'Unknown contact'}
+          {draft.contact_title ? ` — ${draft.contact_title}` : ''}
+          {isEmail && draft.contact_id && (
+            <div style={{ marginTop: '0.2rem' }}>
+              <EditableRecipientEmail contactId={draft.contact_id} currentEmail={draft.contact_email} onSaved={onChanged} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isEmail && (
+        <div className="v2-field" style={{ marginBottom: '0.5rem' }}>
+          <label className="v2-field-label">Subject</label>
+          {editable ? (
+            <input type="text" className="v2-input" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" />
+          ) : (
+            <div className="v2-kv-value">{draft.subject}</div>
+          )}
+        </div>
       )}
+
+      <div className="v2-field" style={{ marginBottom: '0.25rem' }}>
+        <label className="v2-field-label">Body</label>
+        {editable ? (
+          <textarea
+            className="v2-textarea"
+            style={{ minHeight: 160, fontSize: '0.88rem' }}
+            value={messageText}
+            onChange={e => setMessageText(e.target.value)}
+            placeholder="No usable message was produced."
+          />
+        ) : draft.message_text ? (
+          <p style={{ color: 'var(--v2-text)', fontSize: '0.88rem', whiteSpace: 'pre-wrap' }}>{draft.message_text}</p>
+        ) : (
+          <EmptyBlock title="No usable message was produced." body={cleanBackendText((draft.missing_information || []).join(' · ')) || null} />
+        )}
+      </div>
+
+      {editable && (
+        <div style={{ marginBottom: '0.5rem' }}>
+          {saveError && <div className="v2-form-message error">{saveError}</div>}
+          <button type="button" className="v2-btn" disabled={!dirty || saving} onClick={save}>
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      )}
+
       {draft.quality_gate_reasons?.length > 0 && (
         <p className="v2-placeholder-note" style={{ marginBottom: 0 }}>
           Needs review: {draft.quality_gate_reasons.join(' · ')}
