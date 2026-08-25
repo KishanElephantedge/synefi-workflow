@@ -2972,12 +2972,15 @@
 .v2-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .v2-btn-primary {
-  background: var(--v2-accent);
-  border-color: var(--v2-accent);
+  /* Fixed black, matching the sidebar's own always-dark color (--v2-sidebar-bg / .v2-shell's
+     base --v2-surface, #15161f) in both light and dark theme -- not var(--v2-accent) (purple),
+     replaced per explicit instruction. */
+  background: #15161f;
+  border-color: #15161f;
   color: #fff;
 }
 
-.v2-btn-primary:hover { filter: brightness(1.08); }
+.v2-btn-primary:hover { filter: brightness(1.35); }
 
 .v2-btn-danger {
   background: var(--v2-danger);
