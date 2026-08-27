@@ -157,6 +157,30 @@ export function updateContactEmail(contactId, email) {
   return client.patch(`/gtm-os/contacts/${contactId}/email`, { email }).then(res => res.data)
 }
 
+// Manually add a contact when decision-maker search found none -- backed by the pre-existing
+// POST /companies/{id}/contacts/import.
+export function importContact(companyId, { firstName, lastName, title, linkedinUrl }) {
+  return client.post(`/companies/${companyId}/contacts/import`, {
+    first_name: firstName || null, last_name: lastName || null, title: title || null, linkedin_url: linkedinUrl || null,
+  }).then(res => res.data)
+}
+
+// Escalation / Manual Research Capture -- 2026-08-27, the "skip it" half of contacts_to_find
+// (the "found it" half is updateContactEmail/importContact above, both already real).
+export function getContactsToFindDismissals(companyId) {
+  return client.get('/gtm-os/jobs/contacts-to-find/dismissals', { params: { company_id: companyId } }).then(res => res.data)
+}
+
+export function dismissContactsToFind({ sourceType, sourceId, subcategory, reason, dismissedBy }) {
+  return client.post('/gtm-os/jobs/contacts-to-find/dismiss', {
+    source_type: sourceType, source_id: sourceId, subcategory, reason, dismissed_by: dismissedBy,
+  }).then(res => res.data)
+}
+
+export function undoDismissContactsToFind({ sourceType, sourceId }) {
+  return client.post('/gtm-os/jobs/contacts-to-find/undo-dismiss', { source_type: sourceType, source_id: sourceId }).then(res => res.data)
+}
+
 // Phase 9 -- backed by the pre-existing GET/PUT /gtm-os/business-context (app/gtm_os/context/
 // business_context.py), the only gtm_os route that predates Phase 2. PUT has no field-level
 // validation of its own (set_business_context() stores whatever dict it's given), so

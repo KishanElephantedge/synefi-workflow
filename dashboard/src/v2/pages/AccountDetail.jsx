@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTenant } from '../../context/TenantContext.jsx'
-import { getAccountBrief, getAccountMessages, getAccountTimeline, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, updateMessageDraft, updateContactEmail, formatApiError } from '../api.js'
+import { getAccountBrief, getAccountMessages, getAccountTimeline, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, updateMessageDraft, updateContactEmail, importContact, getContactsToFindDismissals, dismissContactsToFind, undoDismissContactsToFind, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconChevronLeft, IconRefreshCw } from '../icons.jsx'
 import { formatRecency } from '../format.js'
 
@@ -464,8 +464,133 @@ function OpportunityStrategyTab({ brief }) {
   )
 }
 
-function ContactsTab({ brief }) {
+// Escalation / Manual Research Capture (2026-08-27) -- "System couldn't find a contact/email.
+// What did you find?" Reuses the two already-real capture routes (importContact,
+// updateContactEmail) for "found it"; DismissControl below adds the one genuinely missing
+// piece, "skip it" -- see app/gtm_os/jobs/escalation.py's own docstring.
+function DismissControl({ sourceType, sourceId, subcategory, dismissal, onChanged }) {
+  const { user } = useTenant()
+  const [showForm, setShowForm] = useState(false)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  if (dismissal) {
+    return (
+      <div style={{ marginTop: '0.4rem' }}>
+        <span className="v2-badge v2-badge-neutral">Skipped{dismissal.reason ? `: ${dismissal.reason}` : ''}</span>{' '}
+        <button
+          type="button"
+          className="v2-btn"
+          style={{ padding: '2px 8px', fontSize: '0.78rem' }}
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await undoDismissContactsToFind({ sourceType, sourceId })
+              onChanged()
+            } catch (err) {
+              setError(formatApiError(err))
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          Undo
+        </button>
+        {error && <div className="v2-form-message error">{error}</div>}
+      </div>
+    )
+  }
+
+  if (!showForm) {
+    return (
+      <button type="button" className="v2-btn" style={{ padding: '2px 8px', fontSize: '0.78rem', marginTop: '0.4rem' }} onClick={() => setShowForm(true)}>
+        Skip
+      </button>
+    )
+  }
+
+  const dismiss = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await dismissContactsToFind({ sourceType, sourceId, subcategory, reason: reason.trim() || null, dismissedBy: user?.email })
+      onChanged()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <input className="v2-input" type="text" style={{ width: 260 }} value={reason} onChange={e => setReason(e.target.value)} placeholder="Why skip? (e.g. wrong decision-maker, no answer)" disabled={busy} />
+      <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={dismiss}>Confirm skip</button>
+      <button type="button" className="v2-btn" disabled={busy} onClick={() => setShowForm(false)}>Cancel</button>
+      {error && <div className="v2-form-message error">{error}</div>}
+    </div>
+  )
+}
+
+function AddContactForm({ companyId, onAdded }) {
+  const [showForm, setShowForm] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [title, setTitle] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  if (!showForm) {
+    return <button type="button" className="v2-btn" onClick={() => setShowForm(true)}>Add contact</button>
+  }
+
+  const save = async () => {
+    if (!firstName.trim()) { setError('First name is required.'); return }
+    setBusy(true)
+    setError(null)
+    try {
+      await importContact(companyId, { firstName: firstName.trim(), lastName: lastName.trim(), title: title.trim(), linkedinUrl: linkedinUrl.trim() })
+      onAdded()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="v2-card" style={{ marginTop: '0.6rem' }}>
+      <div className="v2-field"><label className="v2-field-label">First name</label><input className="v2-input" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} disabled={busy} /></div>
+      <div className="v2-field"><label className="v2-field-label">Last name</label><input className="v2-input" type="text" value={lastName} onChange={e => setLastName(e.target.value)} disabled={busy} /></div>
+      <div className="v2-field"><label className="v2-field-label">Title</label><input className="v2-input" type="text" value={title} onChange={e => setTitle(e.target.value)} disabled={busy} /></div>
+      <div className="v2-field"><label className="v2-field-label">LinkedIn URL</label><input className="v2-input" type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} disabled={busy} /></div>
+      {error && <div className="v2-form-message error">{error}</div>}
+      <div className="v2-btn-row" style={{ marginTop: '0.4rem' }}>
+        <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={save}>Save contact</button>
+        <button type="button" className="v2-btn" disabled={busy} onClick={() => setShowForm(false)}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+function ContactsTab({ brief, companyId }) {
   const { contacts, decision_maker: decisionMaker } = brief
+  const [dismissals, setDismissals] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    getContactsToFindDismissals(companyId).then(res => { if (!cancelled) setDismissals(res.dismissals) }).catch(() => { if (!cancelled) setDismissals([]) })
+    return () => { cancelled = true }
+  }, [companyId, refreshKey])
+
+  const refresh = () => setRefreshKey(k => k + 1)
+  const companyDismissal = dismissals?.find(d => d.source_type === 'company' && d.source_id === Number(companyId))
+  const contactDismissal = (contactId) => dismissals?.find(d => d.source_type === 'contact' && d.source_id === contactId)
+
   return (
     <>
       <div className="v2-section-title">Who we need to reach</div>
@@ -478,18 +603,43 @@ function ContactsTab({ brief }) {
         </div>
       )}
       {contacts.length === 0 ? (
-        <div className="v2-card"><EmptyBlock title="No known contacts for this account." /></div>
+        <div className="v2-card">
+          <EmptyBlock title="No known contacts for this account." />
+          {dismissals !== null && (
+            companyDismissal ? (
+              <DismissControl sourceType="company" sourceId={Number(companyId)} dismissal={companyDismissal} onChanged={refresh} />
+            ) : (
+              <div style={{ marginTop: '0.6rem' }}>
+                <AddContactForm companyId={companyId} onAdded={() => window.location.reload()} />
+                <DismissControl sourceType="company" sourceId={Number(companyId)} subcategory="no_contact_found" onChanged={refresh} />
+              </div>
+            )
+          )}
+        </div>
       ) : (
         <div className="v2-evidence-list">
-          {contacts.map(c => (
-            <div key={c.id} className="v2-evidence-item">
-              <div className="v2-evidence-item-head">
-                <span className="v2-evidence-item-title">{[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed contact'}</span>
-                {c.has_email && <span className="v2-badge v2-badge-success">Email on file</span>}
+          {contacts.map(c => {
+            const dismissal = contactDismissal(c.id)
+            return (
+              <div key={c.id} className="v2-evidence-item">
+                <div className="v2-evidence-item-head">
+                  <span className="v2-evidence-item-title">{[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed contact'}</span>
+                  {c.has_email && <span className="v2-badge v2-badge-success">Email on file</span>}
+                </div>
+                <div className="v2-evidence-item-body">{c.title || 'Title unknown'}</div>
+                {!c.has_email && dismissals !== null && (
+                  dismissal ? (
+                    <DismissControl sourceType="contact" sourceId={c.id} dismissal={dismissal} onChanged={refresh} />
+                  ) : (
+                    <div style={{ marginTop: '0.4rem' }}>
+                      <EditableRecipientEmail contactId={c.id} currentEmail={null} onSaved={() => window.location.reload()} />
+                      <DismissControl sourceType="contact" sourceId={c.id} subcategory="missing_email" onChanged={refresh} />
+                    </div>
+                  )
+                )}
               </div>
-              <div className="v2-evidence-item-body">{c.title || 'Title unknown'}</div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </>
@@ -978,7 +1128,7 @@ export default function AccountDetail() {
       {activeTab === 'Overview' && <OverviewGrid brief={brief} />}
       {activeTab === 'Evidence' && <EvidenceTab brief={brief} />}
       {activeTab === 'Opportunity & Strategy' && <OpportunityStrategyTab brief={brief} />}
-      {activeTab === 'Contacts' && <ContactsTab brief={brief} />}
+      {activeTab === 'Contacts' && <ContactsTab brief={brief} companyId={companyId} />}
       {activeTab === 'Messages' && <MessagesTab companyId={companyId} />}
       {activeTab === 'Timeline' && <TimelineTab companyId={companyId} />}
     </div>
