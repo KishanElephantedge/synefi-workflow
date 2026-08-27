@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import V2Sidebar from './V2Sidebar.jsx'
 import V2Header from './V2Header.jsx'
+import V2AiWidget from '../components/V2AiWidget.jsx'
 import { useV2Theme } from '../theme/V2ThemeContext.jsx'
 import '../v2.css'
 
@@ -27,6 +28,7 @@ export default function V2AppShell() {
           </main>
         </div>
       </div>
+      <V2AiWidget />
     </div>
   )
 }

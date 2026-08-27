@@ -1360,17 +1360,18 @@
 
 .v2-dg-table {
   display: grid;
-  min-width: 720px;
+  min-width: 960px;
 }
 
 .v2-dg-th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.9rem 1.1rem;
   background: var(--v2-surface-elevated);
   border-bottom: 1px solid var(--v2-border);
   border-left: 1px solid var(--v2-border);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 650;
   color: var(--v2-text);
+  line-height: 1.35;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -1384,16 +1385,17 @@
 }
 
 .v2-dg-th-sub {
-  margin-top: 2px;
-  font-size: 0.68rem;
+  margin-top: 6px;
+  font-size: 0.74rem;
   font-weight: 500;
   color: var(--v2-text-faint);
   text-transform: none;
   letter-spacing: 0;
+  line-height: 1.45;
 }
 
 .v2-dg-row-head {
-  padding: 0.5rem 0.75rem;
+  padding: 0.9rem 1.1rem;
   background: var(--v2-surface);
   border-bottom: 1px solid var(--v2-border);
   position: sticky;
@@ -1401,11 +1403,11 @@
   z-index: 1;
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
 }
 
 .v2-dg-row-name {
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 650;
   color: var(--v2-text);
 }
@@ -1414,20 +1416,20 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.7rem;
+  font-size: 0.76rem;
   color: var(--v2-text-faint);
   white-space: nowrap;
 }
 
 .v2-dg-row-empty {
-  padding: 0.5rem 0.75rem;
+  padding: 0.9rem 1.1rem;
   background: var(--v2-surface);
   border-bottom: 1px solid var(--v2-border);
   border-left: 1px solid var(--v2-border);
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   color: var(--v2-text-faint);
   font-style: italic;
 }
@@ -1437,9 +1439,9 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 1px;
-  padding: 0.4rem 0.75rem;
-  min-height: 40px;
+  gap: 4px;
+  padding: 0.9rem 1.1rem;
+  min-height: 64px;
   background: var(--v2-surface);
   border-bottom: 1px solid var(--v2-border);
   border-left: 1px solid var(--v2-border);
@@ -1452,21 +1454,21 @@
 .v2-dg-cell-main {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.86rem;
+  gap: 8px;
+  font-size: 0.94rem;
   font-weight: 650;
   color: var(--v2-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .v2-dg-cell-sub {
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-weight: 500;
   color: var(--v2-text-faint);
 }
 
 .v2-dg-cell-dash {
-  font-size: 0.86rem;
+  font-size: 0.94rem;
   color: var(--v2-text-faint);
 }
 
@@ -4259,4 +4261,193 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   .v2-crm-edit-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* AI Assistant widget (2026-08-27) -- full read/write GTM-OS access + voice input. */
+
+.v2-ai-widget-wrap {
+  position: fixed;
+  bottom: 1.75rem;
+  right: 1.75rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.v2-ai-widget-bubble {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--v2-accent);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-ai-widget-bubble:hover {
+  filter: brightness(1.08);
+}
+
+.v2-ai-widget-panel {
+  width: 400px;
+  height: 560px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 6rem);
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  box-shadow: var(--v2-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.v2-ai-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--v2-border);
+  flex-shrink: 0;
+  color: var(--v2-text);
+}
+
+.v2-ai-widget-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.v2-ai-widget-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--v2-accent);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.v2-ai-widget-close {
+  background: transparent;
+  border: none;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 0.15rem;
+}
+
+.v2-ai-widget-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.v2-ai-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 88%;
+}
+
+.v2-ai-message-user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.v2-ai-message-assistant {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.v2-ai-message-bubble {
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.v2-ai-message-user .v2-ai-message-bubble {
+  background: var(--v2-accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+
+.v2-ai-message-assistant .v2-ai-message-bubble {
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text);
+  border-bottom-left-radius: 3px;
+}
+
+.v2-ai-message-typing {
+  color: var(--v2-text-faint);
+  font-style: italic;
+}
+
+.v2-ai-widget-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--v2-border);
+  flex-shrink: 0;
+}
+
+.v2-ai-widget-input-row textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius, 10px);
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text);
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 0.86rem;
+  max-height: 100px;
+}
+
+.v2-ai-widget-mic,
+.v2-ai-widget-send {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.v2-ai-widget-send {
+  background: var(--v2-accent);
+  border-color: var(--v2-accent);
+  color: #fff;
+}
+
+.v2-ai-widget-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.v2-ai-widget-mic.listening {
+  background: var(--v2-danger, #e5484d);
+  border-color: var(--v2-danger, #e5484d);
+  color: #fff;
+  animation: v2-ai-mic-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes v2-ai-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(229, 72, 77, 0); }
 }

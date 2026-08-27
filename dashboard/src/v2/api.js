@@ -286,6 +286,21 @@ export function setOwnLinkedinProfileUrl(profileUrl) {
   return client.put('/gtm-os/own-linkedin-content/profile-url', { profile_url: profileUrl }).then(res => res.data)
 }
 
+// V2 AI Assistant -- 2026-08-27, full read/write access to GTM-OS (see
+// app/gtm_os/chat/v2_chat_tools.py). Reuses the same real chat endpoints V1's widget already
+// uses, scoped via `scope=v2` so conversation history and tool access never cross-contaminate.
+export function getLatestV2Chat() {
+  return client.get('/chat/latest', { params: { scope: 'v2' } }).then(res => res.data)
+}
+
+export function startNewV2Chat() {
+  return client.post('/chat/new', null, { params: { scope: 'v2' } }).then(res => res.data)
+}
+
+export function sendV2ChatMessage(conversationId, message) {
+  return client.post(`/chat/conversations/${conversationId}/messages`, { message, scope: 'v2' }).then(res => res.data)
+}
+
 // Account Event Timeline -- backed by GET /gtm-os/accounts/{id}/timeline, a pure read-only
 // composition over real, already-existing append-only tables (signals, hypotheses, strategy,
 // messages, campaign activity, outcomes). Never re-derives or fabricates an event.
