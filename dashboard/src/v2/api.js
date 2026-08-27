@@ -262,6 +262,13 @@ export function setOwnLinkedinProfileUrl(profileUrl) {
   return client.put('/gtm-os/own-linkedin-content/profile-url', { profile_url: profileUrl }).then(res => res.data)
 }
 
+// Account Event Timeline -- backed by GET /gtm-os/accounts/{id}/timeline, a pure read-only
+// composition over real, already-existing append-only tables (signals, hypotheses, strategy,
+// messages, campaign activity, outcomes). Never re-derives or fabricates an event.
+export function getAccountTimeline(companyId) {
+  return client.get(`/gtm-os/accounts/${companyId}/timeline`).then(res => res.data)
+}
+
 // Overrides & Evals -- backed by GET /gtm-os/overrides-evals (pure read-only aggregation over
 // MessageDraft's own review lifecycle + CalendarBooking's own outcome fields, no second review/
 // outcome engine) and POST /gtm-os/patterns/{category}/confirm|dismiss (the only writes -- a

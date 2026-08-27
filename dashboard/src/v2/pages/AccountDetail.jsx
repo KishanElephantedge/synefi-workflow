@@ -1,11 +1,82 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTenant } from '../../context/TenantContext.jsx'
-import { getAccountBrief, getAccountMessages, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, updateMessageDraft, updateContactEmail, formatApiError } from '../api.js'
+import { getAccountBrief, getAccountMessages, getAccountTimeline, reviewMessageDraft, regenerateMessageDraft, getEligibleContacts, updateMessageDraft, updateContactEmail, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconChevronLeft, IconRefreshCw } from '../icons.jsx'
 import { formatRecency } from '../format.js'
 
-const TABS = ['Overview', 'Evidence', 'Opportunity & Strategy', 'Contacts', 'Messages']
+const TABS = ['Overview', 'Evidence', 'Opportunity & Strategy', 'Contacts', 'Messages', 'Timeline']
+
+const TIMELINE_EVENT_LABELS = {
+  signal_detected: 'Signal detected',
+  signal_interpreted: 'Signal interpreted',
+  problem_hypothesis_opened: 'Problem hypothesis opened',
+  problem_evidence_linked: 'Problem evidence linked',
+  demand_hypothesis_opened: 'Demand hypothesis opened',
+  demand_evidence_linked: 'Demand evidence linked',
+  opportunity_created: 'Opportunity created',
+  strategy_set: 'Strategy set',
+  message_drafted: 'Message drafted',
+  campaign_pushed: 'Pushed to campaign',
+  campaign_event: 'Campaign event',
+  sales_outcome_observed: 'Sales outcome observed',
+  meeting_outcome_recorded: 'Meeting outcome recorded',
+}
+
+// Real, composed history only -- no LLM, no re-derived status. See
+// app/gtm_os/execution/account_timeline.py's own docstring for exactly which real tables feed
+// this and why status-TRANSITION history (only the latest value is ever stored) and the three
+// deck-example events with zero real backing (phone enrichment, decision-maker-matched,
+// account escalation) are handled with an honest note instead of a fabricated entry.
+function TimelineTab({ companyId }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getAccountTimeline(companyId).then(res => { if (!cancelled) setData(res) }).catch(err => { if (!cancelled) setError(formatApiError(err)) })
+    return () => { cancelled = true }
+  }, [companyId])
+
+  if (error) {
+    return <div className="v2-card"><div className="v2-state v2-state-error">Couldn't load the timeline: {error}</div></div>
+  }
+  if (data === null) {
+    return <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 200 }} />
+  }
+  if (data.events.length === 0) {
+    return (
+      <div className="v2-card">
+        <EmptyBlock title="No timeline activity yet" body="Nothing has happened on this account yet -- a signal, hypothesis, strategy, message, campaign activity, or outcome will show up here as soon as it's real." />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="v2-evidence-list">
+        {data.events.map((event, i) => (
+          <div key={i} className="v2-card" style={{ marginBottom: '0.6rem' }}>
+            <div className="v2-evidence-item-head">
+              <span className="v2-evidence-item-title">{TIMELINE_EVENT_LABELS[event.event_type] || event.event_type}</span>
+              <span className="v2-kv-label">{event.occurred_at ? new Date(event.occurred_at).toLocaleString() : 'Date unknown'}</span>
+            </div>
+            {event.title && event.title !== (TIMELINE_EVENT_LABELS[event.event_type] || event.event_type) && (
+              <div style={{ fontSize: '0.88rem', color: 'var(--v2-text)', marginTop: 4 }}>{event.title}</div>
+            )}
+            {event.detail && <div className="v2-evidence-item-body" style={{ marginTop: 4 }}>{event.detail}</div>}
+          </div>
+        ))}
+      </div>
+
+      {data.untracked_event_types.length > 0 && (
+        <p className="v2-placeholder-note" style={{ marginTop: '0.8rem' }}>
+          Not tracked yet: {data.untracked_event_types.map(u => u.event_type.replace(/_/g, ' ')).join(', ')}.
+        </p>
+      )}
+    </div>
+  )
+}
 
 // account_status -> badge tone. Mirrors ACCOUNT_STATES_ORDER (Batch 12) exactly -- weakest to
 // strongest -- never a new status invented here.
@@ -909,6 +980,7 @@ export default function AccountDetail() {
       {activeTab === 'Opportunity & Strategy' && <OpportunityStrategyTab brief={brief} />}
       {activeTab === 'Contacts' && <ContactsTab brief={brief} />}
       {activeTab === 'Messages' && <MessagesTab companyId={companyId} />}
+      {activeTab === 'Timeline' && <TimelineTab companyId={companyId} />}
     </div>
   )
 }
