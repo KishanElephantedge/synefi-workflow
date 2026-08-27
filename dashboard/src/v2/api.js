@@ -247,6 +247,21 @@ export function getChannelIntelligence() {
   return client.get('/gtm-os/channel-intelligence').then(res => res.data)
 }
 
+// Own LinkedIn content -- 2026-08-27, visibility into Majji's own posts (real Apify sync,
+// separate from the ecosystem-watching LinkedinMonitorProfile/Signal feature). Sync is real,
+// on-demand spend (~$0.002/post) -- never triggered automatically by loading the page.
+export function getOwnLinkedinContent() {
+  return client.get('/gtm-os/own-linkedin-content').then(res => res.data)
+}
+
+export function syncOwnLinkedinContent() {
+  return client.post('/gtm-os/own-linkedin-content/sync').then(res => res.data)
+}
+
+export function setOwnLinkedinProfileUrl(profileUrl) {
+  return client.put('/gtm-os/own-linkedin-content/profile-url', { profile_url: profileUrl }).then(res => res.data)
+}
+
 // Overrides & Evals -- backed by GET /gtm-os/overrides-evals (pure read-only aggregation over
 // MessageDraft's own review lifecycle + CalendarBooking's own outcome fields, no second review/
 // outcome engine) and POST /gtm-os/patterns/{category}/confirm|dismiss (the only writes -- a
