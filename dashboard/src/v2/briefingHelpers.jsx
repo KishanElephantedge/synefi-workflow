@@ -5,7 +5,7 @@ import { IconAlertTriangle, IconInfo, IconCheckCircle } from './icons.jsx'
 // V2 that category's config actually lives. Purely presentational routing over an already-real
 // field -- never a guess at WHICH ICP/offering/motion to fix, just which PAGE has the editor.
 export const CATEGORY_LINK = {
-  configuration: { to: '/v2/icps-offerings', label: 'Open ICPs & Offerings' },
+  configuration: { to: '/v2/settings?tab=icps-offerings', label: 'Open ICPs & Offerings' },
   coverage: { to: '/v2/accounts', label: 'Open Accounts' },
   data: { to: '/v2/accounts', label: 'Open Accounts' },
   execution: { to: '/v2/pipeline', label: 'Open Pipeline' },
@@ -15,8 +15,8 @@ export const CATEGORY_LINK = {
 // A configuration_gaps item's own relates_to_stage (Batch 14, real field) points at a more
 // specific tab than the generic category mapping above can.
 export const STAGE_LINK = {
-  offering_matched: { to: '/v2/icps-offerings?tab=offerings', label: 'Open Offerings' },
-  motion_ready: { to: '/v2/icps-offerings?tab=motion', label: 'Open GTM Motion' },
+  offering_matched: { to: '/v2/settings?tab=icps-offerings', label: 'Open Offerings' },
+  motion_ready: { to: '/v2/settings?tab=icps-offerings', label: 'Open GTM Motion' },
 }
 
 const SEVERITY_ICON = { danger: IconAlertTriangle, warning: IconAlertTriangle, info: IconInfo }

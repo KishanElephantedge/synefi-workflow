@@ -51,7 +51,7 @@ export default function ProposalEdit() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const backTo = '/v2/proposals'
+  const backTo = '/v2/operations?section=proposals'
 
   const save = () => {
     setSaving(true)

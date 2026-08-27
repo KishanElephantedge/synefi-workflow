@@ -38,7 +38,7 @@ export default function CrmEdit() {
     return <div className="v2-state v2-state-error">Unknown CRM object type "{objectType}".</div>
   }
 
-  const backTo = `/v2/crm?tab=${objectType}`
+  const backTo = `/v2/relationships?section=crm&tab=${objectType}`
 
   const save = () => {
     setSaving(true)

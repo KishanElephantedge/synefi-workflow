@@ -124,7 +124,7 @@ function GtmContextTab({ item, brief }) {
               <EmptyNote>
                 Deal strategy is limited by offering fit: <strong>{item.strategy?.offering_fit_status || brief.offerings.best_fit_reason}</strong>
               </EmptyNote>
-              <Link to="/v2/icps-offerings?tab=offerings" className="v2-btn" style={{ display: 'inline-flex', marginTop: '0.6rem', textDecoration: 'none' }}>
+              <Link to="/v2/settings?tab=icps-offerings" className="v2-btn" style={{ display: 'inline-flex', marginTop: '0.6rem', textDecoration: 'none' }}>
                 Configure in ICPs &amp; Offerings → Offerings
               </Link>
             </>
@@ -140,7 +140,7 @@ function GtmContextTab({ item, brief }) {
           ) : (
             <>
               <EmptyNote>{item.gtm_motion?.reason || 'No GTM motion recommendation yet.'}</EmptyNote>
-              <Link to="/v2/icps-offerings?tab=motion" className="v2-btn" style={{ display: 'inline-flex', marginTop: '0.6rem', textDecoration: 'none' }}>
+              <Link to="/v2/settings?tab=icps-offerings" className="v2-btn" style={{ display: 'inline-flex', marginTop: '0.6rem', textDecoration: 'none' }}>
                 Configure in ICPs &amp; Offerings → GTM Motion
               </Link>
             </>

@@ -176,7 +176,7 @@ function ObjectTab({ objectType }) {
                   <td>
                     <div className="v2-table-actions">
                       <Link
-                        to={`/v2/crm/${objectType}/${record.id}`}
+                        to={`/v2/relationships/crm/${objectType}/${record.id}`}
                         className="v2-btn" title="Edit" style={{ padding: '0.35rem 0.55rem' }}
                       >
                         <IconEdit />

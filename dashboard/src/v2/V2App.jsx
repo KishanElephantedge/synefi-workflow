@@ -9,7 +9,7 @@ import BriefingCategoryDetail from './pages/BriefingCategoryDetail.jsx'
 import Meetings from './pages/Meetings.jsx'
 import Pipeline from './pages/Pipeline.jsx'
 import RevenuePace from './pages/RevenuePace.jsx'
-import Campaigns from './pages/Campaigns.jsx'
+import Operations from './pages/Operations.jsx'
 import Efficiency from './pages/Efficiency.jsx'
 import OverridesEvals from './pages/OverridesEvals.jsx'
 import OpportunityDetail from './pages/OpportunityDetail.jsx'
@@ -17,14 +17,9 @@ import Accounts from './pages/Accounts.jsx'
 import AccountDetail from './pages/AccountDetail.jsx'
 import DemandGrid from './pages/DemandGrid.jsx'
 import MarketIntelligence from './pages/MarketIntelligence.jsx'
-import IcpOfferings from './pages/IcpOfferings.jsx'
 import Settings from './pages/Settings.jsx'
-import Inbound from './pages/Inbound.jsx'
-import Autonomous from './pages/Autonomous.jsx'
-import Network from './pages/Network.jsx'
-import Crm from './pages/Crm.jsx'
+import Relationships from './pages/Relationships.jsx'
 import CrmEdit from './pages/CrmEdit.jsx'
-import Proposals from './pages/Proposals.jsx'
 import ProposalEdit from './pages/ProposalEdit.jsx'
 
 // Isolated V2 route tree, mounted at /v2/* from the existing App.jsx (see that file's Gate()).
@@ -49,23 +44,18 @@ export default function V2App() {
           <Route path="briefing/:category" element={<BriefingCategoryDetail />} />
           <Route path="meetings" element={<Meetings />} />
           <Route path="pipeline" element={<Pipeline />} />
-          <Route path="proposals" element={<Proposals />} />
-          <Route path="proposals/:id" element={<ProposalEdit />} />
+          <Route path="operations" element={<Operations />} />
+          <Route path="operations/proposals/:id" element={<ProposalEdit />} />
           <Route path="revenue-pace" element={<RevenuePace />} />
-          <Route path="campaigns" element={<Campaigns />} />
           <Route path="efficiency" element={<Efficiency />} />
           <Route path="overrides-evals" element={<OverridesEvals />} />
-          <Route path="autonomous" element={<Autonomous />} />
-          <Route path="network" element={<Network />} />
           <Route path="pipeline/:opportunityId" element={<OpportunityDetail />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="accounts/:companyId" element={<AccountDetail />} />
           <Route path="demand-grid" element={<DemandGrid />} />
           <Route path="market-intelligence" element={<MarketIntelligence />} />
-          <Route path="inbound" element={<Inbound />} />
-          <Route path="crm" element={<Crm />} />
-          <Route path="crm/:objectType/:id" element={<CrmEdit />} />
-          <Route path="icps-offerings" element={<IcpOfferings />} />
+          <Route path="relationships" element={<Relationships />} />
+          <Route path="relationships/crm/:objectType/:id" element={<CrmEdit />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="briefing" replace />} />
         </Route>

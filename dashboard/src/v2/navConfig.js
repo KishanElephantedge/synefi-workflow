@@ -4,6 +4,15 @@
 // Phase 10 briefly flattened this into a single ungrouped list to match what looked like the
 // reference deck's final iteration, then reverted back to grouped sections per explicit
 // instruction -- keeping the original 3-group structure this app has shipped with since Phase 1.
+//
+// 2026-08-27, explicit instruction -- sidebar consolidation (20 items -> 15): ICPs & Offerings
+// and Knowledge moved into Settings as tabs (both are define-once config, same nature as
+// Settings' existing tabs -- see Settings.jsx). Proposals + Autonomous + Campaigns combined into
+// "Operations" (Operations.jsx); CRM + Inbound + Network combined into "Relationships"
+// (Relationships.jsx) -- each a thin tab shell reusing the original page components as-is.
+// Deliberately NOT combined (checked each page's real content first): Accounts (a company
+// browse list) vs Autonomous (system run control/monitoring) are genuinely different tools, not
+// duplicates, despite looking similar at a glance.
 import {
   IconListChecks,
   IconSparkles,
@@ -15,13 +24,8 @@ import {
   IconUsers,
   IconGrid,
   IconRadio,
-  IconLayers,
   IconSettings,
-  IconLightbulb,
   IconNetwork,
-  IconActivity,
-  IconDatabase,
-  IconFileText,
   IconMegaphone,
 } from './icons.jsx'
 
@@ -38,12 +42,10 @@ export const V2_NAV_GROUPS = [
       { path: 'jobs', label: 'Jobs to be done', icon: IconListChecks, countKey: 'jobs' },
       { path: 'meetings', label: 'Meetings', icon: IconCalendar },
       { path: 'pipeline', label: 'Pipeline', icon: IconTrendingUp },
-      { path: 'proposals', label: 'Proposals', icon: IconFileText },
       { path: 'revenue-pace', label: 'Revenue Pace', icon: IconBarChart },
-      { path: 'campaigns', label: 'Campaigns', icon: IconMegaphone },
+      { path: 'operations', label: 'Operations', icon: IconMegaphone },
       { path: 'efficiency', label: 'Efficiency', icon: IconZap },
       { path: 'overrides-evals', label: 'Overrides & Evals', icon: IconScale, countKey: 'overridesEvals' },
-      { path: 'autonomous', label: 'Autonomous', icon: IconActivity },
     ],
   },
   {
@@ -52,16 +54,12 @@ export const V2_NAV_GROUPS = [
       { path: 'accounts', label: 'Accounts', icon: IconUsers },
       { path: 'demand-grid', label: 'Demand Grid', icon: IconGrid },
       { path: 'market-intelligence', label: 'Market Intelligence', icon: IconRadio },
-      { path: 'network', label: 'Network', icon: IconNetwork },
-      { path: 'inbound', label: 'Inbound', icon: IconTrendingUp },
-      { path: 'crm', label: 'CRM', icon: IconDatabase },
+      { path: 'relationships', label: 'Relationships', icon: IconNetwork },
     ],
   },
   {
     label: 'Configure',
     items: [
-      { path: 'icps-offerings', label: 'ICPs & Offerings', icon: IconLayers },
-      { path: 'knowledge', label: 'Knowledge', icon: IconLightbulb },
       { path: 'settings', label: 'Settings', icon: IconSettings },
     ],
   },

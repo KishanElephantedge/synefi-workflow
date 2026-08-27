@@ -248,6 +248,26 @@ export function dismissPattern(category, confirmedBy) {
   return client.post(`/gtm-os/patterns/${encodeURIComponent(category)}/dismiss`, { confirmed_by: confirmedBy }).then(res => res.data)
 }
 
+// V2 Human-Provided Knowledge (architecture upgrade, Parts 6-9) -- backed by real, already-live
+// GET/POST /gtm-os/knowledge routes (app/gtm_os/learning/human_knowledge.py). 2026-08-27, real
+// bug fix: Knowledge.jsx already imported these 4 names, but they were never actually added to
+// this file -- confirmed by grep (zero prior references) and by `npm run build` failing outright
+// with "is not exported by api.js" the moment Knowledge.jsx got imported directly into
+// Settings.jsx (this page was never bundled/build-checked before now, so the missing exports
+// went uncaught). The backend has been real and complete this whole time.
+export function getKnowledge(status) {
+  return client.get('/gtm-os/knowledge', { params: status ? { status } : {} }).then(res => res.data.items)
+}
+export function submitKnowledge(text, createdBy) {
+  return client.post('/gtm-os/knowledge', { text, created_by: createdBy }).then(res => res.data)
+}
+export function confirmKnowledge(knowledgeId, confirmedBy) {
+  return client.post(`/gtm-os/knowledge/${knowledgeId}/confirm`, { confirmed_by: confirmedBy }).then(res => res.data)
+}
+export function dismissKnowledge(knowledgeId, confirmedBy) {
+  return client.post(`/gtm-os/knowledge/${knowledgeId}/dismiss`, { confirmed_by: confirmedBy }).then(res => res.data)
+}
+
 // V2 Settings Performance tab -- real message-funnel/reply-outcome/strategy-type readout
 // (app/gtm_os/learning/evaluation.py), the same computation governance.py's own Briefing
 // snapshot already uses internally. No accuracy/hit-rate is computed anywhere in this readout.

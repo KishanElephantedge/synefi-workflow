@@ -5,12 +5,22 @@ import {
   getLearningReadout, getCredentials, formatApiError,
 } from '../api.js'
 import { IconAlertTriangle, IconEdit, IconCheck } from '../icons.jsx'
+import IcpOfferings from './IcpOfferings.jsx'
+import Knowledge from './Knowledge.jsx'
 
-const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency']
+// 2026-08-27, explicit instruction -- sidebar consolidation: ICPs & Offerings and Knowledge are
+// both define-once configuration (same nature as Strategy/Playbook/Connections/Performance/
+// Efficiency above), so they moved here as tabs instead of their own standalone nav items. Their
+// full existing page components are reused as-is (imported directly) -- no internal logic
+// rewritten, just re-hosted under this tab bar.
+const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge']
 
 // Slug <-> tab-label mapping so other pages (Efficiency) can deep-link to a specific tab, e.g.
 // /v2/settings?tab=efficiency -- same pattern IcpOfferings.jsx already uses.
-const TAB_SLUGS = { strategy: 'Strategy', playbook: 'Playbook', connections: 'Connections', performance: 'Performance', efficiency: 'Efficiency' }
+const TAB_SLUGS = {
+  strategy: 'Strategy', playbook: 'Playbook', connections: 'Connections', performance: 'Performance', efficiency: 'Efficiency',
+  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge',
+}
 
 // ---------- shared field primitives ----------
 
@@ -338,7 +348,10 @@ function StrategyTab({ context, onSaved, canWrite }) {
         <ConsumedByNote>Passed as reference context into real message drafting, alongside sales methodology and messaging objections.</ConsumedByNote>
         <p className="v2-placeholder-note v2-set-note">
           This flat list predates the structured, per-ICP/offering motion configuration -- edit the
-          canonical version at <Link to="/v2/icps-offerings?tab=motion">ICPs &amp; Offerings → GTM Motion</Link>.
+          canonical version at <Link to="/v2/settings?tab=icps-offerings">ICPs &amp; Offerings</Link> (GTM
+          Motion sub-tab -- IcpOfferings.jsx's own `tab` param now collides with this page's own
+          outer tab selector once nested here, so this link can't deep-link straight to that
+          sub-tab anymore; one extra click to it once there).
           Not editable here to avoid two disagreeing sources of truth.
         </p>
         {gtmMotions.length > 0 ? (
@@ -354,7 +367,7 @@ function StrategyTab({ context, onSaved, canWrite }) {
         <p className="v2-placeholder-note v2-set-note">
           Business Context also stores its own "offerings" and "icp_bands" lists. "offerings" is an
           older, unused duplicate -- the canonical, editable surface is{' '}
-          <Link to="/v2/icps-offerings">ICPs &amp; Offerings</Link>. "icp_bands" is not a pure
+          <Link to="/v2/settings?tab=icps-offerings">ICPs &amp; Offerings</Link>. "icp_bands" is not a pure
           duplicate: its <code>profile</code> text is a real input to{' '}
           <Link to="/v2/market-intelligence">Market Intelligence</Link>'s default topic detection --
           not editable here yet, to avoid a second disagreeing source of truth for ICP config.
@@ -390,7 +403,7 @@ function PlaybookTab({ context, onSaved, canWrite }) {
         discovery-question store exists in the backend, so those reference concepts aren't shown
         here rather than invented. Per-offering positioning and typical objections DO already
         exist, as part of offering configuration -- see{' '}
-        <Link to="/v2/icps-offerings">ICPs &amp; Offerings</Link>, edited there only.
+        <Link to="/v2/settings?tab=icps-offerings">ICPs &amp; Offerings</Link>, edited there only.
       </NotAvailableCard>
     </div>
   )
@@ -710,6 +723,17 @@ export default function Settings() {
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState(TAB_SLUGS[searchParams.get('tab')] || TABS[0])
 
+  // 2026-08-27, real fix -- needed once this page started linking to itself (ICPs & Offerings/
+  // Playbook tabs above link to /v2/settings?tab=icps-offerings while already ON /v2/settings):
+  // a same-route navigation updates the URL/searchParams but does NOT remount this component, so
+  // the useState above (read once, at mount) never saw the new query param. Cross-page deep links
+  // into Settings (e.g. Efficiency.jsx's own /v2/settings?tab=efficiency) still worked before this
+  // because THOSE navigations do remount the page -- this just makes same-page links work too.
+  useEffect(() => {
+    const requested = TAB_SLUGS[searchParams.get('tab')]
+    if (requested) setTab(requested)
+  }, [searchParams])
+
   useEffect(() => {
     getBusinessContext().then(setData).catch(err => setError(formatApiError(err)))
   }, [])
@@ -746,6 +770,8 @@ export default function Settings() {
           {tab === 'Connections' && <ConnectionsTab context={data} onSaved={setData} canWrite={canWrite} />}
           {tab === 'Performance' && <PerformanceTab />}
           {tab === 'Efficiency' && <EfficiencyTab />}
+          {tab === 'ICPs & Offerings' && <IcpOfferings />}
+          {tab === 'Knowledge' && <Knowledge />}
         </>
       )}
     </div>
