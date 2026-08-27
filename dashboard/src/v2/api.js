@@ -233,6 +233,13 @@ export function getCampaignIntelligence() {
   return client.get('/gtm-os/campaign-intelligence').then(res => res.data)
 }
 
+// Channels Intelligence -- 2026-08-27, real revenue/deal aggregation by outcome_channel
+// (personal network, LinkedIn content, inbound, webinar, outbound, other), same
+// real-numbers-plus-grounded-LLM-reasoning shape as campaign intelligence above.
+export function getChannelIntelligence() {
+  return client.get('/gtm-os/channel-intelligence').then(res => res.data)
+}
+
 // Overrides & Evals -- backed by GET /gtm-os/overrides-evals (pure read-only aggregation over
 // MessageDraft's own review lifecycle + CalendarBooking's own outcome fields, no second review/
 // outcome engine) and POST /gtm-os/patterns/{category}/confirm|dismiss (the only writes -- a

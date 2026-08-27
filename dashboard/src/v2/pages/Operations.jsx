@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Proposals from './Proposals.jsx'
 import Autonomous from './Autonomous.jsx'
 import Campaigns from './Campaigns.jsx'
+import Channels from './Channels.jsx'
 
 // 2026-08-27, explicit instruction -- sidebar consolidation: Proposals, Autonomous, and
 // Campaigns combined under one nav item. Each full existing page component is reused as-is
@@ -10,8 +11,11 @@ import Campaigns from './Campaigns.jsx'
 // Uses `section` (not `tab`) for its own query param since Crm.jsx already owns `tab` for its
 // own companies/contacts sub-navigation, and Relationships.jsx (the other combined page) wraps
 // that same Crm.jsx -- picking a distinct param name here avoids any collision between the two.
-const SECTIONS = ['Proposals', 'Autonomous', 'Campaigns']
-const SECTION_SLUGS = { proposals: 'Proposals', autonomous: 'Autonomous', campaigns: 'Campaigns' }
+// Channels added here too (same sidebar-declutter reasoning) rather than as a new top-level nav
+// item -- it's the same "real numbers + grounded reasoning" shape as Campaigns, just by
+// outcome_channel instead of by SalesRobot campaign.
+const SECTIONS = ['Proposals', 'Autonomous', 'Campaigns', 'Channels']
+const SECTION_SLUGS = { proposals: 'Proposals', autonomous: 'Autonomous', campaigns: 'Campaigns', channels: 'Channels' }
 
 export default function Operations() {
   const [searchParams] = useSearchParams()
@@ -30,6 +34,7 @@ export default function Operations() {
       {section === 'Proposals' && <Proposals />}
       {section === 'Autonomous' && <Autonomous />}
       {section === 'Campaigns' && <Campaigns />}
+      {section === 'Channels' && <Channels />}
     </div>
   )
 }
