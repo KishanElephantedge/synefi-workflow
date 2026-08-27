@@ -22,6 +22,7 @@ import {
   IconActivity,
   IconDatabase,
   IconFileText,
+  IconMegaphone,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -39,6 +40,7 @@ export const V2_NAV_GROUPS = [
       { path: 'pipeline', label: 'Pipeline', icon: IconTrendingUp },
       { path: 'proposals', label: 'Proposals', icon: IconFileText },
       { path: 'revenue-pace', label: 'Revenue Pace', icon: IconBarChart },
+      { path: 'campaigns', label: 'Campaigns', icon: IconMegaphone },
       { path: 'efficiency', label: 'Efficiency', icon: IconZap },
       { path: 'overrides-evals', label: 'Overrides & Evals', icon: IconScale, countKey: 'overridesEvals' },
       { path: 'autonomous', label: 'Autonomous', icon: IconActivity },

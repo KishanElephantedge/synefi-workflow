@@ -224,6 +224,15 @@ export function getRevenuePaceDiagnosis(month) {
   return client.get('/gtm-os/revenue-pace/diagnosis', { params: month ? { month } : {} }).then(res => res.data)
 }
 
+// Campaign Intelligence -- backed by GET /gtm-os/campaign-intelligence: real, live per-campaign
+// numbers pulled directly from SalesRobot's own API, plus a grounded LLM reasoning layer that
+// compares campaigns and prioritizes toward revenue/conversions/meetings. Every claim the model
+// makes is checked against the real numbers it was actually given -- a claim citing a campaign
+// never provided is discarded server-side before it ever reaches this response.
+export function getCampaignIntelligence() {
+  return client.get('/gtm-os/campaign-intelligence').then(res => res.data)
+}
+
 // Overrides & Evals -- backed by GET /gtm-os/overrides-evals (pure read-only aggregation over
 // MessageDraft's own review lifecycle + CalendarBooking's own outcome fields, no second review/
 // outcome engine) and POST /gtm-os/patterns/{category}/confirm|dismiss (the only writes -- a

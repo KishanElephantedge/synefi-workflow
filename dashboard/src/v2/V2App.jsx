@@ -9,6 +9,7 @@ import BriefingCategoryDetail from './pages/BriefingCategoryDetail.jsx'
 import Meetings from './pages/Meetings.jsx'
 import Pipeline from './pages/Pipeline.jsx'
 import RevenuePace from './pages/RevenuePace.jsx'
+import Campaigns from './pages/Campaigns.jsx'
 import Efficiency from './pages/Efficiency.jsx'
 import OverridesEvals from './pages/OverridesEvals.jsx'
 import OpportunityDetail from './pages/OpportunityDetail.jsx'
@@ -51,6 +52,7 @@ export default function V2App() {
           <Route path="proposals" element={<Proposals />} />
           <Route path="proposals/:id" element={<ProposalEdit />} />
           <Route path="revenue-pace" element={<RevenuePace />} />
+          <Route path="campaigns" element={<Campaigns />} />
           <Route path="efficiency" element={<Efficiency />} />
           <Route path="overrides-evals" element={<OverridesEvals />} />
           <Route path="autonomous" element={<Autonomous />} />

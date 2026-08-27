@@ -228,6 +228,17 @@ export function IconBarChart(props) {
   )
 }
 
+// Campaign Intelligence -- no existing icon is a confident match for outbound campaigns; added
+// per the same "add one when genuinely needed" precedent as IconCalendar/IconBarChart before it.
+export function IconMegaphone(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m3 11 18-5v12L3 13v-2Z" />
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+    </svg>
+  )
+}
+
 // Efficiency -- reference deck's final iteration uses a lightning-bolt glyph for this nav item.
 export function IconZap(props) {
   return (
