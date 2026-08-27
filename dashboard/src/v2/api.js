@@ -203,10 +203,17 @@ export function getMeetings({ page = 1, pageSize = 25, search = '' } = {}) {
 // record_meeting_outcome(), app/gtm_os/revenue/revenue_pace.py). `status` is "won" | "lost" | null
 // (null resets to pending). `recordedBy` is the real logged-in user's email, same pattern as
 // Phase 7's reviewMessageDraft() -- this backend has no independent identity channel of its own.
-export function patchMeetingOutcome(bookingId, { status, companyId, offeringName, amountUsd, reason, notes, recordedBy, opportunityId }) {
+export function patchMeetingOutcome(bookingId, { status, companyId, offeringName, amountUsd, reason, notes, recordedBy, opportunityId, channel }) {
   return client.patch(`/calendar-bookings/${bookingId}/outcome`, {
-    status, company_id: companyId, offering_name: offeringName, amount_usd: amountUsd, reason, notes, recorded_by: recordedBy, opportunity_id: opportunityId,
+    status, company_id: companyId, offering_name: offeringName, amount_usd: amountUsd, reason, notes, recorded_by: recordedBy, opportunity_id: opportunityId, channel,
   }).then(res => res.data)
+}
+
+// Detected outbound activity -- backed by GET /gtm-os/companies/{id}/detected-outbound-activity,
+// a real check against CampaignPush/MessageSendAttempt for a real send to this company. A
+// suggestion only -- the human still picks the real channel via outcome_channel, never auto-set.
+export function getDetectedOutboundActivity(companyId) {
+  return client.get(`/gtm-os/companies/${companyId}/detected-outbound-activity`).then(res => res.data)
 }
 
 // Revenue Pace -- backed by the new GET /gtm-os/revenue-pace, a thin wrapper over

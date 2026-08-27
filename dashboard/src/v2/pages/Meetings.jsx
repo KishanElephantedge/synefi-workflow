@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTenant } from '../../context/TenantContext.jsx'
-import { getMeetings, patchMeetingOutcome, listAccounts, getIcpsOfferings, getAccountBrief, formatApiError } from '../api.js'
+import { getMeetings, patchMeetingOutcome, listAccounts, getIcpsOfferings, getAccountBrief, getDetectedOutboundActivity, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconChevronLeft, IconChevronRight, IconEdit, IconCheck } from '../icons.jsx'
 
 const PAGE_SIZE = 25
@@ -11,6 +11,17 @@ const STATUS_BADGE = {
 }
 
 const OUTCOME_BADGE = { won: 'v2-badge-success', lost: 'v2-badge-danger' }
+
+// Real, human-selectable outcome_channel values -- app/gtm_os/revenue/revenue_pace.py's
+// OUTCOME_CHANNELS is the validated source of truth; kept in sync manually here.
+const CHANNEL_OPTIONS = [
+  { value: 'personal_network', label: 'Personal network' },
+  { value: 'linkedin_content', label: 'LinkedIn content' },
+  { value: 'inbound', label: 'Inbound (website)' },
+  { value: 'webinar', label: 'Webinar' },
+  { value: 'outbound', label: 'Outbound' },
+  { value: 'other', label: 'Other' },
+]
 
 function formatDateTime(value) {
   if (!value) return '—'
@@ -124,6 +135,19 @@ function OutcomeEditForm({ booking, offerings, onSave, onCancel, saving, error }
   const [reason, setReason] = useState(booking.outcome_reason || '')
   const [notes, setNotes] = useState(booking.outcome_notes || '')
   const [opportunityId, setOpportunityId] = useState(booking.outcome_opportunity_id ?? null)
+  const [channel, setChannel] = useState(booking.outcome_channel || '')
+  const [outboundDetected, setOutboundDetected] = useState(false)
+
+  // Real check against CampaignPush/MessageSendAttempt for this company -- a suggestion only,
+  // never auto-applied to the already-set channel field. See detect_real_outbound_activity().
+  useEffect(() => {
+    if (!company?.id) { setOutboundDetected(false); return }
+    let cancelled = false
+    getDetectedOutboundActivity(company.id).then(res => {
+      if (!cancelled) setOutboundDetected(!!res.detected_outbound_activity)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [company?.id])
 
   const canSave = status === 'won' ? true : reason.trim().length > 0
 
@@ -153,6 +177,26 @@ function OutcomeEditForm({ booking, offerings, onSave, onCancel, saving, error }
           <option value="">Not specified</option>
           {offerings.map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
         </select>
+      </div>
+
+      <div className="v2-field">
+        <label className="v2-field-label">Channel</label>
+        <select className="v2-select" value={channel} onChange={e => setChannel(e.target.value)}>
+          <option value="">Not specified</option>
+          {CHANNEL_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        {outboundDetected && channel !== 'outbound' && (
+          <div className="v2-field-hint">
+            A real outbound send to this company was found — likely "Outbound"?{' '}
+            <button
+              type="button"
+              onClick={() => setChannel('outbound')}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--v2-accent)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}
+            >
+              Use Outbound
+            </button>
+          </div>
+        )}
       </div>
 
       {status === 'won' ? (
@@ -185,6 +229,7 @@ function OutcomeEditForm({ booking, offerings, onSave, onCancel, saving, error }
             amountUsd: status === 'won' && amount !== '' ? Number(amount) : null,
             reason: status === 'lost' ? reason : null,
             notes: notes || null,
+            channel: channel || null,
           })}
         >
           {saving ? 'Saving…' : 'Save outcome'}
@@ -195,7 +240,7 @@ function OutcomeEditForm({ booking, offerings, onSave, onCancel, saving, error }
             type="button"
             className="v2-btn"
             disabled={saving}
-            onClick={() => onSave({ status: null, companyId: null, opportunityId: null, offeringName: null, amountUsd: null, reason: null, notes: null })}
+            onClick={() => onSave({ status: null, companyId: null, opportunityId: null, offeringName: null, amountUsd: null, reason: null, notes: null, channel: null })}
           >
             Clear outcome
           </button>
@@ -258,6 +303,14 @@ function BookingCard({ booking, offerings, recordedBy, onUpdated }) {
 
       {booking.outcome_status && !editing && (
         <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--v2-border)' }}>
+          {booking.outcome_channel && (
+            <div style={{ marginBottom: 6 }}>
+              <div className="v2-kv-label">Channel</div>
+              <div className="v2-kv-value" style={{ fontSize: '0.85rem' }}>
+                {CHANNEL_OPTIONS.find(c => c.value === booking.outcome_channel)?.label || booking.outcome_channel}
+              </div>
+            </div>
+          )}
           {booking.outcome_opportunity_id && (
             <div style={{ marginBottom: 6 }}>
               <div className="v2-kv-label">Linked opportunity</div>
