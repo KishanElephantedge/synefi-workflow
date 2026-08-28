@@ -4417,16 +4417,21 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 .v2-ai-widget-mic,
 .v2-ai-widget-send {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--v2-border);
+  border: 1.5px solid var(--v2-border);
   background: var(--v2-surface-elevated);
-  color: var(--v2-text-muted);
+  color: var(--v2-text);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.v2-ai-widget-mic:hover {
+  border-color: var(--v2-accent);
+  color: var(--v2-accent);
 }
 
 .v2-ai-widget-send {
@@ -4436,7 +4441,9 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 }
 
 .v2-ai-widget-send:disabled {
-  opacity: 0.5;
+  background: var(--v2-surface-elevated);
+  border-color: var(--v2-border);
+  color: var(--v2-text-faint);
   cursor: not-allowed;
 }
 

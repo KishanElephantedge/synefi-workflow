@@ -204,11 +204,11 @@ export default function V2AiWidget() {
                 aria-label={listening ? 'Stop voice input' : 'Start voice input'}
                 title={listening ? 'Stop voice input' : 'Voice input'}
               >
-                <IconMic width={16} height={16} />
+                <IconMic width={20} height={20} strokeWidth={2.5} />
               </button>
             )}
             <button type="button" className="v2-ai-widget-send" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">
-              <IconSend width={16} height={16} />
+              <IconSend width={20} height={20} strokeWidth={2.5} />
             </button>
           </div>
         </div>
