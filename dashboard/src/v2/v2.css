@@ -4434,6 +4434,17 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   color: var(--v2-accent);
 }
 
+/* The icon's width/height are also set as SVG attributes (React props), but a flex-item SVG can
+   have that presentational attribute lose to the flex layout's own auto-sizing (observed live:
+   computed width resolved to 0px despite width="20" on the element) -- explicit CSS width/height
+   always wins over a presentational attribute, so this is the real, decisive fix, not a guess. */
+.v2-ai-widget-mic svg,
+.v2-ai-widget-send svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .v2-ai-widget-send {
   background: var(--v2-accent);
   border-color: var(--v2-accent);
