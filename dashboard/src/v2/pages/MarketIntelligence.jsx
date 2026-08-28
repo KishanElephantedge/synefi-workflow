@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getMarketIntelligence, formatApiError } from '../api.js'
+import { useTenant } from '../../context/TenantContext.jsx'
+import { getMarketIntelligence, getContentOpportunities, reviewContentOpportunity, generateContentOpportunityDraft, formatApiError } from '../api.js'
 import { IconAlertTriangle, IconTrendingUp, IconTrendingDown, IconMinus } from '../icons.jsx'
+
+const ORIGIN_LABEL = { trend: 'Trend search', competitor: 'Competitor content' }
 
 // evaluate_topic_trend()'s own six real states, reused verbatim -- never a numeric score, never a
 // state this frontend invents. TIER only decides visual weight/tone; the label shown is always
@@ -95,6 +98,135 @@ function TopicRow({ topic }) {
   )
 }
 
+// Real, evidence-backed content ideas (2026-08-28) -- each one is grounded in real evidence
+// already shown above (never a second, invented data source), tagged by which real leg (trend
+// search vs. named-competitor search) produced it. Approve/reject/request-changes mirrors the
+// exact same review pattern already used for Message Review elsewhere in this app.
+function ContentOpportunityCard({ opportunity, onChanged }) {
+  const { user } = useTenant()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const [note, setNote] = useState('')
+  const [showChangesForm, setShowChangesForm] = useState(false)
+
+  const review = async (action) => {
+    if (action === 'request_changes' && !note.trim()) { setShowChangesForm(true); return }
+    setBusy(true)
+    setError(null)
+    try {
+      await reviewContentOpportunity(opportunity.id, { action, reviewedBy: user?.email, note: note.trim() || null })
+      onChanged()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const generateDraft = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await generateContentOpportunityDraft(opportunity.id)
+      if (result.status !== 'ok') setError(result.reason || result.error || `Couldn't generate a draft (${result.status}).`)
+      onChanged()
+    } catch (err) {
+      setError(formatApiError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="v2-card" style={{ marginBottom: '1rem' }}>
+      <div className="v2-evidence-item-head">
+        <span className="v2-evidence-item-title">{opportunity.topic_name || `Topic #${opportunity.content_topic_id}`}</span>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <span className="v2-badge v2-badge-neutral">{ORIGIN_LABEL[opportunity.origin] || opportunity.origin}</span>
+          <span className="v2-badge v2-badge-info">{opportunity.status.replace('_', ' ')}</span>
+        </div>
+      </div>
+
+      <div className="v2-kv-label" style={{ marginTop: '0.6rem' }}>Why now</div>
+      <p style={{ fontSize: '0.9rem', color: 'var(--v2-text)', marginTop: 4 }}>{opportunity.why_now}</p>
+
+      <div className="v2-kv-label">Suggested angle</div>
+      <p style={{ fontSize: '0.9rem', color: 'var(--v2-text)', marginTop: 4, marginBottom: 0 }}>{opportunity.suggested_angle}</p>
+
+      {opportunity.cited_urls?.length > 0 && (
+        <div className="v2-mi-chip-row" style={{ marginTop: '0.6rem' }}>
+          {opportunity.cited_urls.map(url => (
+            <a key={url} href={url} target="_blank" rel="noreferrer" className="v2-mi-chip">{new URL(url).hostname}</a>
+          ))}
+        </div>
+      )}
+
+      {opportunity.review_note && (
+        <p className="v2-placeholder-note" style={{ marginTop: '0.6rem' }}>Note: {opportunity.review_note}</p>
+      )}
+
+      {opportunity.draft_text && (
+        <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--v2-border)' }}>
+          <div className="v2-kv-label">Draft</div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--v2-text)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{opportunity.draft_text}</p>
+        </div>
+      )}
+
+      {error && <div className="v2-form-message error" style={{ marginTop: '0.6rem' }}>{error}</div>}
+
+      {opportunity.status === 'candidate' && (
+        <div className="v2-btn-row" style={{ marginTop: '0.8rem' }}>
+          <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={() => review('approve')}>Approve</button>
+          <button type="button" className="v2-btn" disabled={busy} onClick={() => review('reject')}>Reject</button>
+          <button type="button" className="v2-btn" disabled={busy} onClick={() => review('request_changes')}>Request changes</button>
+        </div>
+      )}
+      {showChangesForm && opportunity.status === 'candidate' && (
+        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem' }}>
+          <input className="v2-input" type="text" style={{ flex: 1 }} value={note} onChange={e => setNote(e.target.value)} placeholder="What needs to change?" />
+          <button type="button" className="v2-btn v2-btn-primary" disabled={busy || !note.trim()} onClick={() => review('request_changes')}>Submit</button>
+        </div>
+      )}
+      {opportunity.status === 'approved' && (
+        <div className="v2-btn-row" style={{ marginTop: '0.8rem' }}>
+          <button type="button" className="v2-btn" disabled={busy} onClick={generateDraft}>
+            {opportunity.draft_text ? 'Regenerate draft' : 'Generate draft'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ContentOpportunitiesSection() {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+
+  const load = () => getContentOpportunities().then(res => setData(res.opportunities)).catch(err => setError(formatApiError(err)))
+
+  useEffect(() => { load() }, [])
+
+  if (error) {
+    return <div className="v2-card"><div className="v2-state v2-state-error">Couldn't load content opportunities: {error}</div></div>
+  }
+  if (data === null) {
+    return <div className="v2-skeleton-row" style={{ height: 160 }} />
+  }
+  if (data.length === 0) {
+    return (
+      <div className="v2-card">
+        <div className="v2-state">No content opportunities yet -- these only get generated once a topic has enough real, recent, independent evidence (see the trend states above).</div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {data.map(o => <ContentOpportunityCard key={o.id} opportunity={o} onChanged={load} />)}
+    </div>
+  )
+}
+
 // Answers "what's trending in the market, how strong/recent is it, and where do we have real
 // account-level evidence" -- distinct from Demand Grid's decision-oriented ICP x Offering view.
 // Every number here is read verbatim from evaluate_topic_trend()/the account bridge, never
@@ -145,6 +277,9 @@ export default function MarketIntelligence() {
           <div className="v2-mi-list">
             {sorted.map(t => <TopicRow key={t.content_topic_id} topic={t} />)}
           </div>
+
+          <div className="v2-section-title" style={{ marginTop: '1.5rem' }}>Content opportunities</div>
+          <ContentOpportunitiesSection />
         </>
       )}
     </div>

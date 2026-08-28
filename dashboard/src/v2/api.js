@@ -70,6 +70,21 @@ export function getMarketIntelligence() {
   return client.get('/gtm-os/market-intelligence').then(res => res.data)
 }
 
+// Content Intelligence -- 2026-08-28, real evidence-backed content ideas (why-now + angle),
+// tagged by which real leg (trend search vs. named-competitor search) produced them. Backed by
+// GET /gtm-os/content-opportunities, POST .../review, POST .../generate-draft.
+export function getContentOpportunities() {
+  return client.get('/gtm-os/content-opportunities').then(res => res.data)
+}
+
+export function reviewContentOpportunity(id, { action, reviewedBy, note }) {
+  return client.post(`/gtm-os/content-opportunities/${id}/review`, { action, reviewed_by: reviewedBy, note }).then(res => res.data)
+}
+
+export function generateContentOpportunityDraft(id) {
+  return client.post(`/gtm-os/content-opportunities/${id}/generate-draft`).then(res => res.data)
+}
+
 // Phase 4 -- backed by GET /gtm-os/demand-grid, a thin wrapper over get_demand_grid() (ICP x
 // Offering configuration facts, reused unmodified from Batch 8/9's own config readers).
 export function getDemandGrid() {
