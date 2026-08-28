@@ -12,7 +12,7 @@ const SECTION_SLUGS = { trends: 'Trends', content: 'Content' }
 
 export default function MarketIntelligence() {
   const [searchParams] = useSearchParams()
-  const [section, setSection] = useState(SECTION_SLUGS[searchParams.get('section')] || SECTIONS[0])
+  const [section, setSection] = useState(SECTION_SLUGS[searchParams.get('section')] || 'Content')
 
   return (
     <div>

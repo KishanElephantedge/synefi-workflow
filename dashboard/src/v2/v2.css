@@ -4470,54 +4470,133 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   50% { box-shadow: 0 0 0 6px rgba(229, 72, 77, 0); }
 }
 
-/* Content Strategy page (2026-08-28) -- inline (not floating) content-strategist chat + a
-   redesigned content opportunity board, its own tab distinct from Market Trends. */
+/* Content Strategy page (2026-08-28) -- a collapsed-by-default chat trigger that expands into a
+   full conversation, plus a real trending-board treatment for topics (ranked, tier-accented
+   cards), its own tab distinct from Market Trends. */
 
 .v2-cs-page {
   display: flex;
   flex-direction: column;
 }
 
-.v2-cs-chat {
+.v2-cs-chat-shell {
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+  overflow: hidden;
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-cs-chat-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1.25rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--v2-accent) 12%, transparent), transparent 60%);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.v2-cs-chat-trigger-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--v2-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v2-cs-chat-trigger-text {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 460px;
-  padding: 0;
-  overflow: hidden;
+  gap: 2px;
+  min-width: 0;
 }
 
-.v2-cs-chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--v2-border);
-  flex-shrink: 0;
-}
-
-.v2-cs-chat-header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.v2-cs-chat-trigger-text strong {
+  font-size: 1rem;
   color: var(--v2-text);
 }
 
+.v2-cs-chat-trigger-text span {
+  font-size: 0.84rem;
+  color: var(--v2-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-cs-chat-chevron {
+  flex-shrink: 0;
+  color: var(--v2-text-muted);
+  transition: transform 0.15s;
+}
+
+.v2-cs-chat-chevron.open {
+  transform: rotate(180deg);
+}
+
+.v2-cs-chat-panel {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-cs-chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.25rem;
+}
+
 .v2-cs-chat-messages {
-  flex: 1;
+  max-height: 420px;
   overflow-y: auto;
-  padding: 0.85rem 1rem;
+  padding: 0 1.25rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.v2-cs-chat-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.v2-cs-suggestion-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.v2-cs-suggestion-chip {
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.v2-cs-suggestion-chip:hover {
+  border-color: var(--v2-accent);
+  color: var(--v2-accent);
 }
 
 .v2-cs-chat-input-row {
   display: flex;
   align-items: flex-end;
   gap: 0.4rem;
-  padding: 0.75rem;
+  padding: 0.85rem 1.25rem;
   border-top: 1px solid var(--v2-border);
-  flex-shrink: 0;
 }
 
 .v2-cs-chat-input-row textarea {
@@ -4527,35 +4606,78 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   border-radius: var(--v2-radius, 10px);
   background: var(--v2-surface-elevated);
   color: var(--v2-text);
-  padding: 0.5rem 0.65rem;
+  padding: 0.55rem 0.75rem;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   max-height: 100px;
 }
 
-.v2-cs-topic-list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
-  overflow: hidden;
-  background: var(--v2-surface);
+/* Trending topics -- ranked cards with a tier-colored accent bar, sized to actually read as a
+   trending board (bold names, generous spacing) rather than a settings list. */
+
+.v2-cs-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.85rem;
 }
 
-.v2-cs-topic-row {
+.v2-cs-topic-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--v2-border);
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-left: 4px solid var(--v2-border);
+  transition: border-color 0.15s, transform 0.15s;
 }
 
-.v2-cs-topic-row:last-child {
-  border-bottom: none;
+.v2-cs-topic-card.tier-strong {
+  border-left-color: var(--v2-success);
+}
+
+.v2-cs-topic-card.tier-some {
+  border-left-color: var(--v2-info, var(--v2-accent));
+}
+
+.v2-cs-topic-card.tier-declining {
+  border-left-color: var(--v2-warning);
+}
+
+.v2-cs-topic-card.tier-insufficient {
+  border-left-color: var(--v2-border);
+  opacity: 0.75;
+}
+
+.v2-cs-topic-card:hover {
+  transform: translateY(-1px);
+}
+
+.v2-cs-topic-rank {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--v2-text-faint);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.v2-cs-topic-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .v2-cs-topic-name {
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--v2-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-cs-topic-body .v2-status-pill {
+  align-self: flex-start;
 }
