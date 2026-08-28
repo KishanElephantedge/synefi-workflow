@@ -81,8 +81,8 @@ export function reviewContentOpportunity(id, { action, reviewedBy, note }) {
   return client.post(`/gtm-os/content-opportunities/${id}/review`, { action, reviewed_by: reviewedBy, note }).then(res => res.data)
 }
 
-export function generateContentOpportunityDraft(id) {
-  return client.post(`/gtm-os/content-opportunities/${id}/generate-draft`).then(res => res.data)
+export function generateContentOpportunityDraft(id, platform = 'blog') {
+  return client.post(`/gtm-os/content-opportunities/${id}/generate-draft`, { platform }).then(res => res.data)
 }
 
 // Phase 4 -- backed by GET /gtm-os/demand-grid, a thin wrapper over get_demand_grid() (ICP x
@@ -314,6 +314,20 @@ export function startNewV2Chat() {
 
 export function sendV2ChatMessage(conversationId, message) {
   return client.post(`/chat/conversations/${conversationId}/messages`, { message, scope: 'v2' }).then(res => res.data)
+}
+
+// Content Strategy Copilot -- 2026-08-28, same real chat mechanism, scoped to
+// app/gtm_os/chat/content_chat_tools.py's content-specific tools/persona.
+export function getLatestContentChat() {
+  return client.get('/chat/latest', { params: { scope: 'content' } }).then(res => res.data)
+}
+
+export function startNewContentChat() {
+  return client.post('/chat/new', null, { params: { scope: 'content' } }).then(res => res.data)
+}
+
+export function sendContentChatMessage(conversationId, message) {
+  return client.post(`/chat/conversations/${conversationId}/messages`, { message, scope: 'content' }).then(res => res.data)
 }
 
 // Account Event Timeline -- backed by GET /gtm-os/accounts/{id}/timeline, a pure read-only
