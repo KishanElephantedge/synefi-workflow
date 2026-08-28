@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { getMarketIntelligence, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../api.js'
-import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend, IconTrendingUp, IconTrendingDown, IconMinus, IconChevronDown } from '../icons.jsx'
+import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend, IconChevronDown } from '../icons.jsx'
 
-// Same real six states as MarketTrends.jsx's TREND_META -- reused verbatim, never a paraphrase or
-// a second scoring system. This list is intentionally minimal (name + state only): the actual
-// why-now/angle/draft content only ever comes from the chat above, on request, in whatever format
-// is asked for -- not pre-rendered here (2026-08-28 explicit instruction).
+// Same real six states MarketTrends.jsx reads from evaluate_topic_trend() -- reused verbatim,
+// never a paraphrase or a second scoring system. Grouped into tiers below rather than shown
+// individually per-card (2026-08-28 explicit feedback) -- the section a topic lands in already
+// says its state; cards differentiate only by real numbers (see TopicCard).
 const TREND_META = {
-  emerging: { label: 'Emerging', Icon: IconTrendingUp, tier: 'strong' },
-  accelerating: { label: 'Accelerating', Icon: IconTrendingUp, tier: 'strong' },
-  persistent: { label: 'Persistent', Icon: IconMinus, tier: 'some' },
-  stable: { label: 'Stable', Icon: IconMinus, tier: 'some' },
-  declining: { label: 'Declining', Icon: IconTrendingDown, tier: 'declining' },
-  insufficient_evidence: { label: 'Insufficient evidence', Icon: IconMinus, tier: 'insufficient' },
+  emerging: { tier: 'strong' },
+  accelerating: { tier: 'strong' },
+  persistent: { tier: 'some' },
+  stable: { tier: 'some' },
+  declining: { tier: 'declining' },
+  insufficient_evidence: { tier: 'insufficient' },
 }
-const TIER_TONE = { strong: 'tone-success-solid', some: 'tone-info-soft', declining: 'tone-warning-solid', insufficient: 'tone-neutral' }
-const TIER_RANK = { strong: 3, some: 2, declining: 1, insufficient: 0 }
 
 const PROMPT_SUGGESTIONS = [
   'What should we write about this week?',
@@ -204,9 +202,38 @@ function ContentStrategistChat({ onTopicsChanged }) {
   )
 }
 
-// Real trending-board treatment: ranked cards, a tier-colored accent, larger type -- built to
-// actually look like a trending surface, not a settings list. Still deliberately minimal content
-// (name + real trend state only) -- the reasoning/content itself only comes from the chat above.
+const SECTION_DEF = [
+  { tier: 'strong', title: 'Trending now', blurb: 'Real, recent, independent activity -- worth writing about.' },
+  { tier: 'some', title: 'Holding steady', blurb: "Real activity, but not new -- it's persisted or leveled off." },
+  { tier: 'declining', title: 'Cooling off', blurb: 'Activity is real but fading.' },
+  { tier: 'insufficient', title: 'Not yet trending', blurb: 'Too little evidence so far to call a trend -- watching.' },
+]
+
+// A topic card's ONLY differentiators are real numbers already computed server-side: how many
+// independent sources are talking about it right now, and how many real target accounts are
+// already circling it (the closest real proxy this system has to "this is closer to revenue,"
+// per the strategist's own reasoning). No invented rank, no fake score.
+function TopicCard({ topic }) {
+  const meta = TREND_META[topic.state] || TREND_META.insufficient_evidence
+  const hasAccountEvidence = topic.account_bridge?.linked_account_count > 0
+  return (
+    <div className={`v2-cs-topic-card tier-${meta.tier}`}>
+      <span className="v2-cs-topic-name">{topic.canonical_name}</span>
+      <div className="v2-cs-topic-stats">
+        {topic.recent_observation_count > 0 && (
+          <span className="v2-cs-topic-stat">{topic.recent_observation_count} mention{topic.recent_observation_count === 1 ? '' : 's'} · {topic.recent_independent_entity_count} source{topic.recent_independent_entity_count === 1 ? '' : 's'}</span>
+        )}
+        {hasAccountEvidence && (
+          <span className="v2-cs-topic-stat v2-cs-topic-stat-accent">{topic.account_bridge.linked_account_count} real account{topic.account_bridge.linked_account_count === 1 ? '' : 's'} circling this</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Grouped by real tier into labeled sections, not a flat ranked grid -- a rank number implies a
+// precision this data doesn't have (2026-08-28 explicit feedback), so tier grouping plus the real
+// observation/account-bridge counts on each card are the only differentiators, all real.
 function TrendingTopicsList() {
   const [topics, setTopics] = useState(null)
   const [error, setError] = useState(null)
@@ -221,7 +248,7 @@ function TrendingTopicsList() {
   if (topics === null) {
     return (
       <div className="v2-cs-topic-grid">
-        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="v2-skeleton-row" style={{ height: 90 }} />)}
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="v2-skeleton-row" style={{ height: 70 }} />)}
       </div>
     )
   }
@@ -229,26 +256,32 @@ function TrendingTopicsList() {
     return <div className="v2-card"><div className="v2-state">No topics are configured yet for this tenant.</div></div>
   }
 
-  const sorted = [...topics].sort((a, b) => TIER_RANK[(TREND_META[b.state] || TREND_META.insufficient_evidence).tier] - TIER_RANK[(TREND_META[a.state] || TREND_META.insufficient_evidence).tier])
+  const byTier = {}
+  for (const t of topics) {
+    const tier = (TREND_META[t.state] || TREND_META.insufficient_evidence).tier
+    ;(byTier[tier] ||= []).push(t)
+  }
+  // Within a tier, real observation count is the one real number available to order by --
+  // never an invented composite score.
+  for (const tier in byTier) {
+    byTier[tier].sort((a, b) => b.recent_observation_count - a.recent_observation_count)
+  }
 
   return (
-    <div className="v2-cs-topic-grid">
-      {sorted.map((t, i) => {
-        const meta = TREND_META[t.state] || TREND_META.insufficient_evidence
-        const Icon = meta.Icon
-        return (
-          <div key={t.content_topic_id} className={`v2-cs-topic-card tier-${meta.tier}`}>
-            <span className="v2-cs-topic-rank">{String(i + 1).padStart(2, '0')}</span>
-            <div className="v2-cs-topic-body">
-              <span className="v2-cs-topic-name">{t.canonical_name}</span>
-              <span className={`v2-status-pill ${TIER_TONE[meta.tier]}`}>
-                <Icon width={12} height={12} />
-                {meta.label}
-              </span>
-            </div>
+    <div className="v2-cs-topic-sections">
+      {SECTION_DEF.filter(s => byTier[s.tier]?.length).map(section => (
+        <div key={section.tier} className="v2-cs-topic-section">
+          <div className="v2-cs-topic-section-head">
+            <span className={`v2-cs-topic-section-dot tier-${section.tier}`} />
+            <span className="v2-cs-topic-section-title">{section.title}</span>
+            <span className="v2-cs-topic-section-count">{byTier[section.tier].length}</span>
           </div>
-        )
-      })}
+          <p className="v2-cs-topic-section-blurb">{section.blurb}</p>
+          <div className={`v2-cs-topic-grid${section.tier === 'insufficient' ? ' compact' : ''}`}>
+            {byTier[section.tier].map(t => <TopicCard key={t.content_topic_id} topic={t} />)}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -4612,72 +4612,112 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   max-height: 100px;
 }
 
-/* Trending topics -- ranked cards with a tier-colored accent bar, sized to actually read as a
-   trending board (bold names, generous spacing) rather than a settings list. */
+/* Trending topics -- grouped into real tier sections (not a flat ranked grid, no invented rank
+   number), each card differentiated only by real numbers (observation/source/account-bridge
+   counts) already computed server-side. */
+
+.v2-cs-topic-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.v2-cs-topic-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.v2-cs-topic-section-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.v2-cs-topic-section-dot.tier-strong { background: var(--v2-success); }
+.v2-cs-topic-section-dot.tier-some { background: var(--v2-info, var(--v2-accent)); }
+.v2-cs-topic-section-dot.tier-declining { background: var(--v2-warning); }
+.v2-cs-topic-section-dot.tier-insufficient { background: var(--v2-text-faint); }
+
+.v2-cs-topic-section-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.v2-cs-topic-section-count {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--v2-text-faint);
+  background: var(--v2-surface-elevated);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+
+.v2-cs-topic-section-blurb {
+  font-size: 0.82rem;
+  color: var(--v2-text-muted);
+  margin: 0.2rem 0 0.75rem;
+}
 
 .v2-cs-topic-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+
+.v2-cs-topic-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
 }
 
 .v2-cs-topic-card {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.1rem 1.25rem;
-  border-radius: var(--v2-radius-lg);
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--v2-radius, 12px);
   background: var(--v2-surface);
   border: 1px solid var(--v2-border);
-  border-left: 4px solid var(--v2-border);
+  border-left: 3px solid var(--v2-border);
   transition: border-color 0.15s, transform 0.15s;
 }
 
-.v2-cs-topic-card.tier-strong {
-  border-left-color: var(--v2-success);
-}
+.v2-cs-topic-card.tier-strong { border-left-color: var(--v2-success); }
+.v2-cs-topic-card.tier-some { border-left-color: var(--v2-info, var(--v2-accent)); }
+.v2-cs-topic-card.tier-declining { border-left-color: var(--v2-warning); }
+.v2-cs-topic-card.tier-insufficient { border-left-color: var(--v2-border); opacity: 0.7; }
 
-.v2-cs-topic-card.tier-some {
-  border-left-color: var(--v2-info, var(--v2-accent));
-}
-
-.v2-cs-topic-card.tier-declining {
-  border-left-color: var(--v2-warning);
-}
-
-.v2-cs-topic-card.tier-insufficient {
-  border-left-color: var(--v2-border);
-  opacity: 0.75;
+.v2-cs-topic-grid.compact .v2-cs-topic-card {
+  padding: 0.6rem 0.8rem;
 }
 
 .v2-cs-topic-card:hover {
   transform: translateY(-1px);
 }
 
-.v2-cs-topic-rank {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--v2-text-faint);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-.v2-cs-topic-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
 .v2-cs-topic-name {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 0.94rem;
+  font-weight: 650;
   color: var(--v2-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.v2-cs-topic-body .v2-status-pill {
-  align-self: flex-start;
+.v2-cs-topic-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.v2-cs-topic-stat {
+  font-size: 0.76rem;
+  color: var(--v2-text-faint);
+}
+
+.v2-cs-topic-stat-accent {
+  color: var(--v2-success);
+  font-weight: 600;
 }
