@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { useTenant } from '../../context/TenantContext.jsx'
-import {
-  getContentOpportunities, reviewContentOpportunity, generateContentOpportunityDraft,
-  getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError,
-} from '../api.js'
-import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend } from '../icons.jsx'
+import { getMarketIntelligence, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../api.js'
+import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend, IconTrendingUp, IconTrendingDown, IconMinus } from '../icons.jsx'
 
-const ORIGIN_LABEL = { trend: 'Trend search', competitor: 'Competitor content' }
-const PLATFORMS = [
-  { key: 'blog', label: 'Blog' },
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'twitter', label: 'X / Twitter' },
-]
+// Same real six states as MarketTrends.jsx's TREND_META -- reused verbatim, never a paraphrase or
+// a second scoring system. This list is intentionally minimal (name + state only): the actual
+// why-now/angle/draft content only ever comes from the chat above, on request, in whatever format
+// is asked for -- not pre-rendered here (2026-08-28 explicit instruction).
+const TREND_META = {
+  emerging: { label: 'Emerging', Icon: IconTrendingUp, tier: 'strong' },
+  accelerating: { label: 'Accelerating', Icon: IconTrendingUp, tier: 'strong' },
+  persistent: { label: 'Persistent', Icon: IconMinus, tier: 'some' },
+  stable: { label: 'Stable', Icon: IconMinus, tier: 'some' },
+  declining: { label: 'Declining', Icon: IconTrendingDown, tier: 'declining' },
+  insufficient_evidence: { label: 'Insufficient evidence', Icon: IconMinus, tier: 'insufficient' },
+}
+const TIER_TONE = { strong: 'tone-success-solid', some: 'tone-info-soft', declining: 'tone-warning-solid', insufficient: 'tone-neutral' }
+const TIER_RANK = { strong: 3, some: 2, declining: 1, insufficient: 0 }
 
 // ---- Minimal, dependency-free markdown rendering -- same approach as V2AiWidget.jsx, duplicated
 // rather than shared since each chat surface owns its own rendering (see that file's own note). ----
@@ -50,7 +54,7 @@ const SpeechRecognitionImpl = typeof window !== 'undefined' ? (window.SpeechReco
 // strategist mentoring a junior writer, real evidence-grounded, real tools (see
 // app/gtm_os/chat/content_chat_tools.py). Inline, not floating -- this IS the page's job, not a
 // side widget on top of it.
-function ContentStrategistChat({ onOpportunitiesChanged }) {
+function ContentStrategistChat({ onTopicsChanged }) {
   const [conversationId, setConversationId] = useState(null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -91,8 +95,8 @@ function ContentStrategistChat({ onOpportunitiesChanged }) {
     sendContentChatMessage(conversationId, text)
       .then(res => {
         setMessages(prev => [...prev, { role: 'assistant', content: res.reply, tools_used: res.tools_used, created_at: new Date().toISOString() }])
-        // Any content-changing tool (generate/review) may have run -- refresh the real board below.
-        onOpportunitiesChanged()
+        // A generation/sensing tool may have run -- refresh the real trending-topics list below.
+        onTopicsChanged()
       })
       .catch(err => {
         setMessages(prev => [...prev, { role: 'assistant', content: formatApiError(err), created_at: new Date().toISOString() }])
@@ -135,7 +139,7 @@ function ContentStrategistChat({ onOpportunitiesChanged }) {
       <div className="v2-cs-chat-messages">
         {loaded && messages.length === 0 && (
           <p className="v2-placeholder-note" style={{ padding: '0.5rem 0' }}>
-            Ask me things like "what should we write about this week?", "why does that topic matter right now?", or "write a LinkedIn post for the Sales OS opportunity." I only ever ground suggestions in real evidence -- ask why, and I'll show you.
+            Ask me things like "what should we write about this week?", "why does that topic matter right now?", or "write a LinkedIn post for the Sales OS topic." I only ever ground suggestions in real evidence -- ask why, and I'll show you.
           </p>
         )}
         {messages.map((m, i) => (
@@ -173,146 +177,59 @@ function ContentStrategistChat({ onOpportunitiesChanged }) {
   )
 }
 
-function ContentOpportunityCard({ opportunity, onChanged }) {
-  const { user } = useTenant()
-  const [busy, setBusy] = useState(false)
+// Plain, minimal list -- name + real trend state only, nothing else. The actual why-now/angle/
+// draft content is deliberately never shown here; it only ever comes from the chat above, on
+// request, in whatever format is asked for (2026-08-28 explicit instruction).
+function TrendingTopicsList() {
+  const [topics, setTopics] = useState(null)
   const [error, setError] = useState(null)
-  const [note, setNote] = useState('')
-  const [showChangesForm, setShowChangesForm] = useState(false)
-  const [activePlatform, setActivePlatform] = useState('blog')
 
-  const review = async (action) => {
-    if (action === 'request_changes' && !note.trim()) { setShowChangesForm(true); return }
-    setBusy(true)
-    setError(null)
-    try {
-      await reviewContentOpportunity(opportunity.id, { action, reviewedBy: user?.email, note: note.trim() || null })
-      onChanged()
-    } catch (err) {
-      setError(formatApiError(err))
-    } finally {
-      setBusy(false)
-    }
+  const load = () => getMarketIntelligence().then(data => setTopics(data.topics)).catch(err => setError(formatApiError(err)))
+
+  useEffect(() => { load() }, [])
+
+  if (error) {
+    return <div className="v2-card"><div className="v2-state v2-state-error"><IconAlertTriangle width={20} height={20} style={{ marginBottom: 8 }} /><div>Couldn't load trending topics: {error}</div></div></div>
+  }
+  if (topics === null) {
+    return <div className="v2-skeleton-row" style={{ height: 120 }} />
+  }
+  if (topics.length === 0) {
+    return <div className="v2-card"><div className="v2-state">No topics are configured yet for this tenant.</div></div>
   }
 
-  const generateDraft = async (platform) => {
-    setBusy(true)
-    setError(null)
-    try {
-      const result = await generateContentOpportunityDraft(opportunity.id, platform)
-      if (result.status !== 'ok') setError(result.reason || result.error || `Couldn't generate a draft (${result.status}).`)
-      onChanged()
-    } catch (err) {
-      setError(formatApiError(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const drafts = opportunity.drafts || {}
-  const activeDraft = drafts[activePlatform]
+  const sorted = [...topics].sort((a, b) => TIER_RANK[(TREND_META[b.state] || TREND_META.insufficient_evidence).tier] - TIER_RANK[(TREND_META[a.state] || TREND_META.insufficient_evidence).tier])
 
   return (
-    <div className="v2-card v2-cs-opportunity-card">
-      <div className="v2-evidence-item-head">
-        <span className="v2-evidence-item-title">{opportunity.topic_name || `Topic #${opportunity.content_topic_id}`}</span>
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
-          <span className="v2-badge v2-badge-neutral">{ORIGIN_LABEL[opportunity.origin] || opportunity.origin}</span>
-          <span className="v2-badge v2-badge-info">{opportunity.status.replace('_', ' ')}</span>
-        </div>
-      </div>
-
-      <div className="v2-kv-label" style={{ marginTop: '0.6rem' }}>Why now</div>
-      <p style={{ fontSize: '0.9rem', color: 'var(--v2-text)', marginTop: 4 }}>{opportunity.why_now}</p>
-
-      <div className="v2-kv-label">Suggested angle</div>
-      <p style={{ fontSize: '0.9rem', color: 'var(--v2-text)', marginTop: 4, marginBottom: 0 }}>{opportunity.suggested_angle}</p>
-
-      {opportunity.cited_urls?.length > 0 && (
-        <div className="v2-mi-chip-row" style={{ marginTop: '0.6rem' }}>
-          {opportunity.cited_urls.map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" className="v2-mi-chip">{new URL(url).hostname}</a>
-          ))}
-        </div>
-      )}
-
-      {opportunity.review_note && (
-        <p className="v2-placeholder-note" style={{ marginTop: '0.6rem' }}>Note: {opportunity.review_note}</p>
-      )}
-
-      {error && <div className="v2-form-message error" style={{ marginTop: '0.6rem' }}>{error}</div>}
-
-      {opportunity.status === 'candidate' && (
-        <div className="v2-btn-row" style={{ marginTop: '0.8rem' }}>
-          <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={() => review('approve')}>Approve</button>
-          <button type="button" className="v2-btn" disabled={busy} onClick={() => review('reject')}>Reject</button>
-          <button type="button" className="v2-btn" disabled={busy} onClick={() => review('request_changes')}>Request changes</button>
-        </div>
-      )}
-      {showChangesForm && opportunity.status === 'candidate' && (
-        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem' }}>
-          <input className="v2-input" type="text" style={{ flex: 1 }} value={note} onChange={e => setNote(e.target.value)} placeholder="What needs to change?" />
-          <button type="button" className="v2-btn v2-btn-primary" disabled={busy || !note.trim()} onClick={() => review('request_changes')}>Submit</button>
-        </div>
-      )}
-
-      {opportunity.status === 'approved' && (
-        <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--v2-border)' }}>
-          <div className="v2-config-tabs" style={{ marginBottom: '0.6rem' }}>
-            {PLATFORMS.map(p => (
-              <button
-                key={p.key}
-                type="button"
-                className={`v2-config-tab${activePlatform === p.key ? ' active' : ''}`}
-                onClick={() => setActivePlatform(p.key)}
-              >
-                {p.label}{drafts[p.key] ? ' ✓' : ''}
-              </button>
-            ))}
+    <div className="v2-cs-topic-list">
+      {sorted.map(t => {
+        const meta = TREND_META[t.state] || TREND_META.insufficient_evidence
+        const Icon = meta.Icon
+        return (
+          <div key={t.content_topic_id} className="v2-cs-topic-row">
+            <span className="v2-cs-topic-name">{t.canonical_name}</span>
+            <span className={`v2-status-pill ${TIER_TONE[meta.tier]}`}>
+              <Icon width={12} height={12} />
+              {meta.label}
+            </span>
           </div>
-          {activeDraft ? (
-            <p style={{ fontSize: '0.88rem', color: 'var(--v2-text)', whiteSpace: 'pre-wrap' }}>{activeDraft}</p>
-          ) : (
-            <p className="v2-placeholder-note">No {PLATFORMS.find(p => p.key === activePlatform)?.label} draft yet.</p>
-          )}
-          <button type="button" className="v2-btn" disabled={busy} onClick={() => generateDraft(activePlatform)} style={{ marginTop: '0.5rem' }}>
-            {activeDraft ? `Regenerate ${PLATFORMS.find(p => p.key === activePlatform)?.label} draft` : `Generate ${PLATFORMS.find(p => p.key === activePlatform)?.label} draft`}
-          </button>
-        </div>
-      )}
+        )
+      })}
     </div>
   )
 }
 
 export default function ContentStrategy() {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
-
-  const load = () => getContentOpportunities().then(res => setData(res.opportunities)).catch(err => setError(formatApiError(err)))
-
-  useEffect(() => { load() }, [])
+  const [refreshKey, setRefreshKey] = useState(0)
 
   return (
     <div className="v2-cs-page">
-      <div className="v2-page-eyebrow">Real, evidence-grounded content ideas -- suggested, explained, and drafted per platform</div>
+      <div className="v2-page-eyebrow">Ask your content strategist -- suggestions and drafts are grounded in the real topics below, in whatever format you ask for</div>
 
-      <ContentStrategistChat onOpportunitiesChanged={load} />
+      <ContentStrategistChat onTopicsChanged={() => setRefreshKey(k => k + 1)} />
 
-      <div className="v2-section-title" style={{ marginTop: '1.5rem' }}>Content opportunities</div>
-
-      {error ? (
-        <div className="v2-card"><div className="v2-state v2-state-error"><IconAlertTriangle width={20} height={20} style={{ marginBottom: 8 }} /><div>Couldn't load content opportunities: {error}</div></div></div>
-      ) : data === null ? (
-        <div className="v2-skeleton-row" style={{ height: 160 }} />
-      ) : data.length === 0 ? (
-        <div className="v2-card">
-          <div className="v2-state">No content opportunities yet -- these only get generated once a topic has enough real, recent, independent evidence. Try asking the strategist above what's trending.</div>
-        </div>
-      ) : (
-        <div className="v2-cs-opportunity-grid">
-          {data.map(o => <ContentOpportunityCard key={o.id} opportunity={o} onChanged={load} />)}
-        </div>
-      )}
+      <div className="v2-section-title" style={{ marginTop: '1.5rem' }}>Trending topics</div>
+      <TrendingTopicsList key={refreshKey} />
     </div>
   )
 }

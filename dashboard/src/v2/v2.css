@@ -4533,19 +4533,29 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   max-height: 100px;
 }
 
-.v2-cs-opportunity-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 1rem;
-}
-
-.v2-cs-opportunity-card {
+.v2-cs-topic-list {
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-lg);
+  overflow: hidden;
+  background: var(--v2-surface);
 }
 
-@media (max-width: 800px) {
-  .v2-cs-opportunity-grid {
-    grid-template-columns: 1fr;
-  }
+.v2-cs-topic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-cs-topic-row:last-child {
+  border-bottom: none;
+}
+
+.v2-cs-topic-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--v2-text);
 }
