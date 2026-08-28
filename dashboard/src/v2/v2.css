@@ -4680,14 +4680,10 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   border-radius: var(--v2-radius, 12px);
   background: var(--v2-surface);
   border: 1px solid var(--v2-border);
-  border-left: 3px solid var(--v2-border);
   transition: border-color 0.15s, transform 0.15s;
 }
 
-.v2-cs-topic-card.tier-strong { border-left-color: var(--v2-success); }
-.v2-cs-topic-card.tier-some { border-left-color: var(--v2-info, var(--v2-accent)); }
-.v2-cs-topic-card.tier-declining { border-left-color: var(--v2-warning); }
-.v2-cs-topic-card.tier-insufficient { border-left-color: var(--v2-border); opacity: 0.7; }
+.v2-cs-topic-card.tier-insufficient { opacity: 0.7; }
 
 .v2-cs-topic-grid.compact .v2-cs-topic-card {
   padding: 0.6rem 0.8rem;
