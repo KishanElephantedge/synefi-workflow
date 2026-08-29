@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/gw/:path*", "destination": "https://workflow-automation-1ujz.onrender.com/:path*" },
+    { "source": "/gw/:path*", "destination": "https://elephantedge-gateway.onrender.com/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
