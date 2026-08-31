@@ -272,7 +272,7 @@ function BookingCard({ booking, offerings, recordedBy, onUpdated }) {
   return (
     <div className="v2-card" style={{ marginBottom: '1rem' }}>
       <div className="v2-evidence-item-head">
-        <span className="v2-evidence-item-title">{booking.booker_name || 'Unknown booker'}</span>
+        <span className="v2-evidence-item-title">{booking.booker_name || booking.booker_email || 'Unknown booker'}</span>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           {booking.outcome_status && (
             <span className={`v2-badge ${OUTCOME_BADGE[booking.outcome_status]}`}>
@@ -341,7 +341,7 @@ function BookingCard({ booking, offerings, recordedBy, onUpdated }) {
       ) : (
         <div style={{ marginTop: '0.8rem' }}>
           <button type="button" className="v2-btn" onClick={() => setEditing(true)}>
-            <IconEdit width={13} height={13} /> {booking.outcome_status ? 'Edit outcome' : 'Mark outcome'}
+            <IconEdit width={13} height={13} /> {booking.outcome_status ? 'Edit outcome' : 'Outcome'}
           </button>
         </div>
       )}

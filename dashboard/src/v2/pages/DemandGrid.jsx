@@ -595,7 +595,7 @@ export default function DemandGrid() {
           </div>
 
           <div className="v2-dg-table-wrap">
-            <div className="v2-dg-table" style={{ gridTemplateColumns: `220px repeat(${grid.offerings.length}, minmax(150px, 1fr))` }}>
+            <div className="v2-dg-table" style={{ gridTemplateColumns: `240px repeat(${grid.offerings.length}, minmax(200px, 1fr))` }}>
               <div className="v2-dg-th v2-dg-th-corner">ICP</div>
               {grid.offerings.map(o => (
                 <div key={o} className="v2-dg-th">
