@@ -5,16 +5,22 @@ import { IconMessageCircle, IconMic, IconSend, IconX } from '../icons.jsx'
 // Minimal, dependency-free markdown rendering -- same approach as the legacy V1 widget
 // (src/components/ChatWidget.jsx), duplicated rather than imported since V2 deliberately owns
 // its own layout/rendering with nothing shared from V1 (see V2App.jsx's own docstring).
+// Extended (2026-09-01, explicit instruction) to handle horizontal rules and numbered lists --
+// the two things real assistant replies actually use that were previously falling through to
+// the plain-text branch and showing as literal "---"/"1. " characters instead of formatting.
 function renderMarkdown(text) {
   if (!text) return null
   const lines = text.split('\n')
   const blocks = []
   let listItems = null
+  let listTag = null
 
   const flushList = () => {
     if (listItems) {
-      blocks.push(<ul key={`ul-${blocks.length}`}>{listItems}</ul>)
+      const Tag = listTag
+      blocks.push(<Tag key={`list-${blocks.length}`}>{listItems}</Tag>)
       listItems = null
+      listTag = null
     }
   }
 
@@ -26,19 +32,27 @@ function renderMarkdown(text) {
   lines.forEach((line, i) => {
     const heading = line.match(/^(#{1,3})\s+(.*)/)
     const bullet = line.match(/^[-*]\s+(.*)/)
-    if (heading) {
+    const numbered = line.match(/^\d+[.)]\s+(.*)/)
+    const isRule = /^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())
+    if (isRule) {
+      flushList()
+      blocks.push(<hr key={i} className="v2-ai-message-rule" />)
+    } else if (heading) {
       flushList()
       const Tag = heading[1].length === 1 ? 'h4' : heading[1].length === 2 ? 'h5' : 'h6'
-      blocks.push(<Tag key={i} style={{ margin: '0.3rem 0' }}>{renderInline(heading[2])}</Tag>)
+      blocks.push(<Tag key={i} className="v2-ai-message-heading">{renderInline(heading[2])}</Tag>)
     } else if (bullet) {
-      if (!listItems) listItems = []
+      if (!listItems || listTag !== 'ul') { flushList(); listItems = []; listTag = 'ul' }
       listItems.push(<li key={i}>{renderInline(bullet[1])}</li>)
+    } else if (numbered) {
+      if (!listItems || listTag !== 'ol') { flushList(); listItems = []; listTag = 'ol' }
+      listItems.push(<li key={i}>{renderInline(numbered[1])}</li>)
     } else if (line.trim() === '') {
       flushList()
-      blocks.push(<br key={i} />)
+      blocks.push(<div key={i} className="v2-ai-message-gap" />)
     } else {
       flushList()
-      blocks.push(<span key={i}>{renderInline(line)}<br /></span>)
+      blocks.push(<p key={i} className="v2-ai-message-para">{renderInline(line)}</p>)
     }
   })
   flushList()
@@ -62,6 +76,17 @@ export default function V2AiWidget() {
   const [voiceError, setVoiceError] = useState(null)
   const bottomRef = useRef(null)
   const recognitionRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  // Auto-grow the input as the user types or pastes -- was fixed at rows={1}, which made
+  // anything longer than one line invisible until scrolled. Grows up to a real cap, then
+  // scrolls internally rather than swallowing the whole panel.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  }, [input])
 
   useEffect(() => {
     if (!open || loaded) return
@@ -148,7 +173,7 @@ export default function V2AiWidget() {
   }
 
   return (
-    <div className="v2-ai-widget-wrap">
+    <>
       {open && (
         <div className="v2-ai-widget-panel">
           <div className="v2-ai-widget-header">
@@ -156,7 +181,7 @@ export default function V2AiWidget() {
             <div className="v2-ai-widget-header-actions">
               <button type="button" className="v2-ai-widget-link" onClick={startNewChat}>New chat</button>
               <button type="button" className="v2-ai-widget-close" onClick={() => setOpen(false)} aria-label="Close">
-                <IconX width={16} height={16} />
+                <IconX width={18} height={18} />
               </button>
             </div>
           </div>
@@ -188,6 +213,7 @@ export default function V2AiWidget() {
           {voiceError && <div className="v2-form-message error" style={{ margin: '0 1rem' }}>{voiceError}</div>}
           <div className="v2-ai-widget-input-row">
             <textarea
+              ref={textareaRef}
               rows={1}
               placeholder="Ask a question or give an instruction..."
               value={input}
@@ -213,9 +239,14 @@ export default function V2AiWidget() {
           </div>
         </div>
       )}
-      <button type="button" className="v2-ai-widget-bubble" onClick={() => setOpen(o => !o)} aria-label="AI assistant">
+      <button
+        type="button"
+        className={`v2-ai-widget-bubble${open ? ' is-open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        aria-label="AI assistant"
+      >
         {open ? <IconX width={22} height={22} /> : <IconMessageCircle width={26} height={26} />}
       </button>
-    </div>
+    </>
   )
 }

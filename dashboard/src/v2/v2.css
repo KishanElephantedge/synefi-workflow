@@ -4265,18 +4265,17 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 
 /* AI Assistant widget (2026-08-27) -- full read/write GTM-OS access + voice input. */
 
-.v2-ai-widget-wrap {
+/* Full-height docked sidebar (2026-09-01, explicit instruction -- "like the Comet browser"),
+   not a small floating popup. Slides in from the right edge of the viewport, full height, no
+   backdrop dimming (the rest of the page stays usable while chatting). The launcher bubble is
+   now its own fixed element, separate from the panel, and hides while the panel is open since
+   the panel's own header close button covers that. */
+
+.v2-ai-widget-bubble {
   position: fixed;
   bottom: 1.75rem;
   right: 1.75rem;
   z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.75rem;
-}
-
-.v2-ai-widget-bubble {
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -4294,28 +4293,44 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   filter: brightness(1.08);
 }
 
+.v2-ai-widget-bubble.is-open {
+  display: none;
+}
+
 .v2-ai-widget-panel {
-  width: 400px;
-  height: 560px;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 6rem);
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 65;
+  width: 440px;
+  max-width: 100vw;
   background: var(--v2-surface);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
+  border-left: 1px solid var(--v2-border);
   box-shadow: var(--v2-shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: v2-ai-panel-in 0.18s ease-out;
+}
+
+@keyframes v2-ai-panel-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .v2-ai-widget-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--v2-border);
   flex-shrink: 0;
   color: var(--v2-text);
+}
+
+.v2-ai-widget-header strong {
+  font-size: 1rem;
 }
 
 .v2-ai-widget-header-actions {
@@ -4345,16 +4360,16 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 .v2-ai-widget-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .v2-ai-message {
   display: flex;
   flex-direction: column;
-  max-width: 88%;
+  max-width: 92%;
 }
 
 .v2-ai-message-user {
@@ -4368,14 +4383,14 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 }
 
 .v2-ai-message-bubble {
-  padding: 0.55rem 0.75rem;
+  padding: 0.65rem 0.9rem;
   border-radius: 12px;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 
 .v2-ai-message-user .v2-ai-message-bubble {
+  white-space: pre-wrap;
   background: var(--v2-accent);
   color: #fff;
   border-bottom-right-radius: 3px;
@@ -4392,11 +4407,47 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   font-style: italic;
 }
 
+/* Markdown block types (2026-09-01) -- real paragraph/heading/rule/list spacing instead of the
+   previous single <span>+<br> wall of text, which is what made "---" and "1. " show as literal
+   characters (neither was handled at all before) rather than formatting. */
+.v2-ai-message-para {
+  margin: 0 0 0.5rem;
+}
+.v2-ai-message-para:last-child {
+  margin-bottom: 0;
+}
+.v2-ai-message-heading {
+  margin: 0.7rem 0 0.35rem;
+  font-weight: 700;
+}
+.v2-ai-message-heading:first-child {
+  margin-top: 0;
+}
+.v2-ai-message-gap {
+  height: 0.5rem;
+}
+.v2-ai-message-rule {
+  border: none;
+  border-top: 1px solid var(--v2-border);
+  margin: 0.75rem 0;
+}
+.v2-ai-message-bubble ul,
+.v2-ai-message-bubble ol {
+  margin: 0.35rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+.v2-ai-message-bubble li {
+  margin-bottom: 0.25rem;
+}
+.v2-ai-message-user .v2-ai-message-rule {
+  border-top-color: rgba(255, 255, 255, 0.35);
+}
+
 .v2-ai-widget-input-row {
   display: flex;
   align-items: flex-end;
-  gap: 0.4rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
   border-top: 1px solid var(--v2-border);
   flex-shrink: 0;
 }
@@ -4408,10 +4459,12 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
   border-radius: var(--v2-radius, 10px);
   background: var(--v2-surface-elevated);
   color: var(--v2-text);
-  padding: 0.5rem 0.65rem;
+  padding: 0.6rem 0.75rem;
   font: inherit;
-  font-size: 0.86rem;
-  max-height: 100px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .v2-ai-widget-mic,
