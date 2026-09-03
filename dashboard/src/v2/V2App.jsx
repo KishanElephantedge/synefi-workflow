@@ -19,6 +19,7 @@ import DemandGrid from './pages/DemandGrid.jsx'
 import MarketIntelligence from './pages/MarketIntelligence.jsx'
 import Settings from './pages/Settings.jsx'
 import Relationships from './pages/Relationships.jsx'
+import NetworkChat from './pages/NetworkChat.jsx'
 import CrmEdit from './pages/CrmEdit.jsx'
 import ProposalEdit from './pages/ProposalEdit.jsx'
 
@@ -55,6 +56,7 @@ export default function V2App() {
           <Route path="demand-grid" element={<DemandGrid />} />
           <Route path="market-intelligence" element={<MarketIntelligence />} />
           <Route path="relationships" element={<Relationships />} />
+          <Route path="network-chat" element={<NetworkChat />} />
           <Route path="relationships/crm/:objectType/:id" element={<CrmEdit />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="briefing" replace />} />

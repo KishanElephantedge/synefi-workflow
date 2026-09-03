@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   getNetworkSignals, getNetworkProfiles, addNetworkProfile, removeNetworkProfile, toggleNetworkProfileActive,
   getNetworkKeywords, putNetworkKeywords, runNetworkClassification, getNetworkPartnerMatches, formatApiError,
@@ -6,7 +7,7 @@ import {
   generateNetworkRecommendationMessage, getNetworkRecommendationMessages, updateNetworkRecommendationMessage,
   markNetworkRecommendationMessageSent, lookupNetworkProfileSlackId, setNetworkProfileSlackId,
 } from '../api.js'
-import { IconAlertTriangle, IconRefreshCw, IconCheck, IconX } from '../icons.jsx'
+import { IconAlertTriangle, IconRefreshCw, IconCheck, IconX, IconMessageCircle } from '../icons.jsx'
 
 // V2's port of V1's Targets page -- same real backend (app/phases/linkedin_monitor.py,
 // app/phases/gtm_partner_classification.py, app/phases/gtm_partner_matching.py,
@@ -598,6 +599,19 @@ export default function Network() {
 
   return (
     <div>
+      {/* Opens the full-page network assistant. Deliberately a page rather than a widget: the
+          questions it answers ("what should I talk to this partner about") produce long,
+          quote-heavy replies that a sidebar makes unreadable. */}
+      <div className="v2-net-chat-cta">
+        <Link to="/v2/network-chat" className="v2-net-chat-cta-button">
+          <IconMessageCircle width={18} height={18} />
+          <span>
+            <strong>Ask AI about the network</strong>
+            <em>183 partners and 10,652 community Slack messages — ask anything</em>
+          </span>
+        </Link>
+      </div>
+
       <div className="v2-config-tabs">
         {TABS.map(t => (
           <button key={t} type="button" className={`v2-config-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>

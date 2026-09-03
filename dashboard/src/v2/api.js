@@ -566,3 +566,19 @@ export function deleteProposal(proposalId) {
   return client.delete(`/proposals/${proposalId}`).then(res => res.data)
 }
 
+
+// Network AI -- 2026-09-03, full-page assistant over everything we know about the GTM partner
+// network: their GTM University profiles AND all 10,652 messages from the GTM Partners community
+// Slack. Same real chat endpoints as the other assistants, scoped to `network` so its history and
+// tool access stay separate from the V2 and Content ones (see app/gtm_os/chat/network_chat_tools.py).
+export function getLatestNetworkChat() {
+  return client.get('/chat/latest', { params: { scope: 'network' } }).then(res => res.data)
+}
+
+export function startNewNetworkChat() {
+  return client.post('/chat/new', null, { params: { scope: 'network' } }).then(res => res.data)
+}
+
+export function sendNetworkChatMessage(conversationId, message) {
+  return client.post(`/chat/conversations/${conversationId}/messages`, { message, scope: 'network' }).then(res => res.data)
+}

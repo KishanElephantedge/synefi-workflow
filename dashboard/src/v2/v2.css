@@ -4779,3 +4779,54 @@ h6.v2-ai-message-heading { font-size: 0.92rem; }
   color: var(--v2-success);
   font-weight: 600;
 }
+
+/* ---- Network AI: CTA on the Network tab + the full-page assistant ------------------------- */
+/* A page, not a panel: answers here quote several Slack messages with channel and date, which a
+   narrow sidebar makes unreadable. Sized against the viewport so the composer stays put and only
+   the transcript scrolls. */
+.v2-net-chat-cta { margin-bottom: 1rem; }
+
+.v2-net-chat-cta-button {
+  display: flex; align-items: center; gap: 0.75rem; width: 100%;
+  padding: 0.85rem 1rem; border-radius: 10px; text-decoration: none;
+  border: 1px solid var(--v2-border); background: var(--v2-surface); color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.v2-net-chat-cta-button:hover { border-color: var(--v2-accent); background: var(--v2-surface-hover, var(--v2-surface)); }
+.v2-net-chat-cta-button svg { color: var(--v2-accent); flex-shrink: 0; }
+.v2-net-chat-cta-button span { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.v2-net-chat-cta-button strong { font-size: 0.95rem; }
+.v2-net-chat-cta-button em { font-style: normal; font-size: 0.8rem; color: var(--v2-text-muted); }
+
+.v2-net-chat-page { display: flex; flex-direction: column; height: calc(100vh - 8rem); min-height: 30rem; }
+
+.v2-net-chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 0.75rem; border-bottom: 1px solid var(--v2-border); margin-bottom: 0.5rem;
+}
+.v2-net-chat-header .v2-ai-widget-link { display: inline-flex; align-items: center; gap: 0.25rem; }
+
+.v2-net-chat-messages { flex: 1; overflow-y: auto; padding: 0.5rem 0.25rem 1rem; }
+
+.v2-net-chat-empty { max-width: 46rem; margin: 3rem auto 0; text-align: center; }
+.v2-net-chat-empty svg { color: var(--v2-accent); margin-bottom: 0.5rem; }
+.v2-net-chat-empty h3 { margin: 0 0 0.5rem; }
+.v2-net-chat-empty .v2-cs-suggestion-row { justify-content: center; margin-top: 1.25rem; }
+
+/* Quoting a partner verbatim is the point of this assistant, so a quote has to look like one. */
+.v2-net-chat-quote {
+  margin: 0.4rem 0; padding: 0.3rem 0 0.3rem 0.75rem;
+  border-left: 3px solid var(--v2-accent); color: var(--v2-text-muted);
+}
+
+.v2-net-chat-messages .v2-ai-message-bubble a { color: var(--v2-accent); word-break: break-word; }
+
+.v2-net-chat-input-row {
+  display: flex; align-items: flex-end; gap: 0.5rem;
+  padding-top: 0.75rem; border-top: 1px solid var(--v2-border);
+}
+.v2-net-chat-input-row textarea {
+  flex: 1; resize: none; max-height: 8rem; padding: 0.6rem 0.75rem;
+  border-radius: 8px; border: 1px solid var(--v2-border);
+  background: var(--v2-surface); color: inherit; font: inherit;
+}
