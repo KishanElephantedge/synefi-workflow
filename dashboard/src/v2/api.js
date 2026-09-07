@@ -30,6 +30,13 @@ export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilt
   return client.get('/companies', { params: { page, page_size: pageSize, search, account_filter: accountFilter } }).then(res => res.data)
 }
 
+// Backs the partner dashboard's account click-through. Its own minimal route
+// (/companies/{id}/detail), not getAccountBrief below -- see that route's own docstring for why
+// the full V2 brief doesn't fit a stage-1 partner tenant.
+export function getPartnerCompanyDetail(companyId) {
+  return client.get(`/companies/${companyId}/detail`).then(res => res.data)
+}
+
 // Backed by the new, purely-additive GET /gtm-os/accounts/{company_id}/brief route (Phase 2),
 // which itself only wraps the existing, unmodified build_account_brief() (Batch 12). No frontend
 // re-derivation of ICP/offering/strategy/readiness logic happens anywhere in this file.
