@@ -1,5 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTenant } from '../context/TenantContext'
+
+const LIVE_COUNT_TARGET = 3676
+
+// Counts up from 0 to the target on mount (ease-out, ~1.4s), then keeps nudging upward every
+// few seconds to feel like an ongoing "live" feed rather than a static number -- illustrative
+// only, matching LIVE_EXECUTION_ITEMS above; there's no backend counting real executions yet.
+function useLiveCounter(target) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    let raf
+    let interval
+    const duration = 1400
+    const startTime = performance.now()
+
+    const animate = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(target * eased))
+      if (progress < 1) {
+        raf = requestAnimationFrame(animate)
+      } else {
+        interval = setInterval(() => {
+          setCount(c => c + Math.floor(Math.random() * 4) + 1)
+        }, 3000 + Math.random() * 2000)
+      }
+    }
+    raf = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      clearInterval(interval)
+    }
+  }, [target])
+
+  return count
+}
 
 // Illustrative sample activity for the login page's "Live execution" showcase -- per Majji's
 // mockup exactly (names, roles, and task copy). Not a live feed; there's no backend for this.
@@ -13,6 +50,7 @@ const LIVE_EXECUTION_ITEMS = [
 
 export default function Login() {
   const { login } = useTenant()
+  const liveCount = useLiveCounter(LIVE_COUNT_TARGET)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -46,7 +84,7 @@ export default function Login() {
           <div className="deepline-live-card-head">
             <span className="deepline-live-label">Live execution</span>
             <span className="deepline-live-counter">
-              <strong>3,676</strong>
+              <strong>{liveCount.toLocaleString()}</strong>
               <span>today</span>
             </span>
           </div>
