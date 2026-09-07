@@ -116,9 +116,12 @@ function TenantScope({ children }) {
 function RootRedirect() {
   const { tenants } = useTenant()
   if (tenants.length === 0) return null
+  // Elephant Edge lands on V2 by default now, not the V1 AppShell -- V2 is the actively
+  // developed product; V1 stays reachable directly at /elephant-edge for anyone who needs it.
+  // Any other tenant (a V1-only workspace with no V2 build) still falls back to its own V1 shell.
   const elephant = tenants.find(t => t.slug === 'elephant-edge')
-  const defaultTenant = elephant || tenants[0]
-  return <Navigate to={`/${defaultTenant.slug}`} replace />
+  if (elephant) return <Navigate to="/v2" replace />
+  return <Navigate to={`/${tenants[0].slug}`} replace />
 }
 
 // Root ("") route -- Elephant Edge lands on the new Overview funnel; every other tenant

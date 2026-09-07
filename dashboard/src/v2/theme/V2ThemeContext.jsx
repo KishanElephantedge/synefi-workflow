@@ -11,9 +11,10 @@ const V2ThemeContext = createContext(null)
 function getInitialTheme() {
   const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null
   if (stored === 'light' || stored === 'dark') return stored
-  // Dark is the default presentation -- the reference material is predominantly dark (see
-  // Phase 0 report, Part 1/9). Not derived from the OS preference like V1's tokens are.
-  return 'dark'
+  // Light is the default presentation (explicit instruction, 2026-09-07 -- superseding the
+  // earlier dark-by-default choice from the Phase 0 reference material). Not derived from the
+  // OS preference like V1's tokens are; a returning user's own toggle (localStorage) still wins.
+  return 'light'
 }
 
 export function V2ThemeProvider({ children }) {

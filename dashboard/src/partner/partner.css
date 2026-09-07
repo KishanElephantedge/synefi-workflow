@@ -14,6 +14,7 @@
   --p-hover: #F5F5F5;
   --p-warn-bg: #F2F2F2;
   --p-warn-ink: #4A4A4A;
+  --p-ink-soft: #3A3A3A;
 }
 
 .partnerShell {
@@ -295,14 +296,12 @@
 }
 
 .partnerDetailMetaRow a {
-  color: var(--p-muted-2);
+  color: var(--p-ink-soft);
   text-decoration: none;
-  border-bottom: 1px solid var(--p-line);
 }
 
 .partnerDetailMetaRow a:hover {
   color: var(--p-ink);
-  border-color: var(--p-ink);
 }
 
 .partnerLinkedinLink {
@@ -486,15 +485,13 @@
 .partnerContactCard .partnerContactLink {
   font-size: 12px;
   font-weight: 600;
-  color: var(--p-ink);
+  color: var(--p-ink-soft);
   text-decoration: none;
-  border-bottom: 1px solid var(--p-line);
   margin-left: auto;
 }
 
 .partnerContactCard .partnerContactLink:hover {
   color: var(--p-ink);
-  border-color: var(--p-ink);
 }
 
 .partnerEmptyState, .partnerLoadingState, .partnerErrorState {
