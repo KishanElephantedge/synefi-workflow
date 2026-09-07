@@ -54,7 +54,10 @@ export default function PartnerApp() {
     <div className="partnerShell">
       <aside className="partnerSidebar">
         <div className="partnerBrand">
-          Fractional Partners
+          <div className="partnerBrandRow">
+            <img src="/logo.png" alt="" className="partnerBrandLogo" />
+            Fractional Partners
+          </div>
           <span className="partnerTenantName">{tenant.name}</span>
         </div>
 

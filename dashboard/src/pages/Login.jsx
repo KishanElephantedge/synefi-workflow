@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { useTenant } from '../context/TenantContext'
 
+// Illustrative sample activity for the login page's "Live execution" showcase -- per Majji's
+// mockup exactly (names, roles, and task copy). Not a live feed; there's no backend for this.
+const LIVE_EXECUTION_ITEMS = [
+  { name: 'Raj', role: 'Fractional CRO', done: 'Sent 32 outbound emails', next: 'Following up with 6 warm replies' },
+  { name: 'Sam', role: 'Fractional CS', done: 'Closed 3 support tickets', next: 'Scheduling a check-in with a key account' },
+  { name: 'Sam', role: 'Fractional CS', done: 'Chased 2 overdue invoices', next: "Logging onboarding notes for a new client" },
+  { name: 'Morgan', role: 'Fractional CS', done: 'Closed 3 support tickets', next: 'Scheduling a check-in with a key account' },
+  { name: 'Priya', role: 'Fractional CMO', done: 'Scheduled 3 LinkedIn posts for next week', next: "Writing Thursday's newsletter" },
+]
+
 export default function Login() {
   const { login } = useTenant()
   const [email, setEmail] = useState('')
@@ -23,68 +33,39 @@ export default function Login() {
 
   return (
     <div className="deepline-login-container">
-      {/* Left Pane - Clean Slate Brand Showcase */}
+      {/* Left Pane -- per Majji's mockup: "Live execution" activity feed + tagline, replacing
+          the previous metrics/feature-list content. LIVE_EXECUTION_ITEMS is illustrative sample
+          data (matches the mockup exactly), not a live feed -- there's no backend for this yet. */}
       <div className="deepline-left-pane">
         <div className="deepline-brand-header">
-          <div className="deepline-brand-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          </div>
-          <span>Fractional Partners</span>
+          <span className="deepline-brand-name">Fractional partner</span>
+          <span className="deepline-brand-tagline">The back office for fractional revenue leaders</span>
         </div>
 
-        <div className="deepline-info-body">
-          <h2>Automate your outbound GTM engine.</h2>
-          <p>Discover high-intent accounts, detect buying signals, identify decision-makers, and execute multi-channel campaigns autonomously.</p>
-
-          {/* Metric Pills */}
-          <div className="deepline-metrics-row">
-            <div className="deepline-metric-card">
-              <span className="metric-val">20+</span>
-              <span className="metric-lbl">Daily Accounts</span>
-            </div>
-            <div className="deepline-metric-card">
-              <span className="metric-val">100%</span>
-              <span className="metric-lbl">Verified Leads</span>
-            </div>
-            <div className="deepline-metric-card">
-              <span className="metric-val">0</span>
-              <span className="metric-lbl">Manual Data Entry</span>
-            </div>
+        <div className="deepline-live-card">
+          <div className="deepline-live-card-head">
+            <span className="deepline-live-label">Live execution</span>
+            <span className="deepline-live-counter">
+              <strong>3,676</strong>
+              <span>today</span>
+            </span>
           </div>
 
-          {/* Minimal Feature List */}
-          <div className="deepline-features">
-            <div className="deepline-feature-item">
-              <div className="feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
+          <div className="deepline-live-list">
+            {LIVE_EXECUTION_ITEMS.map((item, i) => (
+              <div className="deepline-live-item" key={i}>
+                <div className="deepline-live-avatar">{item.name[0]}</div>
+                <div>
+                  <div className="deepline-live-name">{item.name} &middot; {item.role}</div>
+                  <div className="deepline-live-done">&#10003; {item.done}</div>
+                  <div className="deepline-live-next">&rarr; {item.next}</div>
+                </div>
               </div>
-              <div>
-                <h4>Autonomous Discovery</h4>
-                <p>Scrape active job board feeds (Jobo & Sentrion) for live hiring signals.</p>
-              </div>
-            </div>
-
-            <div className="deepline-feature-item">
-              <div className="feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 16 14"></polyline></svg>
-              </div>
-              <div>
-                <h4>Waterfall Enrichment</h4>
-                <p>Locate Founders, CEOs, and VPs automatically via multi-source API checks.</p>
-              </div>
-            </div>
-
-            <div className="deepline-feature-item">
-              <div className="feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-              </div>
-              <div>
-                <h4>HubSpot & Calendar Sync</h4>
-                <p>Register contacts in CRM and sync demo availability to Google Calendar.</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+
+        <p className="deepline-tagline">One system, every job your business needs done.</p>
 
         <div className="deepline-footer">
           &copy; {new Date().getFullYear()} Fractional Partners. All rights reserved.

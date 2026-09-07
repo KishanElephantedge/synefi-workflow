@@ -21,9 +21,9 @@ export default function LandingPage() {
         <div className="landing-nav-container">
           <div className="landing-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
             <div className="landing-logo-mark">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <img src="/logo.png" alt="" width="18" height="18" style={{ objectFit: 'contain' }} />
             </div>
-            <span className="landing-logo-text">Sales Operating System</span>
+            <span className="landing-logo-text">Fractional Partners</span>
           </div>
 
           <nav className="landing-nav-links">
@@ -260,7 +260,7 @@ export default function LandingPage() {
       <footer className="landing-footer">
         <div className="landing-footer-container">
           <div className="footer-left">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <img src="/logo.png" alt="" width="20" height="20" style={{ objectFit: 'contain' }} />
             <span>Fractional Partners &copy; {new Date().getFullYear()}. All rights reserved.</span>
           </div>
 

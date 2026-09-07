@@ -3596,113 +3596,124 @@ pre {
 
 .deepline-brand-header {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.deepline-brand-name {
   font-weight: 750;
-  font-size: 1.1rem;
-  color: var(--text);
+  font-size: 1.3rem;
+  color: var(--primary);
   letter-spacing: -0.02em;
 }
 
-.deepline-brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+.deepline-brand-tagline {
+  font-size: 0.86rem;
+  color: var(--primary);
+  opacity: 0.75;
+  font-weight: 500;
 }
 
-.deepline-info-body {
-  max-width: 480px;
+/* "Live execution" showcase card (replaces the old metrics/feature-list content) */
+.deepline-live-card {
   margin: auto 0;
-}
-
-.deepline-info-body h2 {
-  font-size: 2.35rem;
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  color: var(--text);
-  margin-bottom: 0.85rem;
-}
-
-.deepline-info-body p {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  line-height: 1.55;
-  margin-bottom: 2rem;
-}
-
-.deepline-metrics-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 2.25rem;
-}
-
-.deepline-metric-card {
+  max-width: 520px;
   background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.85rem 0.75rem;
-  display: flex;
-  flex-direction: column;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  padding: 1.5rem 1.75rem;
 }
 
-.deepline-metric-card .metric-val {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1;
-  margin-bottom: 0.25rem;
+.deepline-live-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
 }
 
-.deepline-metric-card .metric-lbl {
-  font-size: 0.72rem;
+.deepline-live-label {
+  font-size: 0.92rem;
   color: var(--text-muted);
-  font-weight: 600;
 }
 
-.deepline-features {
+.deepline-live-counter {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  align-items: flex-end;
+  line-height: 1.2;
+  color: var(--text);
 }
 
-.deepline-feature-item {
+.deepline-live-counter strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.deepline-live-counter span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.deepline-live-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.deepline-live-item {
   display: flex;
   align-items: flex-start;
   gap: 0.85rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
 }
 
-.deepline-feature-item .feature-icon {
-  background: var(--primary-soft);
-  color: var(--primary);
-  border-radius: 8px;
-  padding: 0.45rem;
+.deepline-live-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.deepline-live-item:first-child {
+  padding-top: 0;
+}
+
+.deepline-live-avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-}
-
-.deepline-feature-item h4 {
-  margin: 0 0 0.15rem;
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.85rem;
   color: var(--text);
 }
 
-.deepline-feature-item p {
-  margin: 0;
-  font-size: 0.82rem;
+.deepline-live-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.deepline-live-done {
+  font-size: 0.86rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.deepline-live-next {
+  font-size: 0.86rem;
   color: var(--text-muted);
-  line-height: 1.35;
+}
+
+.deepline-tagline {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1.75rem 0 0;
 }
 
 .deepline-footer {
