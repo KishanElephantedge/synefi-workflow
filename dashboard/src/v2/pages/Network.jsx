@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  getNetworkSignals, getNetworkProfiles, addNetworkProfile, removeNetworkProfile, toggleNetworkProfileActive,
+  getNetworkSignals, getNetworkProfiles, getNetworkProfilesPage, addNetworkProfile, removeNetworkProfile, toggleNetworkProfileActive,
   getNetworkKeywords, putNetworkKeywords, runNetworkClassification, getNetworkPartnerMatches, formatApiError,
   runNetworkPartnerMatching, getNetworkRecommendations, updateNetworkRecommendation,
   generateNetworkRecommendationMessage, getNetworkRecommendationMessages, updateNetworkRecommendationMessage,
   markNetworkRecommendationMessageSent, lookupNetworkProfileSlackId, setNetworkProfileSlackId,
 } from '../api.js'
-import { IconAlertTriangle, IconRefreshCw, IconCheck, IconX, IconMessageCircle } from '../icons.jsx'
+import { IconAlertTriangle, IconRefreshCw, IconCheck, IconX, IconMessageCircle, IconChevronLeft, IconChevronRight } from '../icons.jsx'
 
 // V2's port of V1's Targets page -- same real backend (app/phases/linkedin_monitor.py,
 // app/phases/gtm_partner_classification.py, app/phases/gtm_partner_matching.py,
@@ -89,26 +89,42 @@ function SignalFeedTab() {
   )
 }
 
+const WATCHED_PROFILES_PAGE_SIZE = 25
+
 function WatchedProfilesTab({ classifying, classifyResult, onClassify }) {
-  const [profiles, setProfiles] = useState(null)
+  const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
-  const load = () => getNetworkProfiles().then(setProfiles).catch(err => setError(formatApiError(err)))
-  useEffect(load, [])
+  // Real crash, not a style nitpick: a concise-body arrow (`() => promise.then().catch()`)
+  // RETURNS that promise. useEffect(load, []) passes `load` itself as the effect callback, so
+  // React stores whatever `load()` returns as the unmount cleanup function -- and calling a
+  // Promise as a function throws "destroy is not a function" the moment this tab unmounts (e.g.
+  // switching to another tab). Wrapping in a block body makes `load` return undefined, which is
+  // what every other page's own `load` in this codebase already does (see OverridesEvals.jsx,
+  // Knowledge.jsx, etc.) -- this was the one place that didn't.
+  //
+  // Paginated (page/pageSize), not the plain getNetworkProfiles() other callers use -- this tab
+  // was fetching and rendering all ~183 profiles in one request with no way to page through
+  // them, which is the real cause of both "loads slowly" and "no pagination".
+  const load = () => {
+    getNetworkProfilesPage({ page, pageSize: WATCHED_PROFILES_PAGE_SIZE, search })
+      .then(setData)
+      .catch(err => setError(formatApiError(err)))
+  }
+  useEffect(load, [page, search])
 
-  const filtered = (profiles || []).filter(p => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return (p.name || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q)
-  })
+  const profiles = data?.profiles || null
+  const total = data?.total || 0
+  const totalPages = Math.max(1, Math.ceil(total / WATCHED_PROFILES_PAGE_SIZE))
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.9rem' }}>
         <input
           type="text" placeholder="Search name or company..." value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setPage(1); setSearch(e.target.value) }}
           style={{ width: '100%', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--v2-radius)', border: '1px solid var(--v2-border)', background: 'var(--v2-surface)', color: 'var(--v2-text)' }}
         />
         <div style={{ textAlign: 'right' }}>
@@ -129,11 +145,11 @@ function WatchedProfilesTab({ classifying, classifyResult, onClassify }) {
         <div className="v2-card"><div className="v2-state v2-state-error">{error}</div></div>
       ) : profiles === null ? (
         <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 240 }} />
-      ) : filtered.length === 0 ? (
+      ) : profiles.length === 0 ? (
         <div className="v2-card"><div className="v2-state">No profiles match.</div></div>
       ) : (
         <div className="v2-evidence-list">
-          {filtered.map(p => (
+          {profiles.map(p => (
             <div key={p.id} className="v2-evidence-item">
               <div className="v2-evidence-item-head">
                 <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" className="v2-evidence-item-title" style={{ color: 'inherit' }}>
@@ -168,6 +184,17 @@ function WatchedProfilesTab({ classifying, classifyResult, onClassify }) {
           ))}
         </div>
       )}
+      {totalPages > 1 && (
+        <div className="v2-pagination">
+          <button type="button" onClick={() => setPage(p => p - 1)} disabled={page <= 1} aria-label="Previous page">
+            <IconChevronLeft width={14} height={14} />
+          </button>
+          <span>Page {page} of {totalPages} · {total} profiles</span>
+          <button type="button" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages} aria-label="Next page">
+            <IconChevronRight width={14} height={14} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -176,7 +203,9 @@ function PartnerMatchesTab({ classifying, onClassify }) {
   const [matches, setMatches] = useState(null)
   const [error, setError] = useState(null)
 
-  const load = () => getNetworkPartnerMatches().then(setMatches).catch(err => setError(formatApiError(err)))
+  // Same fix as WatchedProfilesTab's load() above -- see that comment for why a concise-body
+  // arrow here crashes React on unmount ("destroy is not a function").
+  const load = () => { getNetworkPartnerMatches().then(setMatches).catch(err => setError(formatApiError(err))) }
   useEffect(load, [])
 
   return (

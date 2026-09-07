@@ -475,6 +475,15 @@ export function getNetworkSignals(limit = 50) {
 export function getNetworkProfiles() {
   return client.get('/linkedin-monitor/profiles').then(res => res.data)
 }
+
+// Paginated variant for WatchedProfilesTab -- the plain getNetworkProfiles() above returns
+// every profile in one request (untouched: RecommendedCompaniesTab relies on that exact bare-
+// list shape). Passing `page` opts the backend into the {page, page_size, total, total_pages,
+// profiles} envelope instead of the ~183-row full fetch that was making this tab slow with
+// nothing to page through.
+export function getNetworkProfilesPage({ page = 1, pageSize = 25, search = '' } = {}) {
+  return client.get('/linkedin-monitor/profiles', { params: { page, page_size: pageSize, search } }).then(res => res.data)
+}
 export function addNetworkProfile({ name, company, linkedin_url }) {
   return client.post('/linkedin-monitor/profiles', null, { params: { name: name || undefined, company: company || undefined, linkedin_url } }).then(res => res.data)
 }
