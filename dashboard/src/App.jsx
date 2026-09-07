@@ -18,6 +18,7 @@ import ChatWidget from './components/ChatWidget'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
 import V2App from './v2/V2App.jsx'
+import PartnerApp from './partner/PartnerApp.jsx'
 import './App.css'
 
 function TenantSwitcher() {
@@ -277,6 +278,20 @@ function Gate() {
 
   if (loading) return null
   if (!user) return <Login />
+
+  // A partner login only ever sees its own tenant-scoped shell -- the same restriction the
+  // gateway now enforces server-side (see gateway/app/main.py: /api/tenants and proxy() both
+  // reject anything outside a partner's own tenant), mirrored here so the UI never even offers
+  // the full V1/V2 chooser, tenant switcher, or a raw "/{tenantSlug}" route it could type into
+  // the address bar and have the request simply 403 rather than silently doing nothing.
+  if (user.role === 'partner') {
+    return (
+      <Routes>
+        <Route path="/partner/*" element={<PartnerApp />} />
+        <Route path="*" element={<Navigate to="/partner" replace />} />
+      </Routes>
+    )
+  }
 
   return (
     <Routes>

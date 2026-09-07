@@ -7,19 +7,20 @@ import {
 import { IconAlertTriangle, IconEdit, IconCheck } from '../icons.jsx'
 import IcpOfferings from './IcpOfferings.jsx'
 import Knowledge from './Knowledge.jsx'
+import Users from './Users.jsx'
 
 // 2026-08-27, explicit instruction -- sidebar consolidation: ICPs & Offerings and Knowledge are
 // both define-once configuration (same nature as Strategy/Playbook/Connections/Performance/
 // Efficiency above), so they moved here as tabs instead of their own standalone nav items. Their
 // full existing page components are reused as-is (imported directly) -- no internal logic
 // rewritten, just re-hosted under this tab bar.
-const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge']
+const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge', 'Users']
 
 // Slug <-> tab-label mapping so other pages (Efficiency) can deep-link to a specific tab, e.g.
 // /v2/settings?tab=efficiency -- same pattern IcpOfferings.jsx already uses.
 const TAB_SLUGS = {
   strategy: 'Strategy', playbook: 'Playbook', connections: 'Connections', performance: 'Performance', efficiency: 'Efficiency',
-  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge',
+  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge', users: 'Users',
 }
 
 // ---------- shared field primitives ----------
@@ -772,6 +773,7 @@ export default function Settings() {
           {tab === 'Efficiency' && <EfficiencyTab />}
           {tab === 'ICPs & Offerings' && <IcpOfferings />}
           {tab === 'Knowledge' && <Knowledge />}
+          {tab === 'Users' && <Users />}
         </>
       )}
     </div>

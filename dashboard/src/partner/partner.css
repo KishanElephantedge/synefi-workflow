@@ -1,0 +1,200 @@
+/* Minimal partner shell -- deliberately not a copy of V2's own chrome (V2Sidebar, its icon
+   set, its 3-group nav). A partner's whole nav is "whatever is in enabledFeatures", which
+   today is a single item -- building the full V2 shell around one link would be misleading
+   about how much is actually here, and it would need updating every time V2's own sidebar
+   design changes even though nothing here depends on it. */
+.partnerShell {
+  display: flex;
+  min-height: 100vh;
+  background: #F7F7F5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #16181A;
+}
+
+.partnerSidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-right: 1px solid #E5E5E1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+}
+
+.partnerBrand {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  padding: 6px 10px 20px;
+  border-bottom: 1px solid #EDEDE9;
+  margin-bottom: 14px;
+}
+
+.partnerTenantName {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: #7A7D77;
+  margin-top: 2px;
+}
+
+.partnerNavLink {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #45473F;
+  text-decoration: none;
+}
+
+.partnerNavLink:hover {
+  background: #F1F1EC;
+}
+
+.partnerNavLinkActive {
+  background: #16181A;
+  color: #FFFFFF;
+}
+
+.partnerSidebarFooter {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #EDEDE9;
+}
+
+.partnerLogoutBtn {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #E5E5E1;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-weight: 500;
+  color: #45473F;
+  cursor: pointer;
+  text-align: left;
+}
+
+.partnerLogoutBtn:hover {
+  background: #F1F1EC;
+}
+
+.partnerMain {
+  flex: 1;
+  padding: 32px 40px;
+  max-width: 1080px;
+}
+
+.partnerEmptyFeatures {
+  color: #7A7D77;
+  font-size: 14px;
+}
+
+/* ---- accounts table ---- */
+.partnerAccountsHeader {
+  margin-bottom: 22px;
+}
+
+.partnerAccountsHeader h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.partnerAccountsHeader p {
+  font-size: 14px;
+  color: #7A7D77;
+  margin: 0;
+}
+
+.partnerSearchRow {
+  margin-bottom: 16px;
+}
+
+.partnerSearchInput {
+  width: 100%;
+  max-width: 340px;
+  padding: 8px 12px;
+  border: 1px solid #DEDEDA;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.partnerTableWrap {
+  background: #FFFFFF;
+  border: 1px solid #E5E5E1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.partnerTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.partnerTable th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7A7D77;
+  padding: 10px 16px;
+  border-bottom: 1px solid #E5E5E1;
+  background: #FAFAF8;
+}
+
+.partnerTable td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #F0F0EC;
+}
+
+.partnerTable tr:last-child td {
+  border-bottom: none;
+}
+
+.partnerTable a {
+  color: #16181A;
+  text-decoration: none;
+}
+
+.partnerTable a:hover {
+  text-decoration: underline;
+}
+
+.partnerEmptyState, .partnerLoadingState, .partnerErrorState {
+  padding: 40px 16px;
+  text-align: center;
+  color: #7A7D77;
+  font-size: 14px;
+}
+
+.partnerErrorState {
+  color: #B23B3B;
+}
+
+.partnerPagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #45473F;
+}
+
+.partnerPagination button {
+  padding: 6px 10px;
+  border: 1px solid #DEDEDA;
+  border-radius: 6px;
+  background: #FFFFFF;
+  cursor: pointer;
+}
+
+.partnerPagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
