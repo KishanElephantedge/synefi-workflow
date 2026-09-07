@@ -261,7 +261,7 @@ export default function LandingPage() {
         <div className="landing-footer-container">
           <div className="footer-left">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            <span>Sales Operating System &copy; {new Date().getFullYear()} Elephant Edge. All rights reserved.</span>
+            <span>Fractional Partners &copy; {new Date().getFullYear()}. All rights reserved.</span>
           </div>
 
           <div className="footer-links">

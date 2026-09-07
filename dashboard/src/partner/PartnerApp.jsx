@@ -3,6 +3,7 @@ import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
 import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
+import PartnerSettings from './PartnerSettings.jsx'
 import './partner.css'
 
 // One entry per possible enabledFeatures value. Stage-by-stage rollout means this map only
@@ -31,7 +32,7 @@ export default function PartnerApp() {
       <div className="partnerShell">
         <div className="partnerMain">
           <p className="partnerEmptyFeatures">
-            Your account has no workspace assigned yet. Contact Elephant Edge to get set up.
+            Your account has no workspace assigned yet. Contact Fractional Partners to get set up.
           </p>
         </div>
       </div>
@@ -44,29 +45,38 @@ export default function PartnerApp() {
 
   const features = (tenant.enabledFeatures || []).filter((f) => FEATURE_PAGES[f])
   const firstFeature = features[0]
+  // Settings (profile + ICP) is a baseline capability, not a staged product feature -- it's
+  // not gated by enabledFeatures the way "accounts" is, and stays available even before any
+  // stage is turned on for a tenant.
+  const defaultPath = firstFeature ? FEATURE_PAGES[firstFeature].path : 'settings'
 
   return (
     <div className="partnerShell">
       <aside className="partnerSidebar">
         <div className="partnerBrand">
-          Elephant Edge
+          Fractional Partners
           <span className="partnerTenantName">{tenant.name}</span>
         </div>
 
         <nav>
-          {features.length === 0 ? (
+          {features.length === 0 && (
             <p className="partnerEmptyFeatures">Nothing to show yet -- check back soon.</p>
-          ) : (
-            features.map((f) => (
-              <NavLink
-                key={f}
-                to={`/partner/${FEATURE_PAGES[f].path}`}
-                className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
-              >
-                {FEATURE_PAGES[f].label}
-              </NavLink>
-            ))
           )}
+          {features.map((f) => (
+            <NavLink
+              key={f}
+              to={`/partner/${FEATURE_PAGES[f].path}`}
+              className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
+            >
+              {FEATURE_PAGES[f].label}
+            </NavLink>
+          ))}
+          <NavLink
+            to="/partner/settings"
+            className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
+          >
+            Settings
+          </NavLink>
         </nav>
 
         <div className="partnerSidebarFooter">
@@ -82,10 +92,8 @@ export default function PartnerApp() {
           {features.flatMap((f) => FEATURE_PAGES[f].extraRoutes || []).map((r) => (
             <Route key={r.path} path={r.path} element={r.element} />
           ))}
-          <Route
-            path="*"
-            element={firstFeature ? <Navigate to={`/partner/${FEATURE_PAGES[firstFeature].path}`} replace /> : null}
-          />
+          <Route path="settings" element={<PartnerSettings />} />
+          <Route path="*" element={<Navigate to={`/partner/${defaultPath}`} replace />} />
         </Routes>
       </main>
     </div>

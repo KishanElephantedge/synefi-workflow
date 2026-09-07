@@ -37,6 +37,22 @@ export function getPartnerCompanyDetail(companyId) {
   return client.get(`/companies/${companyId}/detail`).then(res => res.data)
 }
 
+// Partner Settings page. ICP calls are tenant-scoped (same /gtm-os/partner/icp route the
+// onboarding wizard's step 3 already writes to); the profile call is not -- name lives on the
+// gateway's own User row, which this product backend has no model for, same reasoning as
+// /auth/me and /api/tenants in TenantContext.jsx.
+export function getPartnerIcp() {
+  return client.get('/gtm-os/partner/icp').then(res => res.data)
+}
+
+export function savePartnerIcp(icp) {
+  return client.put('/gtm-os/partner/icp', icp).then(res => res.data)
+}
+
+export function updateMyProfile({ name }) {
+  return client.patch('/auth/me', { name }, { tenantScoped: false }).then(res => res.data)
+}
+
 // Backed by the new, purely-additive GET /gtm-os/accounts/{company_id}/brief route (Phase 2),
 // which itself only wraps the existing, unmodified build_account_brief() (Batch 12). No frontend
 // re-derivation of ICP/offering/strategy/readiness logic happens anywhere in this file.

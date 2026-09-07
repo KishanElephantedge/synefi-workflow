@@ -29,7 +29,7 @@ export default function Login() {
           <div className="deepline-brand-logo">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          <span>Sales Operating System</span>
+          <span>Fractional Partners</span>
         </div>
 
         <div className="deepline-info-body">
@@ -87,7 +87,7 @@ export default function Login() {
         </div>
 
         <div className="deepline-footer">
-          &copy; {new Date().getFullYear()} Elephant Edge. All rights reserved.
+          &copy; {new Date().getFullYear()} Fractional Partners. All rights reserved.
         </div>
       </div>
 
