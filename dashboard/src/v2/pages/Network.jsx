@@ -31,10 +31,13 @@ function timeAgo(iso) {
   return `${Math.round(hours / 24)}d ago`
 }
 
+const SIGNAL_FEED_PAGE_SIZE = 10
+
 function SignalFeedTab() {
   const [signals, setSignals] = useState(null)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('relevant')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     getNetworkSignals(100).then(setSignals).catch(err => setError(formatApiError(err)))
@@ -46,6 +49,11 @@ function SignalFeedTab() {
     return s.recommended_action === filter
   })
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / SIGNAL_FEED_PAGE_SIZE))
+  const pageItems = filtered.slice((page - 1) * SIGNAL_FEED_PAGE_SIZE, page * SIGNAL_FEED_PAGE_SIZE)
+
+  const setFilterAndReset = (key) => { setFilter(key); setPage(1) }
+
   return (
     <div>
       <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -56,7 +64,7 @@ function SignalFeedTab() {
           { key: 'ignore', label: 'Ignored' },
           { key: 'all', label: 'All' },
         ].map(f => (
-          <button key={f.key} type="button" className={`v2-config-tab${filter === f.key ? ' active' : ''}`} onClick={() => setFilter(f.key)}>
+          <button key={f.key} type="button" className={`v2-config-tab${filter === f.key ? ' active' : ''}`} onClick={() => setFilterAndReset(f.key)}>
             {f.label}
           </button>
         ))}
@@ -68,22 +76,31 @@ function SignalFeedTab() {
       ) : filtered.length === 0 ? (
         <div className="v2-card"><div className="v2-state">No signals yet -- the monitor checks every 45 minutes.</div></div>
       ) : (
-        <div className="v2-evidence-list">
-          {filtered.map(s => (
-            <div key={s.id} className="v2-evidence-item">
-              <div className="v2-evidence-item-head">
-                <span className="v2-evidence-item-title">{s.author_name || s.profile_name || 'Unknown'}</span>
-                {s.recommended_action && <span className={`v2-badge ${ACTION_BADGE[s.recommended_action] || 'v2-badge-neutral'}`}>{s.recommended_action}</span>}
+        <>
+          <div className="v2-evidence-list">
+            {pageItems.map(s => (
+              <div key={s.id} className="v2-evidence-item">
+                <div className="v2-evidence-item-head">
+                  <span className="v2-evidence-item-title">{s.author_name || s.profile_name || 'Unknown'}</span>
+                  {s.recommended_action && <span className={`v2-badge ${ACTION_BADGE[s.recommended_action] || 'v2-badge-neutral'}`}>{s.recommended_action}</span>}
+                </div>
+                <div className="v2-evidence-item-body">{s.post_text}</div>
+                {s.classifier_reason && <p className="v2-placeholder-note" style={{ marginTop: 4, marginBottom: 0, fontStyle: 'italic' }}>{s.classifier_reason}</p>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                  <span className="v2-kv-label">{timeAgo(s.posted_at)}</span>
+                  {s.post_url && <a href={s.post_url} target="_blank" rel="noopener noreferrer">View post &rarr;</a>}
+                </div>
               </div>
-              <div className="v2-evidence-item-body">{s.post_text}</div>
-              {s.classifier_reason && <p className="v2-placeholder-note" style={{ marginTop: 4, marginBottom: 0, fontStyle: 'italic' }}>{s.classifier_reason}</p>}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                <span className="v2-kv-label">{timeAgo(s.posted_at)}</span>
-                {s.post_url && <a href={s.post_url} target="_blank" rel="noopener noreferrer">View post &rarr;</a>}
-              </div>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="v2-pagination">
+              <button type="button" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Previous</button>
+              <span>Page {page} of {totalPages}</span>
+              <button type="button" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -378,12 +395,15 @@ function SlackIdentity({ profile, onChanged }) {
 // could be introduced to, approve/reject, then an auto-drafted outreach message per partner once
 // at least one company is approved. Backed entirely by app/phases/gtm_partner_matching.py +
 // gtm_partner_messaging.py -- no new backend work, this is a straight port.
+const RECOMMENDED_PARTNERS_PAGE_SIZE = 10
+
 function RecommendedCompaniesTab() {
   const [profiles, setProfiles] = useState(null)
   const [recommendations, setRecommendations] = useState(null)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
   const [matching, setMatching] = useState(false)
   const [matchResult, setMatchResult] = useState(null)
@@ -411,6 +431,12 @@ function RecommendedCompaniesTab() {
     if (!q) return true
     return (p.name || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q)
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / RECOMMENDED_PARTNERS_PAGE_SIZE))
+  const pageProfiles = filteredProfiles.slice((page - 1) * RECOMMENDED_PARTNERS_PAGE_SIZE, page * RECOMMENDED_PARTNERS_PAGE_SIZE)
+
+  const setSearchAndReset = (v) => { setSearch(v); setPage(1) }
+  const setRoleFilterAndReset = (v) => { setRoleFilter(v); setPage(1) }
 
   const selectedProfile = (profiles || []).find(p => p.id === selectedId)
   const selectedRecs = recsByProfile[selectedId] || []
@@ -440,11 +466,11 @@ function RecommendedCompaniesTab() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.9rem' }}>
           <input
             type="text" placeholder="Search name or company..." value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => setSearchAndReset(e.target.value)}
             style={{ flex: '1 1 260px', maxWidth: 320, padding: '0.5rem 0.75rem', borderRadius: 'var(--v2-radius)', border: '1px solid var(--v2-border)', background: 'var(--v2-surface)', color: 'var(--v2-text)' }}
           />
-          <button type="button" className={`v2-config-tab${roleFilter === 'all' ? ' active' : ''}`} onClick={() => setRoleFilter('all')}>All</button>
-          <button type="button" className={`v2-config-tab${roleFilter === 'cro' ? ' active' : ''}`} onClick={() => setRoleFilter('cro')}>CRO</button>
+          <button type="button" className={`v2-config-tab${roleFilter === 'all' ? ' active' : ''}`} onClick={() => setRoleFilterAndReset('all')}>All</button>
+          <button type="button" className={`v2-config-tab${roleFilter === 'cro' ? ' active' : ''}`} onClick={() => setRoleFilterAndReset('cro')}>CRO</button>
         </div>
         <p className="v2-placeholder-note" style={{ marginTop: 0 }}>
           Watched partners matched against Elephant Edge's own company DB, based on each partner's real, classified specialty -- click a partner to review and approve matches.
@@ -454,20 +480,29 @@ function RecommendedCompaniesTab() {
         ) : filteredProfiles.length === 0 ? (
           <div className="v2-card"><div className="v2-state">No partners match.</div></div>
         ) : (
-          <div className="v2-evidence-list">
-            {filteredProfiles.map(p => {
-              const recs = recsByProfile[p.id] || []
-              return (
-                <div key={p.id} className="v2-evidence-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedId(p.id)}>
-                  <div className="v2-evidence-item-head">
-                    <span className="v2-evidence-item-title">{p.name || `Profile #${p.id}`}{p.company ? ` · ${p.company}` : ''}</span>
-                    {recs.length > 0 && <span className="v2-badge v2-badge-neutral">{recs.length} matched</span>}
+          <>
+            <div className="v2-evidence-list">
+              {pageProfiles.map(p => {
+                const recs = recsByProfile[p.id] || []
+                return (
+                  <div key={p.id} className="v2-evidence-item" style={{ cursor: 'pointer' }} onClick={() => setSelectedId(p.id)}>
+                    <div className="v2-evidence-item-head">
+                      <span className="v2-evidence-item-title">{p.name || `Profile #${p.id}`}{p.company ? ` · ${p.company}` : ''}</span>
+                      {recs.length > 0 && <span className="v2-badge v2-badge-neutral">{recs.length} matched</span>}
+                    </div>
+                    <div className="v2-evidence-item-body">{p.sells_to || p.industry || 'No specialty on file'}</div>
                   </div>
-                  <div className="v2-evidence-item-body">{p.sells_to || p.industry || 'No specialty on file'}</div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+            {totalPages > 1 && (
+              <div className="v2-pagination">
+                <button type="button" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>Previous</button>
+                <span>Page {page} of {totalPages}</span>
+                <button type="button" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages}>Next</button>
+              </div>
+            )}
+          </>
         )}
       </div>
     )
