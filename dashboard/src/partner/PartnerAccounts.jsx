@@ -9,7 +9,7 @@ import { listAccounts, formatApiError } from '../v2/api.js'
 // promises: the accounts fetched for this tenant, and a click into each one.
 const PAGE_SIZE = 25
 
-export default function PartnerAccounts() {
+export default function PartnerAccounts({ basePath = '/partner' }) {
   const [companies, setCompanies] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -67,7 +67,7 @@ export default function PartnerAccounts() {
       ) : (
         <div className="partnerAccountGrid">
           {companies.map((c) => (
-            <Link className="partnerAccountCard" to={`/partner/accounts/${c.id}`} key={c.id}>
+            <Link className="partnerAccountCard" to={`${basePath}/accounts/${c.id}`} key={c.id}>
               <div className="partnerAccountCardTop">
                 <div className="partnerAccountLogo">{c.name.slice(0, 1).toUpperCase()}</div>
                 <div>

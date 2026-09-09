@@ -1,3 +1,4 @@
+import { cloneElement } from 'react'
 import { Navigate, Route, Routes, NavLink } from 'react-router-dom'
 import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
@@ -107,10 +108,10 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
       <main className="partnerMain">
         <Routes>
           {features.map((f) => (
-            <Route key={f} path={FEATURE_PAGES[f].path} element={FEATURE_PAGES[f].element} />
+            <Route key={f} path={FEATURE_PAGES[f].path} element={cloneElement(FEATURE_PAGES[f].element, { basePath })} />
           ))}
           {features.flatMap((f) => FEATURE_PAGES[f].extraRoutes || []).map((r) => (
-            <Route key={r.path} path={r.path} element={r.element} />
+            <Route key={r.path} path={r.path} element={cloneElement(r.element, { basePath })} />
           ))}
           <Route path="settings" element={<PartnerSettings adminMode={adminMode} />} />
           <Route path="*" element={<Navigate to={defaultPath} replace />} />

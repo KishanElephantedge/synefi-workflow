@@ -39,7 +39,7 @@ function LinkedInBadge() {
   )
 }
 
-export default function PartnerAccountDetail() {
+export default function PartnerAccountDetail({ basePath = '/partner' }) {
   const { companyId } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -57,7 +57,7 @@ export default function PartnerAccountDetail() {
   if (error) {
     return (
       <div>
-        <Link className="partnerBackLink" to="/partner/accounts">← Back to accounts</Link>
+        <Link className="partnerBackLink" to={`${basePath}/accounts`}>← Back to accounts</Link>
         <div className="partnerCardWrap"><div className="partnerErrorState">{error}</div></div>
       </div>
     )
@@ -66,7 +66,7 @@ export default function PartnerAccountDetail() {
   if (!data) {
     return (
       <div>
-        <Link className="partnerBackLink" to="/partner/accounts">← Back to accounts</Link>
+        <Link className="partnerBackLink" to={`${basePath}/accounts`}>← Back to accounts</Link>
         <div className="partnerLoadingState">Loading...</div>
       </div>
     )
@@ -78,7 +78,7 @@ export default function PartnerAccountDetail() {
 
   return (
     <div>
-      <Link className="partnerBackLink" to="/partner/accounts">← Back to accounts</Link>
+      <Link className="partnerBackLink" to={`${basePath}/accounts`}>← Back to accounts</Link>
 
       <div className="partnerDetailHeader">
         <div className="partnerAccountLogo partnerAccountLogoLg">{data.name.slice(0, 1).toUpperCase()}</div>
