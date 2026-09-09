@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTenant } from '../context/TenantContext'
 
 const LIVE_COUNT_TARGET = 3676
@@ -50,6 +51,7 @@ const LIVE_EXECUTION_ITEMS = [
 
 export default function Login() {
   const { login } = useTenant()
+  const navigate = useNavigate()
   const liveCount = useLiveCounter(LIVE_COUNT_TARGET)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -62,6 +64,11 @@ export default function Login() {
     setBusy(true)
     try {
       await login(email, password)
+      // Force back to "/" regardless of whatever URL happened to be in the address bar before
+      // login (e.g. a stale bookmark to /synefi) -- Gate()'s RootRedirect is the one place that
+      // decides where a freshly-logged-in user actually belongs (Elephant Edge -> /v2, a
+      // partner -> their own shell), and it only runs at the exact "/" route.
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please check your email and password.')
     } finally {

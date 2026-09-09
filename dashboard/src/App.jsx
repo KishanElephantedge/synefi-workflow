@@ -63,7 +63,7 @@ function TenantSwitcher() {
               <div
                 className={`custom-select-option ${t.slug === tenantSlug && !isV2 ? 'selected' : ''}`}
                 onClick={() => {
-                  navigate(`/${t.slug}`)
+                  navigate(t.slug === 'elephant-edge' ? '/v2' : `/v2/partner-view/${t.slug}`)
                   setIsOpen(false)
                 }}
               >
