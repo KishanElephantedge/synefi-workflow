@@ -135,6 +135,8 @@ a.partnerLogoutBtn {
 
 .partnerWorkspaceSwitcher {
   position: relative;
+  margin-top: 10px;
+  font-weight: 400;
 }
 
 .partnerWorkspaceTrigger {
@@ -159,7 +161,7 @@ a.partnerLogoutBtn {
 
 .partnerWorkspaceDropdown {
   position: absolute;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   max-height: 260px;

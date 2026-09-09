@@ -73,6 +73,7 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
               looking at their own dashboard doesn't need to be told they're a partner. */}
           <span className="partnerTenantName">{tenant.name.replace(/^Partner\s*[—-]\s*/, '')}</span>
           {adminMode && <span className="partnerAdminBadge">Viewing as admin</span>}
+          {adminMode && <PartnerWorkspaceSwitcher />}
         </div>
 
         <nav>
@@ -96,13 +97,11 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
           </NavLink>
         </nav>
 
-        <div className="partnerSidebarFooter">
-          {adminMode ? (
-            <PartnerWorkspaceSwitcher />
-          ) : (
+        {!adminMode && (
+          <div className="partnerSidebarFooter">
             <button className="partnerLogoutBtn" onClick={logout}>Log out</button>
-          )}
-        </div>
+          </div>
+        )}
       </aside>
 
       <main className="partnerMain">
