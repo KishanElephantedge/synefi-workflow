@@ -133,6 +133,60 @@ a.partnerLogoutBtn {
   letter-spacing: 0.02em;
 }
 
+.partnerWorkspaceSwitcher {
+  position: relative;
+}
+
+.partnerWorkspaceTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--p-muted-2);
+  cursor: pointer;
+}
+
+.partnerWorkspaceTrigger:hover {
+  background: var(--p-hover);
+}
+
+.partnerWorkspaceDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  background: var(--p-paper);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 20;
+}
+
+.partnerWorkspaceOption {
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--p-ink-soft);
+  cursor: pointer;
+}
+
+.partnerWorkspaceOption:hover {
+  background: var(--p-hover);
+}
+
+.partnerWorkspaceOption.selected {
+  background: var(--p-ink);
+  color: var(--p-paper);
+}
+
 .partnerMain {
   flex: 1;
   padding: 32px 40px;

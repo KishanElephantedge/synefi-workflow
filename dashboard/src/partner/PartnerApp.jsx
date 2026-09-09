@@ -5,6 +5,7 @@ import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
 import PartnerContent from './PartnerContent.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
+import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
 import './partner.css'
 
 // One entry per possible enabledFeatures value. Stage-by-stage rollout means this map only
@@ -97,7 +98,7 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
 
         <div className="partnerSidebarFooter">
           {adminMode ? (
-            <NavLink to="/v2" className="partnerLogoutBtn">Back to Elephant Edge V2</NavLink>
+            <PartnerWorkspaceSwitcher />
           ) : (
             <button className="partnerLogoutBtn" onClick={logout}>Log out</button>
           )}
