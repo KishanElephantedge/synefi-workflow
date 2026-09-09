@@ -868,6 +868,71 @@ a.partnerLogoutBtn {
   cursor: not-allowed;
 }
 
+.partnerIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--p-muted-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.partnerIconBtn:hover {
+  background: var(--p-hover);
+  color: var(--p-ink);
+}
+
+/* Maximized chat -- covers everything right of the fixed 220px sidebar (see .partnerSidebar),
+   i.e. exactly the "right side window" the button is meant to fill, not the whole viewport. */
+.partnerContentChatFullscreen {
+  position: fixed;
+  top: 0;
+  left: 220px;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--p-paper);
+  display: flex;
+  flex-direction: column;
+}
+
+.partnerContentChatFullscreen .partnerContentChatPanelHead {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--p-line-soft);
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.partnerContentChatFullscreen .partnerContentChatMessages {
+  max-height: none;
+  flex: 1;
+  padding: 20px;
+  gap: 14px;
+}
+
+.partnerContentChatFullscreen .partnerChatBubble {
+  max-width: 70ch;
+}
+
+.partnerContentChatFullscreen .partnerContentChatInputRow {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 760px) {
+  .partnerContentChatFullscreen {
+    left: 0;
+  }
+}
+
 .partnerTopicSections {
   display: flex;
   flex-direction: column;

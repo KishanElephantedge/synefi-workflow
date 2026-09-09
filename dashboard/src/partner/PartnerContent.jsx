@@ -62,8 +62,25 @@ function renderMarkdown(text) {
   return blocks
 }
 
+function MaximizeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+    </svg>
+  )
+}
+
+function MinimizeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3v3a2 2 0 0 1-2 2H3M16 3v3a2 2 0 0 0 2 2h3M21 16h-3a2 2 0 0 0-2 2v3M8 21v-3a2 2 0 0 0-2-2H3" />
+    </svg>
+  )
+}
+
 function ContentChat({ onTopicsChanged }) {
   const [expanded, setExpanded] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const [conversationId, setConversationId] = useState(null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -114,6 +131,69 @@ function ContentChat({ onTopicsChanged }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
+  const messageList = (
+    <div className="partnerContentChatMessages">
+      {loaded && messages.length === 0 && (
+        <div className="partnerContentChatEmpty">
+          <p className="partnerHint" style={{ margin: 0 }}>
+            Ask about any trending topic, or a topic of your own -- I'll ground it in real evidence, not a generic idea.
+          </p>
+          <div className="partnerContentSuggestionRow">
+            {PROMPT_SUGGESTIONS.map(s => (
+              <button key={s} type="button" className="partnerSuggestionChip" onClick={() => send(s)}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {messages.map((m, i) => (
+        <div key={i} className={`partnerChatMsg partnerChatMsg-${m.role}`}>
+          <div className="partnerChatBubble">{m.role === 'assistant' ? renderMarkdown(m.content) : m.content}</div>
+        </div>
+      ))}
+      {sending && (
+        <div className="partnerChatMsg partnerChatMsg-assistant">
+          <div className="partnerChatBubble partnerChatTyping">Thinking…</div>
+        </div>
+      )}
+      <div ref={bottomRef} />
+    </div>
+  )
+
+  const inputRow = (
+    <div className="partnerContentChatInputRow">
+      <textarea
+        rows={1}
+        placeholder="Ask about your content..."
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onFocus={() => setExpanded(true)}
+        onKeyDown={handleKeyDown}
+        disabled={sending}
+      />
+      <button type="button" className="partnerSendBtn" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">↑</button>
+    </div>
+  )
+
+  // Fullscreen covers everything right of the fixed 220px sidebar (see .partnerSidebar's own
+  // width) -- "the right side window" the user meant, not the whole viewport including nav.
+  if (fullscreen) {
+    return (
+      <div className="partnerContentChatFullscreen">
+        <div className="partnerContentChatPanelHead">
+          <span>Conversation</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+            <button type="button" className="partnerLinkBtn" onClick={startNewChat}>New conversation</button>
+            <button type="button" className="partnerIconBtn" onClick={() => setFullscreen(false)} title="Exit fullscreen" aria-label="Exit fullscreen">
+              <MinimizeIcon />
+            </button>
+          </div>
+        </div>
+        {messageList}
+        {inputRow}
+      </div>
+    )
+  }
+
   return (
     <div className="partnerContentChatShell">
       <button type="button" className="partnerContentChatTrigger" onClick={() => setExpanded(o => !o)}>
@@ -121,7 +201,18 @@ function ContentChat({ onTopicsChanged }) {
           <strong>Ask about your content</strong>
           <span>What should you publish next -- and why?</span>
         </span>
-        <span className={`partnerChevron${expanded ? ' open' : ''}`}>▾</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span
+            className="partnerIconBtn"
+            role="button" tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); setExpanded(true); setFullscreen(true) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpanded(true); setFullscreen(true) } }}
+            title="Maximize" aria-label="Maximize"
+          >
+            <MaximizeIcon />
+          </span>
+          <span className={`partnerChevron${expanded ? ' open' : ''}`}>▾</span>
+        </span>
       </button>
 
       {expanded && (
@@ -130,46 +221,11 @@ function ContentChat({ onTopicsChanged }) {
             <span>Conversation</span>
             <button type="button" className="partnerLinkBtn" onClick={startNewChat}>New conversation</button>
           </div>
-          <div className="partnerContentChatMessages">
-            {loaded && messages.length === 0 && (
-              <div className="partnerContentChatEmpty">
-                <p className="partnerHint" style={{ margin: 0 }}>
-                  Ask about any trending topic, or a topic of your own -- I'll ground it in real evidence, not a generic idea.
-                </p>
-                <div className="partnerContentSuggestionRow">
-                  {PROMPT_SUGGESTIONS.map(s => (
-                    <button key={s} type="button" className="partnerSuggestionChip" onClick={() => send(s)}>{s}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} className={`partnerChatMsg partnerChatMsg-${m.role}`}>
-                <div className="partnerChatBubble">{m.role === 'assistant' ? renderMarkdown(m.content) : m.content}</div>
-              </div>
-            ))}
-            {sending && (
-              <div className="partnerChatMsg partnerChatMsg-assistant">
-                <div className="partnerChatBubble partnerChatTyping">Thinking…</div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
+          {messageList}
         </div>
       )}
 
-      <div className="partnerContentChatInputRow">
-        <textarea
-          rows={1}
-          placeholder="Ask about your content..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onFocus={() => setExpanded(true)}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-        />
-        <button type="button" className="partnerSendBtn" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">↑</button>
-      </div>
+      {inputRow}
     </div>
   )
 }
