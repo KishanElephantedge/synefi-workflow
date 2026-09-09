@@ -58,7 +58,10 @@ export default function PartnerApp() {
             <img src="/logo.png" alt="" className="partnerBrandLogo" />
             Fractional Partners
           </div>
-          <span className="partnerTenantName">{tenant.name}</span>
+          {/* Every partner Tenant.name is stored as "Partner — <name>" (helps internal admins
+              spot partner tenants in the search/tenant list) -- stripped here since a partner
+              looking at their own dashboard doesn't need to be told they're a partner. */}
+          <span className="partnerTenantName">{tenant.name.replace(/^Partner\s*[—-]\s*/, '')}</span>
         </div>
 
         <nav>
