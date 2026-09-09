@@ -3,19 +3,22 @@ import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
 import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
+import PartnerContent from './PartnerContent.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import './partner.css'
 
 // One entry per possible enabledFeatures value. Stage-by-stage rollout means this map only
-// ever grows -- adding "content" here later is the whole job of shipping stage 2, nothing
-// else in this file changes. extraRoutes are sub-pages that only exist because the feature
-// itself is enabled (the account detail click-through has no reason to be reachable if
-// "accounts" itself isn't) -- kept alongside the nav entry rather than registered separately,
-// so enabling/disabling a feature can never leave an orphaned route reachable by URL alone.
+// ever grows -- extraRoutes are sub-pages that only exist because the feature itself is
+// enabled (the account detail click-through has no reason to be reachable if "accounts" itself
+// isn't) -- kept alongside the nav entry rather than registered separately, so enabling/
+// disabling a feature can never leave an orphaned route reachable by URL alone.
 const FEATURE_PAGES = {
   accounts: {
     label: 'Accounts', path: 'accounts', element: <PartnerAccounts />,
     extraRoutes: [{ path: 'accounts/:companyId', element: <PartnerAccountDetail /> }],
+  },
+  content: {
+    label: 'Content', path: 'content', element: <PartnerContent />,
   },
 }
 
