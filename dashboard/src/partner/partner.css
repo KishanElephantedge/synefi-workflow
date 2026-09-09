@@ -702,6 +702,12 @@ a.partnerLogoutBtn {
   cursor: pointer;
 }
 
+.partnerMinimizeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .partnerContentChatShell {
   border: 1px solid var(--p-line);
   border-radius: 10px;
@@ -915,15 +921,12 @@ a.partnerLogoutBtn {
 }
 
 .partnerContentChatFullscreen .partnerChatBubble {
-  max-width: 70ch;
+  max-width: 85%;
 }
 
 .partnerContentChatFullscreen .partnerContentChatInputRow {
   flex-shrink: 0;
   padding: 14px 20px;
-  max-width: 760px;
-  margin: 0 auto;
-  width: 100%;
   box-sizing: border-box;
 }
 

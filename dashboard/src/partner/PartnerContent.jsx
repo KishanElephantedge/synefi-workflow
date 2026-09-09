@@ -181,10 +181,10 @@ function ContentChat({ onTopicsChanged }) {
       <div className="partnerContentChatFullscreen">
         <div className="partnerContentChatPanelHead">
           <span>Conversation</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
             <button type="button" className="partnerLinkBtn" onClick={startNewChat}>New conversation</button>
-            <button type="button" className="partnerIconBtn" onClick={() => setFullscreen(false)} title="Exit fullscreen" aria-label="Exit fullscreen">
-              <MinimizeIcon />
+            <button type="button" className="partnerLinkBtn partnerMinimizeBtn" onClick={() => setFullscreen(false)}>
+              <MinimizeIcon /> Minimize
             </button>
           </div>
         </div>
