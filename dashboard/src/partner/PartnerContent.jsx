@@ -207,7 +207,7 @@ function TrendingTopics({ refreshKey }) {
     return <div className="partnerCardWrap"><div className="partnerLoadingState">Loading...</div></div>
   }
   if (topics.length === 0) {
-    return <div className="partnerCardWrap"><div className="partnerEmptyState">No topics configured yet -- add some in Settings, or just ask the chat above.</div></div>
+    return <div className="partnerCardWrap"><div className="partnerEmptyState">Nothing sensed yet -- ask the chat above to check for fresh trends, and real topics will show up here once it finds something.</div></div>
   }
 
   const byTier = {}
