@@ -3580,14 +3580,21 @@ pre {
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background: var(--bg);
+  /* Hardcoded, not var(--bg) -- this page must always render light regardless of the
+     device's OS dark-mode setting (confirmed live: a phone in dark mode showed a dark
+     background around the white sign-in card once the left pane collapsed at the mobile
+     breakpoint below). Every color on this page is hardcoded to its light value for the
+     same reason -- var(--text)/var(--border)/etc. all flip under prefers-color-scheme:
+     dark elsewhere in the app, which would make text unreadable against this card's
+     always-white background. */
+  background: #f8fafc;
   font-family: var(--sans);
 }
 
 .deepline-left-pane {
   flex: 1;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid #e2e8f0;
   padding: 3.5rem 4rem;
   display: flex;
   flex-direction: column;
@@ -3603,13 +3610,13 @@ pre {
 .deepline-brand-name {
   font-weight: 750;
   font-size: 1.3rem;
-  color: var(--primary);
+  color: #4f46e5;
   letter-spacing: -0.02em;
 }
 
 .deepline-brand-tagline {
   font-size: 0.86rem;
-  color: var(--primary);
+  color: #4f46e5;
   opacity: 0.75;
   font-weight: 500;
 }
@@ -3619,7 +3626,7 @@ pre {
   margin: auto 0;
   max-width: 520px;
   background: #ffffff;
-  border: 1px solid var(--border);
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: 1.5rem 1.75rem;
@@ -3634,7 +3641,7 @@ pre {
 
 .deepline-live-label {
   font-size: 0.92rem;
-  color: var(--text-muted);
+  color: #475569;
 }
 
 .deepline-live-counter {
@@ -3642,7 +3649,7 @@ pre {
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.2;
-  color: var(--text);
+  color: #0f172a;
 }
 
 .deepline-live-counter strong {
@@ -3652,7 +3659,7 @@ pre {
 
 .deepline-live-counter span {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #475569;
 }
 
 .deepline-live-list {
@@ -3665,7 +3672,7 @@ pre {
   align-items: flex-start;
   gap: 0.85rem;
   padding: 0.9rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .deepline-live-item:last-child {
@@ -3682,49 +3689,49 @@ pre {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.85rem;
-  color: var(--text);
+  color: #0f172a;
 }
 
 .deepline-live-name {
   font-weight: 700;
   font-size: 0.92rem;
-  color: var(--text);
+  color: #0f172a;
   margin-bottom: 0.3rem;
 }
 
 .deepline-live-done {
   font-size: 0.86rem;
-  color: var(--text);
+  color: #0f172a;
   margin-bottom: 0.2rem;
 }
 
 .deepline-live-next {
   font-size: 0.86rem;
-  color: var(--text-muted);
+  color: #475569;
 }
 
 .deepline-tagline {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text);
+  color: #0f172a;
   margin: 1.75rem 0 0;
 }
 
 .deepline-footer {
   font-size: 0.78rem;
-  color: var(--text-faint);
+  color: #94a3b8;
 }
 
 /* Right Pane */
 .deepline-right-pane {
   flex: 1;
-  background: var(--bg);
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3735,7 +3742,7 @@ pre {
   width: 100%;
   max-width: 420px;
   background: #ffffff;
-  border: 1px solid var(--border);
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 2.75rem 2.5rem;
@@ -3744,21 +3751,21 @@ pre {
 .deepline-form-header h1 {
   font-size: 1.75rem;
   font-weight: 800;
-  color: var(--text);
+  color: #0f172a;
   margin: 0 0 0.35rem;
   letter-spacing: -0.03em;
 }
 
 .deepline-form-header p {
-  color: var(--text-muted);
+  color: #475569;
   font-size: 0.85rem;
   margin: 0 0 1.75rem;
   line-height: 1.4;
 }
 
 .deepline-error-alert {
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: #fee2e2;
+  color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
@@ -3782,23 +3789,23 @@ pre {
 .deepline-input-field label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #475569;
 }
 
 .deepline-input-field input {
   padding: 0.75rem 1rem;
   font-size: 0.88rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1px solid #e2e8f0;
   background: #ffffff;
-  color: var(--text);
+  color: #0f172a;
   width: 100%;
   transition: all 0.15s ease;
 }
 
 .deepline-input-field input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
@@ -3814,12 +3821,12 @@ pre {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #475569;
   cursor: pointer;
 }
 
 .deepline-checkbox-label input[type=checkbox] {
-  accent-color: var(--primary);
+  accent-color: #4f46e5;
 }
 
 .deepline-submit-btn {
@@ -3832,7 +3839,7 @@ pre {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--primary);
+  background: #4f46e5;
   color: #ffffff;
   border: none;
   border-radius: var(--radius-sm);
@@ -3842,7 +3849,7 @@ pre {
 }
 
 .deepline-submit-btn:hover {
-  background: var(--primary-hover);
+  background: #4338ca;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
 }
