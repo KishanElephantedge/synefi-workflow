@@ -7,9 +7,12 @@ import { getJobsToBeDone, getOverridesEvals } from '../api.js'
 // Mirrors V1's TenantSwitcher (App.jsx) so the same "Workspace" dropdown reachable from V1
 // is also reachable from inside V2: real tenants come from useTenant() (unchanged), plus one
 // extra static "Elephant Edge V2" row appended right after the real "Elephant Edge" entry --
-// same convention App.jsx's TenantSwitcher already uses. Picking a real tenant navigates to
-// /:slug (leaving V2 entirely, mounting V1's AppShell); picking "Elephant Edge V2" just closes
-// the menu since we're already there.
+// same convention App.jsx's TenantSwitcher already uses. Picking a partner tenant navigates to
+// /v2/partner-view/:slug (AdminPartnerView -- the partner's OWN real dashboard, read through
+// the admin's session, no second login) rather than /:slug (V1's generic AppShell) -- an admin
+// asking to see "that partner's dashboard" means the actual partner-facing product, not V1's
+// internal batch-management UI. Picking "Elephant Edge V2" just closes the menu since we're
+// already there.
 function V2WorkspaceSwitcher() {
   const { tenants } = useTenant()
   const navigate = useNavigate()
@@ -46,7 +49,7 @@ function V2WorkspaceSwitcher() {
               <div
                 className="v2-workspace-option"
                 onClick={() => {
-                  navigate(`/${t.slug}`)
+                  navigate(t.slug === 'elephant-edge' ? '/v2' : `/v2/partner-view/${t.slug}`)
                   setIsOpen(false)
                 }}
               >

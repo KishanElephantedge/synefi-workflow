@@ -18,6 +18,7 @@ import ChatWidget from './components/ChatWidget'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
 import V2App from './v2/V2App.jsx'
+import AdminPartnerView from './v2/AdminPartnerView.jsx'
 import PartnerApp from './partner/PartnerApp.jsx'
 import './App.css'
 
@@ -300,6 +301,7 @@ function Gate() {
     <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/v2/*" element={<V2App />} />
+      <Route path="/v2/partner-view/:tenantSlug/*" element={<AdminPartnerView />} />
       <Route path="/:tenantSlug/*" element={<AppShell />} />
     </Routes>
   )

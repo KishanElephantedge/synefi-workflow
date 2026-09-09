@@ -11,7 +11,7 @@ function icpToForm(icp) {
   }
 }
 
-export default function PartnerSettings() {
+export default function PartnerSettings({ adminMode = false }) {
   const { user } = useTenant()
 
   return (
@@ -21,7 +21,14 @@ export default function PartnerSettings() {
         <p>Your profile and the ICP we fetch accounts against.</p>
       </div>
 
-      <ProfileCard user={user} />
+      {/* Hidden in admin mode -- ProfileCard edits the CURRENT SESSION's own name via
+          PATCH /auth/me, which is the admin's own account here, not the partner's. Nothing
+          about editing a partner's display name is possible or needed from this view. */}
+      {adminMode ? (
+        <p className="partnerEmptyFeatures">Profile editing is only available to the partner themselves.</p>
+      ) : (
+        <ProfileCard user={user} />
+      )}
       <IcpCard />
     </div>
   )

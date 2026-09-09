@@ -22,13 +22,19 @@ const FEATURE_PAGES = {
   },
 }
 
-export default function PartnerApp() {
+// tenantOverride + basePath let an internal admin view a partner's real dashboard read-through
+// their own logged-in session (see v2/AdminPartnerView.jsx) instead of needing a second login --
+// gateway's proxy() already allows an internal user through to any tenant, so this is purely a
+// frontend routing gap, not a new access grant. adminMode disables the one control
+// (ProfileCard's name edit) that would otherwise silently edit the ADMIN's own account while
+// looking at someone else's dashboard.
+export default function PartnerApp({ tenantOverride, basePath = '/partner', adminMode = false }) {
   const { user, logout } = useTenant()
-  const tenant = user?.tenant
+  const tenant = tenantOverride || user?.tenant
 
-  // Gate() already checks role === 'partner' before rendering this component, but a
-  // partner user with no tenant assigned (shouldn't happen -- create_partner_user always
-  // requires one -- but "shouldn't happen" is exactly when a null check earns its keep)
+  // Gate() already checks role === 'partner' before rendering this component for a real partner
+  // login, but a partner user with no tenant assigned (shouldn't happen -- create_partner_user
+  // always requires one -- but "shouldn't happen" is exactly when a null check earns its keep)
   // gets a clear message instead of a blank shell or a crash reading tenant.slug below.
   if (!tenant) {
     return (
@@ -65,6 +71,7 @@ export default function PartnerApp() {
               spot partner tenants in the search/tenant list) -- stripped here since a partner
               looking at their own dashboard doesn't need to be told they're a partner. */}
           <span className="partnerTenantName">{tenant.name.replace(/^Partner\s*[—-]\s*/, '')}</span>
+          {adminMode && <span className="partnerAdminBadge">Viewing as admin</span>}
         </div>
 
         <nav>
@@ -74,14 +81,14 @@ export default function PartnerApp() {
           {features.map((f) => (
             <NavLink
               key={f}
-              to={`/partner/${FEATURE_PAGES[f].path}`}
+              to={`${basePath}/${FEATURE_PAGES[f].path}`}
               className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
             >
               {FEATURE_PAGES[f].label}
             </NavLink>
           ))}
           <NavLink
-            to="/partner/settings"
+            to={`${basePath}/settings`}
             className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
           >
             Settings
@@ -89,7 +96,11 @@ export default function PartnerApp() {
         </nav>
 
         <div className="partnerSidebarFooter">
-          <button className="partnerLogoutBtn" onClick={logout}>Log out</button>
+          {adminMode ? (
+            <NavLink to="/v2" className="partnerLogoutBtn">Back to Elephant Edge V2</NavLink>
+          ) : (
+            <button className="partnerLogoutBtn" onClick={logout}>Log out</button>
+          )}
         </div>
       </aside>
 
@@ -101,8 +112,8 @@ export default function PartnerApp() {
           {features.flatMap((f) => FEATURE_PAGES[f].extraRoutes || []).map((r) => (
             <Route key={r.path} path={r.path} element={r.element} />
           ))}
-          <Route path="settings" element={<PartnerSettings />} />
-          <Route path="*" element={<Navigate to={`/partner/${defaultPath}`} replace />} />
+          <Route path="settings" element={<PartnerSettings adminMode={adminMode} />} />
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
         </Routes>
       </main>
     </div>
