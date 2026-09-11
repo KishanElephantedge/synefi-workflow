@@ -65,13 +65,13 @@
   margin-top: 2px;
 }
 
-/* Scoped under .partnerSidebar (not a bare .partnerNavLink) so these reliably beat index.css's
-   global `a` / `a:hover` rules -- a plain `a:hover { color: var(--primary-hover) }` outranks a
-   single class selector once specificity ties on the class tier (both count as one), so an
-   ACTIVE link being hovered was rendering the global blue hover color instead of staying
-   black-on-white. Found live: "Settings" showed blue text on a light hover background instead
-   of the intended white-on-black active pill the moment the cursor rested on it. */
-.partnerSidebar a.partnerNavLink {
+/* Bare-class base shared by BOTH the real `a` nav links and the non-interactive placeholder
+   `div`s (Proposals/Webinars/Newsletters) -- this is the shape (block, padding, radius, size)
+   every sidebar row needs regardless of tag. Without this shared rule, the placeholder divs had
+   no display/padding/font-size at all (the old rules below were scoped to `a.partnerNavLink`,
+   which a `div` never matches), so they rendered as bare, tightly-packed default-size text
+   instead of a proper row matching Accounts/Content/Settings above them. */
+.partnerSidebar .partnerNavLink {
   display: block;
   padding: 9px 10px;
   border-radius: 6px;
@@ -81,6 +81,12 @@
   text-decoration: none;
 }
 
+/* Scoped under .partnerSidebar (not a bare .partnerNavLink) so these reliably beat index.css's
+   global `a` / `a:hover` rules -- a plain `a:hover { color: var(--primary-hover) }` outranks a
+   single class selector once specificity ties on the class tier (both count as one), so an
+   ACTIVE link being hovered was rendering the global blue hover color instead of staying
+   black-on-white. Found live: "Settings" showed blue text on a light hover background instead
+   of the intended white-on-black active pill the moment the cursor rested on it. */
 .partnerSidebar a.partnerNavLink:hover {
   background: var(--p-hover);
   color: var(--p-muted-2);
@@ -92,11 +98,10 @@
   color: var(--p-paper);
 }
 
-/* Placeholder tabs (Proposals/Webinars/Newsletters, 2026-09-11) -- a plain div, not an `a`, so
-   the real-link rules above never apply here; sharing the .partnerNavLink base class keeps the
-   same padding/size/radius so the sidebar reads as one consistent list, with its own muted,
-   non-interactive treatment layered on top. */
-.partnerSidebar div.partnerNavLinkPlaceholder {
+/* Placeholder tabs (Proposals/Webinars/Newsletters, 2026-09-11) -- shares the base row shape via
+   .partnerNavLink above; not clickable (plain div, no href/route) and never will be until each
+   is actually released, so this layers on only the muted/disabled treatment. */
+.partnerSidebar .partnerNavLinkPlaceholder {
   color: var(--p-muted-2);
   opacity: 0.45;
   cursor: not-allowed;
