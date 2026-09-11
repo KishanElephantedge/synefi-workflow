@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getMarketIntelligence, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../api.js'
-import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend, IconChevronDown } from '../icons.jsx'
+import { IconAlertTriangle, IconMessageCircle, IconMic, IconSend, IconChevronDown, IconMaximize2, IconMinimize2 } from '../icons.jsx'
 
 // Same real six states MarketTrends.jsx reads from evaluate_topic_trend() -- reused verbatim,
 // never a paraphrase or a second scoring system. Grouped into tiers below rather than shown
@@ -59,6 +59,7 @@ const SpeechRecognitionImpl = typeof window !== 'undefined' ? (window.SpeechReco
 // occupying a large fixed panel before anyone's asked it anything.
 function ContentStrategistChat({ onTopicsChanged }) {
   const [expanded, setExpanded] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const [conversationId, setConversationId] = useState(null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -133,6 +134,77 @@ function ContentStrategistChat({ onTopicsChanged }) {
     recognition.start()
   }
 
+  const messageList = (
+    <div className="v2-cs-chat-messages">
+      {loaded && messages.length === 0 && (
+        <div className="v2-cs-chat-empty">
+          <p className="v2-placeholder-note" style={{ margin: 0 }}>
+            I ground every call in real evidence -- observation counts, independent sources, and which real target accounts are already circling a topic. Ask why, and I'll show the numbers.
+          </p>
+          <div className="v2-cs-suggestion-row">
+            {PROMPT_SUGGESTIONS.map(s => (
+              <button key={s} type="button" className="v2-cs-suggestion-chip" onClick={() => send(s)}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {messages.map((m, i) => (
+        <div key={i} className={`v2-ai-message v2-ai-message-${m.role}`}>
+          <div className="v2-ai-message-bubble">{m.role === 'assistant' ? renderMarkdown(m.content) : m.content}</div>
+        </div>
+      ))}
+      {sending && (
+        <div className="v2-ai-message v2-ai-message-assistant">
+          <div className="v2-ai-message-bubble v2-ai-message-typing">Thinking…</div>
+        </div>
+      )}
+      <div ref={bottomRef} />
+    </div>
+  )
+
+  const inputRow = (
+    <div className="v2-cs-chat-input-row">
+      <textarea
+        rows={1}
+        placeholder="Ask your content strategist..."
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onFocus={() => setExpanded(true)}
+        onKeyDown={handleKeyDown}
+        disabled={sending}
+      />
+      {SpeechRecognitionImpl && (
+        <button type="button" className={`v2-ai-widget-mic${listening ? ' listening' : ''}`} onClick={toggleVoice} disabled={sending} title={listening ? 'Stop voice input' : 'Voice input'}>
+          <IconMic width={20} height={20} strokeWidth={2.5} />
+        </button>
+      )}
+      <button type="button" className="v2-ai-widget-send" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">
+        <IconSend width={20} height={20} strokeWidth={2.5} />
+      </button>
+    </div>
+  )
+
+  // Fullscreen covers everything right of the fixed sidebar (see .v2-sidebar's own width) --
+  // the "right side window" a maximize button is meant to fill, not the whole viewport including nav.
+  if (fullscreen) {
+    return (
+      <div className="v2-cs-chat-fullscreen">
+        <div className="v2-cs-chat-panel-header">
+          <span className="v2-kv-label" style={{ margin: 0 }}>Conversation</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+            <button type="button" className="v2-ai-widget-link" onClick={startNewChat}>New conversation</button>
+            <button type="button" className="v2-ai-widget-link v2-cs-minimize-btn" onClick={() => setFullscreen(false)}>
+              <IconMinimize2 width={15} height={15} /> Minimize
+            </button>
+          </div>
+        </div>
+        {messageList}
+        {voiceError && <div className="v2-form-message error" style={{ margin: '0 1.25rem' }}>{voiceError}</div>}
+        {inputRow}
+      </div>
+    )
+  }
+
   return (
     <div className="v2-cs-chat-shell">
       <button type="button" className="v2-cs-chat-trigger" onClick={() => setExpanded(o => !o)}>
@@ -140,6 +212,15 @@ function ContentStrategistChat({ onTopicsChanged }) {
         <span className="v2-cs-chat-trigger-text">
           <strong>Ask the Content Strategist</strong>
           <span>What should we publish next -- and why will it actually move revenue?</span>
+        </span>
+        <span
+          className="v2-cs-chat-maximize"
+          role="button" tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); setExpanded(true); setFullscreen(true) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setExpanded(true); setFullscreen(true) } }}
+          title="Maximize" aria-label="Maximize"
+        >
+          <IconMaximize2 width={15} height={15} />
         </span>
         <IconChevronDown width={18} height={18} className={`v2-cs-chat-chevron${expanded ? ' open' : ''}`} />
       </button>
@@ -150,54 +231,12 @@ function ContentStrategistChat({ onTopicsChanged }) {
             <span className="v2-kv-label" style={{ margin: 0 }}>Conversation</span>
             <button type="button" className="v2-ai-widget-link" onClick={startNewChat}>New conversation</button>
           </div>
-          <div className="v2-cs-chat-messages">
-            {loaded && messages.length === 0 && (
-              <div className="v2-cs-chat-empty">
-                <p className="v2-placeholder-note" style={{ margin: 0 }}>
-                  I ground every call in real evidence -- observation counts, independent sources, and which real target accounts are already circling a topic. Ask why, and I'll show the numbers.
-                </p>
-                <div className="v2-cs-suggestion-row">
-                  {PROMPT_SUGGESTIONS.map(s => (
-                    <button key={s} type="button" className="v2-cs-suggestion-chip" onClick={() => send(s)}>{s}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} className={`v2-ai-message v2-ai-message-${m.role}`}>
-                <div className="v2-ai-message-bubble">{m.role === 'assistant' ? renderMarkdown(m.content) : m.content}</div>
-              </div>
-            ))}
-            {sending && (
-              <div className="v2-ai-message v2-ai-message-assistant">
-                <div className="v2-ai-message-bubble v2-ai-message-typing">Thinking…</div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
+          {messageList}
           {voiceError && <div className="v2-form-message error" style={{ margin: '0 0 0.5rem' }}>{voiceError}</div>}
         </div>
       )}
 
-      <div className="v2-cs-chat-input-row">
-        <textarea
-          rows={1}
-          placeholder="Ask your content strategist..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onFocus={() => setExpanded(true)}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-        />
-        {SpeechRecognitionImpl && (
-          <button type="button" className={`v2-ai-widget-mic${listening ? ' listening' : ''}`} onClick={toggleVoice} disabled={sending} title={listening ? 'Stop voice input' : 'Voice input'}>
-            <IconMic width={20} height={20} strokeWidth={2.5} />
-          </button>
-        )}
-        <button type="button" className="v2-ai-widget-send" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">
-          <IconSend width={20} height={20} strokeWidth={2.5} />
-        </button>
-      </div>
+      {inputRow}
     </div>
   )
 }

@@ -4674,6 +4674,79 @@ h6.v2-ai-message-heading { font-size: 0.92rem; }
   max-height: 100px;
 }
 
+.v2-cs-chat-maximize {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+}
+
+.v2-cs-chat-maximize:hover {
+  background: var(--v2-surface-elevated);
+  color: var(--v2-text);
+}
+
+.v2-cs-minimize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Maximized chat -- covers everything right of the sidebar (see .v2-sidebar's own width), i.e.
+   exactly the "right side window" the maximize button is meant to fill, not the whole viewport
+   including nav. Widths mirror .v2-sidebar's own responsive widths exactly so this never drifts
+   out of sync with it. */
+.v2-cs-chat-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--v2-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-cs-chat-fullscreen .v2-cs-chat-panel-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--v2-border);
+  flex-shrink: 0;
+}
+
+.v2-cs-chat-fullscreen .v2-cs-chat-messages {
+  max-height: none;
+  flex: 1;
+  padding: 1.25rem;
+  gap: 1rem;
+}
+
+.v2-cs-chat-fullscreen .v2-ai-message {
+  max-width: 85%;
+}
+
+.v2-cs-chat-fullscreen .v2-cs-chat-input-row {
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .v2-cs-chat-fullscreen {
+    left: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .v2-cs-chat-fullscreen {
+    left: 0;
+  }
+}
+
 /* Trending topics -- grouped into real tier sections (not a flat ranked grid, no invented rank
    number), each card differentiated only by real numbers (observation/source/account-bridge
    counts) already computed server-side. */
