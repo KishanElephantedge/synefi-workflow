@@ -20,9 +20,17 @@ const FEATURE_PAGES = {
     extraRoutes: [{ path: 'accounts/:companyId', element: <PartnerAccountDetail /> }],
   },
   content: {
-    label: 'Content', path: 'content', element: <PartnerContent />,
+    label: 'LinkedIn Content', path: 'content', element: <PartnerContent />,
   },
 }
+
+// Placeholder-only sidebar entries (2026-09-11, explicit instruction) -- shown to every partner
+// regardless of enabledFeatures, next to no real page, no route, and no click behavior. These
+// exist purely to preview the module list from Majji's reference mockups before any of them are
+// built; a plain, non-interactive div rather than a NavLink/Link makes that literal -- there is
+// no href to navigate and no route for "*" to fall through to, so clicking one is structurally a
+// no-op rather than a broken link.
+const PLACEHOLDER_TABS = ['Proposals', 'Webinars', 'Newsletters']
 
 // tenantOverride + basePath let an internal admin view a partner's real dashboard read-through
 // their own logged-in session (see v2/AdminPartnerView.jsx) instead of needing a second login --
@@ -89,6 +97,11 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
             >
               {FEATURE_PAGES[f].label}
             </NavLink>
+          ))}
+          {PLACEHOLDER_TABS.map((label) => (
+            <div key={label} className="partnerNavLink partnerNavLinkPlaceholder">
+              {label}
+            </div>
           ))}
           <NavLink
             to={`${basePath}/settings`}

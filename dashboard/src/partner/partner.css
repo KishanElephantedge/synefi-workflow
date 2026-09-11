@@ -92,6 +92,17 @@
   color: var(--p-paper);
 }
 
+/* Placeholder tabs (Proposals/Webinars/Newsletters, 2026-09-11) -- a plain div, not an `a`, so
+   the real-link rules above never apply here; sharing the .partnerNavLink base class keeps the
+   same padding/size/radius so the sidebar reads as one consistent list, with its own muted,
+   non-interactive treatment layered on top. */
+.partnerSidebar div.partnerNavLinkPlaceholder {
+  color: var(--p-muted-2);
+  opacity: 0.45;
+  cursor: not-allowed;
+  user-select: none;
+}
+
 .partnerSidebarFooter {
   margin-top: auto;
   padding-top: 14px;
