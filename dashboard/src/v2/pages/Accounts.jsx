@@ -89,49 +89,66 @@ function SummaryStrip({ summary }) {
   )
 }
 
-// Every row shares the SAME structural grid (company / intelligence / action) regardless of
-// state -- hierarchy comes from chip intensity, accent color, and which cells have content,
-// never from switching between a "plain row" and a "boxed card" per tier. Consistent column
-// alignment means every status chip and every CTA lines up down the page.
-function AccountCard({ company }) {
-  // account_status defaults to 'insufficient_context' when absent (e.g. an older backend
-  // that hasn't deployed list_account_states() yet) rather than rendering a blank badge --
-  // the safest, least-alarming fallback, matching how every account starts out anyway.
+// Formats a real employee_count/revenue range without inventing precision the data doesn't
+// have -- revenue is a derived (lower, upper) band, not a point figure, so it renders as a
+// range or not at all rather than picking one number.
+function formatSize(company) {
+  const parts = []
+  if (company.employee_count) parts.push(`${company.employee_count} emp`)
+  if (company.estimated_revenue_lower_usd) {
+    const fmt = (n) => n >= 1_000_000 ? `$${Math.round(n / 1_000_000)}M` : `$${Math.round(n / 1000)}K`
+    parts.push(
+      company.estimated_revenue_higher_usd && company.estimated_revenue_higher_usd !== company.estimated_revenue_lower_usd
+        ? `${fmt(company.estimated_revenue_lower_usd)}-${fmt(company.estimated_revenue_higher_usd)}`
+        : fmt(company.estimated_revenue_lower_usd)
+    )
+  }
+  return parts.join(' · ')
+}
+
+// CRM-style table row -- one line per account, every real field the card view buried behind a
+// click (employee/revenue size, contact count, outreach status) now visible without navigating
+// away. "Open" stays a real link to the same detail page (Account Agent), per explicit
+// instruction to keep that click-through for the deep-dive view.
+function AccountRow({ company }) {
   const accountStatus = company.account_status || 'insufficient_context'
   const isQuiet = QUIET_STATES.has(accountStatus)
   const hasEvidence = !isQuiet && ((company.signal_count > 0) || (company.opportunity_count > 0))
-  const secondaryText = [
-    company.hot_lead && 'Hot lead',
-    company.hiring_signal_role && `hiring: ${company.hiring_signal_role.replace(/_/g, ' ')}`,
-  ].filter(Boolean).join(' · ')
   const added = formatRecency(company.created_at)
+  const size = formatSize(company)
 
   return (
-    <Link to={`/v2/accounts/${company.id}`} className={`v2-account-row-grid v2-account-state-${accountStatus}`}>
-      <div className="v2-ar-company">
+    <tr className={`v2-account-state-${accountStatus}`}>
+      <td>
         <div className="v2-account-name">{company.name}</div>
-        <div className="v2-account-meta">
-          {[company.domain, company.industry].filter(Boolean).join(' · ') || 'No domain or industry on file'}
-          {added && <span title={added.exact}> · Added {added.label}</span>}
-        </div>
-        {secondaryText && <div className="v2-account-secondary">{secondaryText}</div>}
-      </div>
-
-      <div className="v2-ar-intel">
-        <StatusMark status={accountStatus} />
-        {hasEvidence && (
-          <div className="v2-account-evidence">
-            <span className="v2-account-evidence-stat">{company.signal_count} signal{company.signal_count === 1 ? '' : 's'}</span>
-            <span className="v2-account-evidence-stat">{company.opportunity_count} opportunit{company.opportunity_count === 1 ? 'y' : 'ies'}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="v2-account-cta">
-        <span>Open Account Agent</span>
-        <IconChevronRight width={14} height={14} />
-      </div>
-    </Link>
+        <div className="v2-table-muted">{[company.domain, company.industry].filter(Boolean).join(' · ') || '—'}</div>
+      </td>
+      <td className={size ? '' : 'v2-table-muted'}>{size || '—'}</td>
+      <td className={company.hiring_signal_role || company.hot_lead ? '' : 'v2-table-muted'}>
+        {[
+          company.hot_lead && 'Hot lead',
+          company.hiring_signal_role && `Hiring: ${company.hiring_signal_role.replace(/_/g, ' ')}`,
+        ].filter(Boolean).join(' · ') || '—'}
+      </td>
+      <td><StatusMark status={accountStatus} /></td>
+      <td className={hasEvidence ? '' : 'v2-table-muted'}>
+        {hasEvidence
+          ? `${company.signal_count} signal${company.signal_count === 1 ? '' : 's'} · ${company.opportunity_count} opp${company.opportunity_count === 1 ? '' : 's'}`
+          : '—'}
+      </td>
+      <td className={company.contact_count ? '' : 'v2-table-muted'}>{company.contact_count || 0}</td>
+      <td>
+        <span className={`v2-status-pill tone-${company.outreached ? 'success-solid' : 'neutral'}`}>
+          {company.outreached ? 'Reached out' : 'Not yet'}
+        </span>
+      </td>
+      <td className="v2-table-muted" title={added?.exact}>{added ? added.label : '—'}</td>
+      <td>
+        <Link to={`/v2/accounts/${company.id}`} className="v2-btn" style={{ padding: '0.35rem 0.6rem', whiteSpace: 'nowrap' }}>
+          Open <IconChevronRight width={12} height={12} />
+        </Link>
+      </td>
+    </tr>
   )
 }
 
@@ -225,7 +242,7 @@ export default function Accounts() {
         </div>
       ) : loading ? (
         <div className="v2-accounts-grid">
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="v2-skeleton-row" style={{ height: 96, borderRadius: 'var(--v2-radius)' }} />)}
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="v2-skeleton-row" style={{ height: 40, borderRadius: 'var(--v2-radius)' }} />)}
         </div>
       ) : companies.length === 0 ? (
         <div className="v2-card">
@@ -235,8 +252,25 @@ export default function Accounts() {
         </div>
       ) : (
         <>
-          <div className="v2-accounts-grid">
-            {companies.map(c => <AccountCard key={c.id} company={c} />)}
+          <div className="v2-table-wrap">
+            <table className="v2-table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Size</th>
+                  <th>Signal</th>
+                  <th>Status</th>
+                  <th>Evidence</th>
+                  <th>Contacts</th>
+                  <th>Outreach</th>
+                  <th>Added</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map(c => <AccountRow key={c.id} company={c} />)}
+              </tbody>
+            </table>
           </div>
           {totalPages > 1 && (
             <div className="v2-pagination">
