@@ -7,6 +7,29 @@ import { listAccounts, formatApiError } from '../v2/api.js'
 // neither of which is scoped to a partner tenant today, and a stage-1 partner tenant has no
 // ICP/opportunity pipeline populated to summarize anyway. This shows exactly what stage 1
 // promises: the accounts fetched for this tenant, and a click into each one.
+//
+// Table, not a card grid (2026-09-13, explicit instruction: "what if when we scale up... to
+// hundreds of accounts, this is not currently [set up] to present it"). A card grid caps out
+// readably around a couple dozen tiles; a table keeps hundreds of rows scannable at a glance.
+// Only real, already-returned fields are shown -- no status/evidence columns like V2's own
+// Accounts table, since those come from list_account_states() which is hardcoded to Elephant
+// Edge's tenant_id (app/routes/api.py) and would show meaningless data for a partner's own
+// companies. Outreach status is also omitted: partners never get pushed to a campaign (their
+// accounts land in the database only), so "reached out" has no real meaning here.
+function formatSize(company) {
+  const parts = []
+  if (company.employee_count) parts.push(`${company.employee_count} emp`)
+  if (company.estimated_revenue_lower_usd) {
+    const fmt = (n) => n >= 1_000_000 ? `$${Math.round(n / 1_000_000)}M` : `$${Math.round(n / 1000)}K`
+    parts.push(
+      company.estimated_revenue_higher_usd && company.estimated_revenue_higher_usd !== company.estimated_revenue_lower_usd
+        ? `${fmt(company.estimated_revenue_lower_usd)}-${fmt(company.estimated_revenue_higher_usd)}`
+        : fmt(company.estimated_revenue_lower_usd)
+    )
+  }
+  return parts.join(' · ')
+}
+
 const PAGE_SIZE = 25
 
 export default function PartnerAccounts({ basePath = '/partner' }) {
@@ -65,25 +88,50 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
           </div>
         </div>
       ) : (
-        <div className="partnerAccountGrid">
-          {companies.map((c) => (
-            <Link className="partnerAccountCard" to={`${basePath}/accounts/${c.id}`} key={c.id}>
-              <div className="partnerAccountCardTop">
-                <div className="partnerAccountLogo">{c.name.slice(0, 1).toUpperCase()}</div>
-                <div>
-                  <div className="partnerAccountName">{c.name}</div>
-                  <div className="partnerAccountDomain">{c.domain || '—'}</div>
-                </div>
-              </div>
-              <div className="partnerAccountMeta">
-                {c.industry && <span className="partnerTag">{c.industry}</span>}
-              </div>
-              <div className="partnerAccountFooter">
-                <span>View decision-makers</span>
-                <span className="partnerAccountArrow">→</span>
-              </div>
-            </Link>
-          ))}
+        <div className="partnerTableWrap">
+          <table className="partnerTable">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Industry</th>
+                <th>Size</th>
+                <th>Signal</th>
+                <th>Contacts</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((c) => {
+                const size = formatSize(c)
+                const signal = [
+                  c.hot_lead && 'Hot lead',
+                  c.hiring_signal_role && `Hiring: ${c.hiring_signal_role.replace(/_/g, ' ')}`,
+                ].filter(Boolean).join(' · ')
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="partnerTableCompanyRow">
+                        <div className="partnerAccountLogo partnerAccountLogoSm">{c.name.slice(0, 1).toUpperCase()}</div>
+                        <div>
+                          <div className="partnerAccountName">{c.name}</div>
+                          <div className="partnerAccountDomain">{c.domain || '—'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={c.industry ? '' : 'partnerTableMuted'}>{c.industry || '—'}</td>
+                    <td className={size ? '' : 'partnerTableMuted'}>{size || '—'}</td>
+                    <td className={signal ? '' : 'partnerTableMuted'}>{signal || '—'}</td>
+                    <td className={c.contact_count ? '' : 'partnerTableMuted'}>{c.contact_count || 0}</td>
+                    <td>
+                      <Link className="partnerTableAction" to={`${basePath}/accounts/${c.id}`}>
+                        View decision-makers <span className="partnerAccountArrow">→</span>
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

@@ -261,6 +261,82 @@ a.partnerLogoutBtn {
   gap: 14px;
 }
 
+/* ---- account table (list page, replaces the grid above 2026-09-13 -- a card grid stops
+   being scannable once a tenant has more than a couple dozen accounts; a table scales to
+   hundreds of rows without needing to click into each one). Same paper/ink tokens as every
+   other partner surface, just a denser row layout. */
+.partnerTableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-paper);
+}
+
+.partnerTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.partnerTable th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--p-muted-2);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--p-line);
+  background: var(--p-hover);
+}
+
+.partnerTable td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--p-line-soft);
+  color: var(--p-ink);
+  vertical-align: middle;
+}
+
+.partnerTable tr:last-child td {
+  border-bottom: none;
+}
+
+.partnerTable tr:hover td {
+  background: var(--p-hover);
+}
+
+.partnerTable td.partnerTableMuted {
+  color: var(--p-muted-2);
+}
+
+.partnerTableCompanyRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partnerAccountLogoSm {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.partnerTableAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--p-ink);
+  text-decoration: none;
+}
+
+.partnerTableAction:hover .partnerAccountArrow {
+  transform: translateX(3px);
+}
+
 .partnerAccountCard {
   display: flex;
   flex-direction: column;
