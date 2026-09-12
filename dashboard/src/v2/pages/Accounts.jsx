@@ -131,6 +131,7 @@ function AccountRow({ company }) {
         ].filter(Boolean).join(' · ') || '—'}
       </td>
       <td><StatusMark status={accountStatus} /></td>
+      <td className={company.resolved_offering_name ? '' : 'v2-table-muted'}>{company.resolved_offering_name || '—'}</td>
       <td className={hasEvidence ? '' : 'v2-table-muted'}>
         {hasEvidence
           ? `${company.signal_count} signal${company.signal_count === 1 ? '' : 's'} · ${company.opportunity_count} opp${company.opportunity_count === 1 ? '' : 's'}`
@@ -260,6 +261,7 @@ export default function Accounts() {
                   <th>Size</th>
                   <th>Signal</th>
                   <th>Status</th>
+                  <th>Offered</th>
                   <th>Evidence</th>
                   <th>Contacts</th>
                   <th>Outreach</th>
