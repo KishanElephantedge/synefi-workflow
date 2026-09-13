@@ -8,19 +8,22 @@ import { IconAlertTriangle, IconEdit, IconCheck } from '../icons.jsx'
 import IcpOfferings from './IcpOfferings.jsx'
 import Knowledge from './Knowledge.jsx'
 import Users from './Users.jsx'
+import UsageAndLinks from './UsageAndLinks.jsx'
 
 // 2026-08-27, explicit instruction -- sidebar consolidation: ICPs & Offerings and Knowledge are
 // both define-once configuration (same nature as Strategy/Playbook/Connections/Performance/
 // Efficiency above), so they moved here as tabs instead of their own standalone nav items. Their
 // full existing page components are reused as-is (imported directly) -- no internal logic
 // rewritten, just re-hosted under this tab bar.
-const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge', 'Users']
+const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge', 'Users', 'Usage & Links']
+
+const CONTEXT_TABS = new Set(['Strategy', 'Playbook', 'Connections'])
 
 // Slug <-> tab-label mapping so other pages (Efficiency) can deep-link to a specific tab, e.g.
 // /v2/settings?tab=efficiency -- same pattern IcpOfferings.jsx already uses.
 const TAB_SLUGS = {
   strategy: 'Strategy', playbook: 'Playbook', connections: 'Connections', performance: 'Performance', efficiency: 'Efficiency',
-  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge', users: 'Users',
+  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge', users: 'Users', usage: 'Usage & Links',
 }
 
 // ---------- shared field primitives ----------
@@ -747,7 +750,18 @@ export default function Settings() {
     <div className="v2-set-page">
       <div className="v2-page-eyebrow">The company's own operating context -- goals, playbook, connections and real performance data.</div>
 
-      {error ? (
+      <div className="v2-config-tabs">
+        {TABS.map(t => (
+          <button key={t} type="button" className={`v2-config-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Only these three tabs read business context. The rest load their own data (several
+          from the gateway, not this backend), so they must not be hidden behind this request --
+          a backend cold start used to blank the whole Settings page, usage view included. */}
+      {CONTEXT_TABS.has(tab) && (error ? (
         <div className="v2-card">
           <div className="v2-state v2-state-error">
             <IconAlertTriangle width={20} height={20} style={{ marginBottom: 8 }} />
@@ -758,24 +772,18 @@ export default function Settings() {
         <div className="v2-skeleton-row" style={{ borderRadius: 'var(--v2-radius-lg)', height: 240 }} />
       ) : (
         <>
-          <div className="v2-config-tabs">
-            {TABS.map(t => (
-              <button key={t} type="button" className={`v2-config-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-                {t}
-              </button>
-            ))}
-          </div>
-
           {tab === 'Strategy' && <StrategyTab context={data} onSaved={setData} canWrite={canWrite} />}
           {tab === 'Playbook' && <PlaybookTab context={data} onSaved={setData} canWrite={canWrite} />}
           {tab === 'Connections' && <ConnectionsTab context={data} onSaved={setData} canWrite={canWrite} />}
-          {tab === 'Performance' && <PerformanceTab />}
-          {tab === 'Efficiency' && <EfficiencyTab />}
-          {tab === 'ICPs & Offerings' && <IcpOfferings />}
-          {tab === 'Knowledge' && <Knowledge />}
-          {tab === 'Users' && <Users />}
         </>
-      )}
+      ))}
+
+      {tab === 'Performance' && <PerformanceTab />}
+      {tab === 'Efficiency' && <EfficiencyTab />}
+      {tab === 'ICPs & Offerings' && <IcpOfferings />}
+      {tab === 'Knowledge' && <Knowledge />}
+      {tab === 'Users' && <Users />}
+      {tab === 'Usage & Links' && <UsageAndLinks />}
     </div>
   )
 }

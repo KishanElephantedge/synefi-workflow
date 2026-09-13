@@ -27,7 +27,6 @@ import {
   IconSettings,
   IconNetwork,
   IconMegaphone,
-  IconActivity,
 } from './icons.jsx'
 
 export const V2_NAV_GROUPS = [
@@ -56,9 +55,6 @@ export const V2_NAV_GROUPS = [
       { path: 'demand-grid', label: 'Demand Grid', icon: IconGrid },
       { path: 'market-intelligence', label: 'Market Intelligence', icon: IconRadio },
       { path: 'relationships', label: 'Relationships', icon: IconNetwork },
-      // Internal-only surface: the gateway's /api/usage/summary requires role="internal",
-      // so a partner reaching this path sees an access error rather than other tenants' data.
-      { path: 'platform-usage', label: 'Platform Usage', icon: IconActivity },
     ],
   },
   {

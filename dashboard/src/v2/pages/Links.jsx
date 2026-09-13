@@ -96,11 +96,6 @@ function CreateForm({ onCreated }) {
         </button>
       </div>
       {error && <div className="v2-table-muted" style={{ marginTop: 8, color: 'var(--v2-danger)' }}>{error}</div>}
-      <div className="v2-table-muted" style={{ fontSize: '0.78rem', marginTop: 10 }}>
-        To see <em>who</em> clicked, add <code>?r=</code> to the end of the short link when you send
-        it — e.g. <code>…/l/abc123?r=&#123;&#123;firstName&#125;&#125;</code> in a SalesRobot sequence, so each
-        recipient's click is attributed to them.
-      </div>
     </form>
   )
 }

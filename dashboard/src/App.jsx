@@ -286,7 +286,7 @@ function Gate() {
   // them and can never drift out of sync as shells are added. Disabled until a user is
   // actually resolved -- an unauthenticated pageview has nobody to attribute it to, and the
   // gateway would reject it anyway.
-  useUsageTracking(Boolean(user))
+  useUsageTracking(user)
 
   if (loading) return null
   if (!user) return <Login />

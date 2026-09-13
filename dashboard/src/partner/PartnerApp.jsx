@@ -127,7 +127,11 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
             <Route key={r.path} path={r.path} element={cloneElement(r.element, { basePath })} />
           ))}
           <Route path="settings" element={<PartnerSettings adminMode={adminMode} />} />
-          <Route path="*" element={<Navigate to={defaultPath} replace />} />
+          {/* Absolute, not `to={defaultPath}`. A relative Navigate on the catch-all resolves
+              against the UNMATCHED url, so /accounts on a tenant without that feature became
+              /accounts/settings, which also doesn't match, which became /accounts/settings/settings
+              -- an infinite loop (found live 2026-09-13: one page visit, 1,684 redirects). */}
+          <Route path="*" element={<Navigate to={`${basePath}/${defaultPath}`} replace />} />
         </Routes>
       </main>
     </div>
