@@ -4,6 +4,7 @@ import Proposals from './Proposals.jsx'
 import Autonomous from './Autonomous.jsx'
 import Campaigns from './Campaigns.jsx'
 import Channels from './Channels.jsx'
+import Links from './Links.jsx'
 
 // 2026-08-27, explicit instruction -- sidebar consolidation: Proposals, Autonomous, and
 // Campaigns combined under one nav item. Each full existing page component is reused as-is
@@ -14,8 +15,11 @@ import Channels from './Channels.jsx'
 // Channels added here too (same sidebar-declutter reasoning) rather than as a new top-level nav
 // item -- it's the same "real numbers + grounded reasoning" shape as Campaigns, just by
 // outcome_channel instead of by SalesRobot campaign.
-const SECTIONS = ['Proposals', 'Autonomous', 'Campaigns', 'Channels']
-const SECTION_SLUGS = { proposals: 'Proposals', autonomous: 'Autonomous', campaigns: 'Campaigns', channels: 'Channels' }
+// Links added 2026-09-13 -- click tracking for what we send out. Same reasoning that put
+// Channels here rather than in the sidebar: it is an outbound-operations tool, not its own
+// top-level destination.
+const SECTIONS = ['Proposals', 'Autonomous', 'Campaigns', 'Channels', 'Links']
+const SECTION_SLUGS = { proposals: 'Proposals', autonomous: 'Autonomous', campaigns: 'Campaigns', channels: 'Channels', links: 'Links' }
 
 export default function Operations() {
   const [searchParams] = useSearchParams()
@@ -35,6 +39,7 @@ export default function Operations() {
       {section === 'Autonomous' && <Autonomous />}
       {section === 'Campaigns' && <Campaigns />}
       {section === 'Channels' && <Channels />}
+      {section === 'Links' && <Links />}
     </div>
   )
 }

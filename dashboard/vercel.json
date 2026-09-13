@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/gw/:path*", "destination": "https://elephantedge-gateway.onrender.com/:path*" },
+    { "source": "/l/:slug", "destination": "https://elephantedge-gateway.onrender.com/l/:slug" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
