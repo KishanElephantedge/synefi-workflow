@@ -17,6 +17,7 @@ import NotificationBell from './components/NotificationBell'
 import ChatWidget from './components/ChatWidget'
 import { TenantProvider, useTenant } from './context/TenantContext'
 import { setActiveTenant } from './api/client'
+import { useUsageTracking } from './api/usage'
 import V2App from './v2/V2App.jsx'
 import AdminPartnerView from './v2/AdminPartnerView.jsx'
 import PartnerApp from './partner/PartnerApp.jsx'
@@ -279,6 +280,13 @@ function AppShell() {
 
 function Gate() {
   const { user, loading } = useTenant()
+
+  // Mounted here rather than per-shell: this is the one component every authenticated route
+  // tree (V1, V2, partner, admin partner-view) renders through, so one hook covers all of
+  // them and can never drift out of sync as shells are added. Disabled until a user is
+  // actually resolved -- an unauthenticated pageview has nobody to attribute it to, and the
+  // gateway would reject it anyway.
+  useUsageTracking(Boolean(user))
 
   if (loading) return null
   if (!user) return <Login />

@@ -28,6 +28,13 @@ export function setActiveTenant(slug) {
   activeTenantSlug = slug
 }
 
+// The real source of truth for "which workspace is being viewed right now" -- already
+// maintained by every route shell that calls setActiveTenant(). Usage tracking reads it here
+// rather than re-parsing the URL, which differs per shell (/v2/*, /:tenantSlug/*, /partner/*).
+export function getActiveTenant() {
+  return activeTenantSlug
+}
+
 // Tenant-scoped requests are written as relative paths (e.g. '/batches'); this interceptor
 // prefixes them with the current tenant's slug so they route through the gateway's
 // /api/{tenant_slug}/... proxy. Auth endpoints (/auth/...) and the tenant directory
