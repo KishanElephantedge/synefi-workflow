@@ -409,6 +409,13 @@ export function getCredentials() {
   return client.get('/credentials').then(res => res.data)
 }
 
+// Lets an operator paste a new key straight into Settings instead of needing a terminal/curl
+// call (2026-09-15, explicit instruction). Write-only, matching getCredentials()'s own
+// read-only contract -- the value goes to the backend and is never read back.
+export function setCredential(name, value) {
+  return client.post('/credentials', null, { params: { name, value } }).then(res => res.data)
+}
+
 // V2 Inbound page -- same backend routes V1's Inbound page already uses (app/google_analytics_client.py,
 // app/google_search_console_client.py, app/website_visitor_tracking.py). No second implementation,
 // just a V2-styled read of the same data.

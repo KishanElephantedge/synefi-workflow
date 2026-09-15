@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   getBusinessContext, putBusinessContext, getEfficiencyBenchmarks, putEfficiencyBenchmarks,
-  getLearningReadout, getCredentials, formatApiError,
+  getLearningReadout, getCredentials, setCredential, formatApiError,
 } from '../api.js'
 import { IconAlertTriangle, IconEdit, IconCheck } from '../icons.jsx'
 import IcpOfferings from './IcpOfferings.jsx'
@@ -434,13 +434,63 @@ function formatDateTime(value) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+// Paste-a-key box (2026-09-15, explicit instruction: "so this never needs a terminal again").
+// Only offered for single-credential groups (Apify, HubSpot, SmartLead, HeyReach, SalesRobot) --
+// Slack/Google Calendar are multi-field (webhook + several OAuth fields) and stay read-only here,
+// same reasoning CONNECTION_GROUPS' own comment gives for keeping this tab curated, not a raw
+// dump of every stored key.
+function CredentialPasteBox({ name, onSaved }) {
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  if (!open) {
+    return (
+      <button type="button" className="v2-btn" style={{ padding: '0.3rem 0.6rem' }} onClick={() => setOpen(true)}>
+        <IconEdit width={13} height={13} /> Paste key
+      </button>
+    )
+  }
+
+  const save = () => {
+    if (!value.trim()) return
+    setSaving(true)
+    setError(null)
+    setCredential(name, value.trim())
+      .then(() => { setOpen(false); setValue(''); onSaved() })
+      .catch(err => setError(formatApiError(err)))
+      .finally(() => setSaving(false))
+  }
+
+  return (
+    <div className="v2-set-conn-paste">
+      <input
+        type="password"
+        className="v2-input"
+        placeholder="Paste the new key"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && save()}
+        autoFocus
+      />
+      <button type="button" className="v2-btn v2-btn-primary" disabled={saving || !value.trim()} onClick={save}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+      <button type="button" className="v2-btn" onClick={() => { setOpen(false); setValue(''); setError(null) }}>Cancel</button>
+      {error && <div className="v2-state v2-state-error" style={{ padding: '0.3rem 0' }}>{error}</div>}
+    </div>
+  )
+}
+
+const SINGLE_CREDENTIAL_GROUPS = new Set(['LinkedIn / Apify', 'HubSpot', 'SmartLead', 'HeyReach', 'SalesRobot'])
+
 function ConnectionsTab({ context, onSaved, canWrite }) {
   const [creds, setCreds] = useState(null)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    getCredentials().then(setCreds).catch(err => setError(formatApiError(err)))
-  }, [])
+  const reload = () => getCredentials().then(setCreds).catch(err => setError(formatApiError(err)))
+  useEffect(() => { reload() }, [])
 
   const byName = {}
   ;(creds || []).forEach(c => { byName[c.name] = c })
@@ -476,6 +526,9 @@ function ConnectionsTab({ context, onSaved, canWrite }) {
                       {connected ? 'Connected' : 'Not connected'}
                     </span>
                     {connected && lastUpdated && <span className="v2-set-conn-updated">Updated {formatDateTime(lastUpdated)}</span>}
+                    {SINGLE_CREDENTIAL_GROUPS.has(group.label) && (
+                      <CredentialPasteBox name={group.names[0]} onSaved={reload} />
+                    )}
                   </div>
                 </div>
               )

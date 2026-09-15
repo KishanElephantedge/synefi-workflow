@@ -2842,6 +2842,18 @@
   color: var(--v2-text-faint);
 }
 
+.v2-set-conn-paste {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.v2-set-conn-paste .v2-input {
+  width: 220px;
+  max-width: 60vw;
+}
+
 /* Performance -- real counts as tags, never a score. */
 .v2-set-tag-row {
   display: flex;
