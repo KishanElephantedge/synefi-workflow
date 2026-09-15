@@ -425,6 +425,7 @@ const CONNECTION_GROUPS = [
   { label: 'SmartLead', names: ['smartlead_api_key'], note: 'Outbound email sending.' },
   { label: 'HeyReach', names: ['heyreach_api_key'], note: 'LinkedIn outreach.' },
   { label: 'SalesRobot', names: ['salesrobot_api_key'], note: 'LinkedIn outreach.' },
+  { label: 'Email (SMTP)', names: ['smtp_email', 'smtp_app_password'], note: 'V2 outbound email -- sends directly from this Gmail mailbox.' },
   { label: 'Slack', names: ['slack_webhook_url', 'slack_webhook_url_2'], note: 'Notifications.' },
   { label: 'Google Calendar', names: ['google_calendar_client_id', 'google_calendar_client_secret', 'google_calendar_refresh_token', 'google_calendar_id'], note: 'Meeting sync -- see Meetings.' },
 ]
@@ -485,6 +486,67 @@ function CredentialPasteBox({ name, onSaved }) {
 
 const SINGLE_CREDENTIAL_GROUPS = new Set(['LinkedIn / Apify', 'HubSpot', 'SmartLead', 'HeyReach', 'SalesRobot'])
 
+// SMTP needs two real values (the mailbox address, plain text, and its app password) saved
+// together -- distinct from CredentialPasteBox's one-field case. Field-level labels/types so
+// the email address doesn't get masked as a password field the way the app password should.
+const MULTI_CREDENTIAL_GROUPS = {
+  'Email (SMTP)': [
+    { name: 'smtp_email', label: 'Gmail address', type: 'text' },
+    { name: 'smtp_app_password', label: 'App password', type: 'password' },
+  ],
+}
+
+function MultiCredentialPasteBox({ fields, onSaved }) {
+  const [open, setOpen] = useState(false)
+  const [values, setValues] = useState(() => Object.fromEntries(fields.map(f => [f.name, ''])))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  if (!open) {
+    return (
+      <button type="button" className="v2-btn" style={{ padding: '0.3rem 0.6rem' }} onClick={() => setOpen(true)}>
+        <IconEdit width={13} height={13} /> Paste
+      </button>
+    )
+  }
+
+  const allFilled = fields.every(f => values[f.name].trim())
+  const reset = () => { setOpen(false); setValues(Object.fromEntries(fields.map(f => [f.name, '']))); setError(null) }
+
+  const save = () => {
+    if (!allFilled) return
+    setSaving(true)
+    setError(null)
+    Promise.all(fields.map(f => setCredential(f.name, values[f.name].trim())))
+      .then(() => { reset(); onSaved() })
+      .catch(err => setError(formatApiError(err)))
+      .finally(() => setSaving(false))
+  }
+
+  return (
+    <div className="v2-set-conn-paste" style={{ flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
+      {fields.map(f => (
+        <input
+          key={f.name}
+          type={f.type}
+          className="v2-input"
+          placeholder={f.label}
+          value={values[f.name]}
+          onChange={e => setValues(v => ({ ...v, [f.name]: e.target.value }))}
+          onKeyDown={e => e.key === 'Enter' && save()}
+        />
+      ))}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button type="button" className="v2-btn v2-btn-primary" disabled={saving || !allFilled} onClick={save}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" className="v2-btn" onClick={reset}>Cancel</button>
+      </div>
+      {error && <div className="v2-state v2-state-error" style={{ padding: '0.3rem 0' }}>{error}</div>}
+    </div>
+  )
+}
+
 function ConnectionsTab({ context, onSaved, canWrite }) {
   const [creds, setCreds] = useState(null)
   const [error, setError] = useState(null)
@@ -528,6 +590,9 @@ function ConnectionsTab({ context, onSaved, canWrite }) {
                     {connected && lastUpdated && <span className="v2-set-conn-updated">Updated {formatDateTime(lastUpdated)}</span>}
                     {SINGLE_CREDENTIAL_GROUPS.has(group.label) && (
                       <CredentialPasteBox name={group.names[0]} onSaved={reload} />
+                    )}
+                    {MULTI_CREDENTIAL_GROUPS[group.label] && (
+                      <MultiCredentialPasteBox fields={MULTI_CREDENTIAL_GROUPS[group.label]} onSaved={reload} />
                     )}
                   </div>
                 </div>
