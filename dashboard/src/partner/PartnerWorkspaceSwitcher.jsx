@@ -43,7 +43,9 @@ export default function PartnerWorkspaceSwitcher() {
               className={`partnerWorkspaceOption${t.slug === tenantSlug ? ' selected' : ''}`}
               onClick={() => { navigate(`/v2/partner-view/${t.slug}`); setIsOpen(false) }}
             >
-              {t.name}
+              {/* Every partner Tenant.name is stored as "Partner — <name>" (see PartnerApp.jsx's
+                  own note) -- stripped here too so the admin switcher reads the same clean name. */}
+              {t.name.replace(/^Partner\s*[—-]\s*/, '')}
             </div>
           ))}
         </div>
