@@ -676,8 +676,10 @@
   flex-wrap: wrap;
 }
 
-/* Real filter on CampaignPush.pushed_at (when an account was actually sent), not just search --
-   2026-09-16, explicit instruction: "how many accounts were sent in the past day/week/month". */
+/* Real filter on Company.created_at (when an account was actually fetched), not just search --
+   2026-09-16, explicit instruction: "when we click yesterday it shows the discovery... and the
+   list of that period below". Class name kept as -outreach- from an earlier draft of this same
+   control (was framed around send date, corrected to fetch date) -- not worth a pure rename. */
 .v2-outreach-filter {
   display: flex;
   align-items: center;
@@ -691,6 +693,36 @@
 .v2-outreach-filter input[type="date"] {
   padding: 0.45rem 0.6rem;
   font-size: 0.82rem;
+}
+
+/* The 3 real period numbers (companies/decision-makers fetched, pushed to campaigns), shown
+   only once a period is selected -- app/routes/api.py's period_stats. */
+.v2-period-stats {
+  display: flex;
+  gap: var(--v2-space-4, 1.5rem);
+  padding: var(--v2-space-3);
+  margin-bottom: var(--v2-space-3);
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+}
+
+.v2-period-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.v2-period-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-period-stat-label {
+  font-size: 0.78rem;
+  color: var(--v2-text-muted);
 }
 
 .v2-accounts-count {
@@ -3898,6 +3930,11 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
 
   .v2-outreach-filter {
     flex-wrap: wrap;
+  }
+
+  .v2-period-stats {
+    flex-wrap: wrap;
+    gap: var(--v2-space-3);
   }
 
   .v2-account-header {

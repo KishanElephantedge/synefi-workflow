@@ -26,11 +26,11 @@ export function formatApiError(err) {
 // itself reusing the exact same real conditions jobs_to_be_done.py computes its counts from --
 // see that route's own docstring for why this exists (a Jobs "View all 99" used to link to the
 // fully unfiltered 706-company list).
-export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilter = '', outreachDays = 0, outreachDateFrom = '', outreachDateTo = '' } = {}) {
+export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilter = '', periodDays = 0, periodDateFrom = '', periodDateTo = '' } = {}) {
   return client.get('/companies', {
     params: {
       page, page_size: pageSize, search, account_filter: accountFilter,
-      outreach_days: outreachDays, outreach_date_from: outreachDateFrom, outreach_date_to: outreachDateTo,
+      period_days: periodDays, period_date_from: periodDateFrom, period_date_to: periodDateTo,
     },
   }).then(res => res.data)
 }

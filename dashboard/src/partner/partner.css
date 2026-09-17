@@ -243,6 +243,10 @@ a.partnerLogoutBtn {
 
 .partnerSearchRow {
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .partnerSearchInput {
@@ -252,6 +256,37 @@ a.partnerLogoutBtn {
   border: 1px solid var(--p-line);
   border-radius: 6px;
   font-size: 14px;
+}
+
+.partnerPeriodSelect {
+  padding: 8px 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 160px;
+  background: var(--p-paper);
+  color: var(--p-ink);
+}
+
+/* The 3 real period numbers -- pushed_to_campaigns is always 0 here by design (partner accounts
+   are database-only, never pushed to a campaign), shown plainly rather than hidden. */
+.partnerPeriodStats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--p-muted);
+}
+
+.partnerPeriodStats strong {
+  color: var(--p-ink);
+  font-size: 1.1rem;
+  margin-right: 4px;
 }
 
 .partnerCardWrap {

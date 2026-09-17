@@ -32,6 +32,18 @@ function formatSize(company) {
 
 const PAGE_SIZE = 25
 
+// "When we click yesterday it shows the discovery... and the list of that period below" (2026-
+// 09-16, explicit instruction: "for the partners let for them also be filters"). Filters on
+// Company.created_at (when a company was actually fetched for this partner), the one date-based
+// fact that's real for a partner tenant -- unlike a "sent" filter, which would always show zero
+// since partner accounts never get pushed to a campaign (see this file's own note above).
+const PERIOD_PRESETS = [
+  { value: '1', label: 'Today' },
+  { value: '7', label: 'Past 7 days' },
+  { value: '30', label: 'Past 30 days' },
+  { value: 'custom', label: 'Custom range' },
+]
+
 export default function PartnerAccounts({ basePath = '/partner' }) {
   const [companies, setCompanies] = useState([])
   const [total, setTotal] = useState(0)
@@ -39,16 +51,22 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [periodPreset, setPeriodPreset] = useState('')
+  const [periodDateFrom, setPeriodDateFrom] = useState('')
+  const [periodDateTo, setPeriodDateTo] = useState('')
+  const [periodStats, setPeriodStats] = useState(null)
+  const periodDays = periodPreset && periodPreset !== 'custom' ? Number(periodPreset) : 0
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listAccounts({ page, pageSize: PAGE_SIZE, search })
+    listAccounts({ page, pageSize: PAGE_SIZE, search, periodDays, periodDateFrom, periodDateTo })
       .then((data) => {
         if (cancelled) return
         setCompanies(data.companies || [])
         setTotal(data.total || 0)
+        setPeriodStats(data.period_stats || null)
       })
       .catch((err) => {
         if (cancelled) return
@@ -56,7 +74,7 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
       })
       .finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
-  }, [page, search])
+  }, [page, search, periodDays, periodDateFrom, periodDateTo])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -75,7 +93,33 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value) }}
         />
+        <select
+          className="partnerPeriodSelect"
+          value={periodPreset}
+          onChange={(e) => { setPage(1); setPeriodPreset(e.target.value); setPeriodDateFrom(''); setPeriodDateTo('') }}
+          aria-label="Filter accounts by when they were fetched"
+        >
+          <option value="">Fetched — any time</option>
+          {PERIOD_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+        {periodPreset === 'custom' && (
+          <>
+            <input type="date" className="partnerSearchInput" style={{ maxWidth: 160 }} value={periodDateFrom}
+                   onChange={(e) => { setPage(1); setPeriodDateFrom(e.target.value) }} aria-label="Fetched from" />
+            <span>to</span>
+            <input type="date" className="partnerSearchInput" style={{ maxWidth: 160 }} value={periodDateTo}
+                   onChange={(e) => { setPage(1); setPeriodDateTo(e.target.value) }} aria-label="Fetched to" />
+          </>
+        )}
       </div>
+
+      {periodStats && (
+        <div className="partnerPeriodStats">
+          <div><strong>{periodStats.companies_fetched}</strong> companies fetched</div>
+          <div><strong>{periodStats.decision_makers_fetched}</strong> decision-makers fetched</div>
+          <div><strong>{periodStats.pushed_to_campaigns}</strong> pushed to campaigns</div>
+        </div>
+      )}
 
       {loading ? (
         <div className="partnerLoadingState">Loading...</div>

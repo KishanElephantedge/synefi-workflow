@@ -166,38 +166,63 @@ function AccountRow({ company }) {
 // secondary context, not the row's primary identity. "Qualified" (a V1 pipeline-eligibility
 // gate, unrelated to GTM-OS state) is deliberately not shown here -- still present in the raw
 // API response for the detail view if needed, just not surfaced on this list.
-// "How many were sent, and the list" (explicit instruction, 2026-09-16) -- filters the whole
-// table by CampaignPush.pushed_at (the real send date), not Company.created_at. Presets are
-// plain day counts (outreach_days=1/7/30), not baked-in special cases, so "any range" already
+// "When we click yesterday, it shows the discovery -- number of companies, number of decision
+// makers, and pushed -- and the list of that period below" (explicit instruction, 2026-09-16,
+// after correcting an earlier "sent" framing). Filters on Company.created_at (when a company
+// was actually fetched), not CampaignPush.pushed_at -- that's what makes this meaningful for
+// every tenant, including partners, who never get pushed to a campaign at all. Presets are
+// plain day counts (period_days=1/7/30), not baked-in special cases, so "any range" already
 // works via the same query param; Custom just exposes two date inputs for an exact range.
-// Lives in the URL (?outreach=...) the same way the Jobs-to-Be-Done `filter` param already
-// does, so a filtered view is bookmarkable/shareable.
-const OUTREACH_PRESETS = [
+// Lives in the URL (?period=...) the same way the Jobs-to-Be-Done `filter` param already does,
+// so a filtered view is bookmarkable/shareable.
+const PERIOD_PRESETS = [
   { value: '1', label: 'Today' },
   { value: '7', label: 'Past 7 days' },
   { value: '30', label: 'Past 30 days' },
   { value: 'custom', label: 'Custom range' },
 ]
 
-function OutreachDateFilter({ value, onChange, dateFrom, dateTo, onDateFromChange, onDateToChange }) {
+function PeriodFilter({ value, onChange, dateFrom, dateTo, onDateFromChange, onDateToChange }) {
   return (
     <div className="v2-outreach-filter">
       <select
         className="v2-select"
         value={value}
         onChange={e => onChange(e.target.value)}
-        aria-label="Filter accounts by when they were sent"
+        aria-label="Filter accounts by when they were fetched"
       >
-        <option value="">Sent — any time</option>
-        {OUTREACH_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+        <option value="">Fetched — any time</option>
+        {PERIOD_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
       </select>
       {value === 'custom' && (
         <>
-          <input type="date" className="v2-input" value={dateFrom} onChange={e => onDateFromChange(e.target.value)} aria-label="Sent from" />
+          <input type="date" className="v2-input" value={dateFrom} onChange={e => onDateFromChange(e.target.value)} aria-label="Fetched from" />
           <span className="v2-table-muted">to</span>
-          <input type="date" className="v2-input" value={dateTo} onChange={e => onDateToChange(e.target.value)} aria-label="Sent to" />
+          <input type="date" className="v2-input" value={dateTo} onChange={e => onDateToChange(e.target.value)} aria-label="Fetched to" />
         </>
       )}
+    </div>
+  )
+}
+
+// The 3 real numbers for the selected period, computed server-side independent of search/other
+// filters (app/routes/api.py's period_stats) -- shown only once a period is actually selected.
+function PeriodStatsBar({ stats }) {
+  if (!stats) return null
+  return (
+    <div className="v2-period-stats">
+      <div className="v2-period-stat">
+        <span className="v2-period-stat-value">{stats.companies_fetched}</span>
+        <span className="v2-period-stat-label">Companies fetched</span>
+      </div>
+      <div className="v2-period-stat">
+        <span className="v2-period-stat-value">{stats.decision_makers_fetched}</span>
+        <span className="v2-period-stat-label">Decision-makers fetched</span>
+      </div>
+      <div className="v2-period-stat">
+        <span className="v2-period-stat-value">{stats.pushed_to_campaigns}</span>
+        <span className="v2-period-stat-label">Pushed to campaigns</span>
+      </div>
     </div>
   )
 }
@@ -205,27 +230,27 @@ function OutreachDateFilter({ value, onChange, dateFrom, dateTo, onDateFromChang
 export default function Accounts() {
   const [searchParams, setSearchParams] = useSearchParams()
   const accountFilter = searchParams.get('filter') || ''
-  const outreachPreset = searchParams.get('outreach') || ''
-  const outreachDateFrom = searchParams.get('outreach_from') || ''
-  const outreachDateTo = searchParams.get('outreach_to') || ''
-  const outreachDays = outreachPreset && outreachPreset !== 'custom' ? Number(outreachPreset) : 0
+  const periodPreset = searchParams.get('period') || ''
+  const periodDateFrom = searchParams.get('period_from') || ''
+  const periodDateTo = searchParams.get('period_to') || ''
+  const periodDays = periodPreset && periodPreset !== 'custom' ? Number(periodPreset) : 0
 
-  const setOutreachPreset = (val) => {
+  const setPeriodPreset = (val) => {
     const next = new URLSearchParams(searchParams)
-    if (val) next.set('outreach', val); else next.delete('outreach')
-    next.delete('outreach_from'); next.delete('outreach_to')
+    if (val) next.set('period', val); else next.delete('period')
+    next.delete('period_from'); next.delete('period_to')
     setSearchParams(next)
     setPage(1)
   }
-  const setOutreachDateFrom = (val) => {
+  const setPeriodDateFrom = (val) => {
     const next = new URLSearchParams(searchParams)
-    if (val) next.set('outreach_from', val); else next.delete('outreach_from')
+    if (val) next.set('period_from', val); else next.delete('period_from')
     setSearchParams(next)
     setPage(1)
   }
-  const setOutreachDateTo = (val) => {
+  const setPeriodDateTo = (val) => {
     const next = new URLSearchParams(searchParams)
-    if (val) next.set('outreach_to', val); else next.delete('outreach_to')
+    if (val) next.set('period_to', val); else next.delete('period_to')
     setSearchParams(next)
     setPage(1)
   }
@@ -239,6 +264,7 @@ export default function Accounts() {
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [summary, setSummary] = useState(null)
+  const [periodStats, setPeriodStats] = useState(null)
 
   useEffect(() => {
     getAccountsSummary().then(setSummary).catch(() => setSummary(null))
@@ -256,12 +282,13 @@ export default function Accounts() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listAccounts({ page, pageSize: PAGE_SIZE, search, accountFilter, outreachDays, outreachDateFrom, outreachDateTo })
+    listAccounts({ page, pageSize: PAGE_SIZE, search, accountFilter, periodDays, periodDateFrom, periodDateTo })
       .then(data => {
         if (cancelled) return
         setCompanies(data.companies)
         setTotal(data.total)
         setTotalPages(data.total_pages)
+        setPeriodStats(data.period_stats || null)
       })
       .catch(err => {
         if (cancelled) return
@@ -271,7 +298,7 @@ export default function Accounts() {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [page, search, accountFilter, outreachDays, outreachDateFrom, outreachDateTo])
+  }, [page, search, accountFilter, periodDays, periodDateFrom, periodDateTo])
 
   return (
     <div className="v2-accounts-page">
@@ -298,16 +325,18 @@ export default function Accounts() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
           />
-          <OutreachDateFilter
-            value={outreachPreset}
-            onChange={setOutreachPreset}
-            dateFrom={outreachDateFrom}
-            dateTo={outreachDateTo}
-            onDateFromChange={setOutreachDateFrom}
-            onDateToChange={setOutreachDateTo}
+          <PeriodFilter
+            value={periodPreset}
+            onChange={setPeriodPreset}
+            dateFrom={periodDateFrom}
+            dateTo={periodDateTo}
+            onDateFromChange={setPeriodDateFrom}
+            onDateToChange={setPeriodDateTo}
           />
         </div>
       </div>
+
+      <PeriodStatsBar stats={periodStats} />
 
       {error ? (
         <div className="v2-card">
