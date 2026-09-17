@@ -142,6 +142,11 @@ function AccountRow({ company }) {
         <span className={`v2-status-pill tone-${company.outreached ? 'success-solid' : 'neutral'}`}>
           {company.outreached ? 'Reached out' : 'Not yet'}
         </span>
+        {company.outreached && company.outreached_at && (
+          <div className="v2-table-muted" style={{ marginTop: 2 }} title={formatRecency(company.outreached_at)?.exact}>
+            {formatRecency(company.outreached_at)?.label}
+          </div>
+        )}
       </td>
       <td className="v2-table-muted" title={added?.exact}>{added ? added.label : '—'}</td>
       <td>
@@ -161,9 +166,69 @@ function AccountRow({ company }) {
 // secondary context, not the row's primary identity. "Qualified" (a V1 pipeline-eligibility
 // gate, unrelated to GTM-OS state) is deliberately not shown here -- still present in the raw
 // API response for the detail view if needed, just not surfaced on this list.
+// "How many were sent, and the list" (explicit instruction, 2026-09-16) -- filters the whole
+// table by CampaignPush.pushed_at (the real send date), not Company.created_at. Presets are
+// plain day counts (outreach_days=1/7/30), not baked-in special cases, so "any range" already
+// works via the same query param; Custom just exposes two date inputs for an exact range.
+// Lives in the URL (?outreach=...) the same way the Jobs-to-Be-Done `filter` param already
+// does, so a filtered view is bookmarkable/shareable.
+const OUTREACH_PRESETS = [
+  { value: '1', label: 'Today' },
+  { value: '7', label: 'Past 7 days' },
+  { value: '30', label: 'Past 30 days' },
+  { value: 'custom', label: 'Custom range' },
+]
+
+function OutreachDateFilter({ value, onChange, dateFrom, dateTo, onDateFromChange, onDateToChange }) {
+  return (
+    <div className="v2-outreach-filter">
+      <select
+        className="v2-select"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        aria-label="Filter accounts by when they were sent"
+      >
+        <option value="">Sent — any time</option>
+        {OUTREACH_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+      </select>
+      {value === 'custom' && (
+        <>
+          <input type="date" className="v2-input" value={dateFrom} onChange={e => onDateFromChange(e.target.value)} aria-label="Sent from" />
+          <span className="v2-table-muted">to</span>
+          <input type="date" className="v2-input" value={dateTo} onChange={e => onDateToChange(e.target.value)} aria-label="Sent to" />
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Accounts() {
   const [searchParams, setSearchParams] = useSearchParams()
   const accountFilter = searchParams.get('filter') || ''
+  const outreachPreset = searchParams.get('outreach') || ''
+  const outreachDateFrom = searchParams.get('outreach_from') || ''
+  const outreachDateTo = searchParams.get('outreach_to') || ''
+  const outreachDays = outreachPreset && outreachPreset !== 'custom' ? Number(outreachPreset) : 0
+
+  const setOutreachPreset = (val) => {
+    const next = new URLSearchParams(searchParams)
+    if (val) next.set('outreach', val); else next.delete('outreach')
+    next.delete('outreach_from'); next.delete('outreach_to')
+    setSearchParams(next)
+    setPage(1)
+  }
+  const setOutreachDateFrom = (val) => {
+    const next = new URLSearchParams(searchParams)
+    if (val) next.set('outreach_from', val); else next.delete('outreach_from')
+    setSearchParams(next)
+    setPage(1)
+  }
+  const setOutreachDateTo = (val) => {
+    const next = new URLSearchParams(searchParams)
+    if (val) next.set('outreach_to', val); else next.delete('outreach_to')
+    setSearchParams(next)
+    setPage(1)
+  }
 
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -191,7 +256,7 @@ export default function Accounts() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listAccounts({ page, pageSize: PAGE_SIZE, search, accountFilter })
+    listAccounts({ page, pageSize: PAGE_SIZE, search, accountFilter, outreachDays, outreachDateFrom, outreachDateTo })
       .then(data => {
         if (cancelled) return
         setCompanies(data.companies)
@@ -206,7 +271,7 @@ export default function Accounts() {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [page, search, accountFilter])
+  }, [page, search, accountFilter, outreachDays, outreachDateFrom, outreachDateTo])
 
   return (
     <div className="v2-accounts-page">
@@ -225,13 +290,23 @@ export default function Accounts() {
 
       <div className="v2-accounts-toolbar">
         <span className="v2-accounts-count">{total || summary?.total_accounts || 0} accounts</span>
-        <input
-          type="text"
-          className="v2-accounts-search"
-          placeholder="Search accounts, domains, industries..."
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-        />
+        <div className="v2-accounts-toolbar-right">
+          <input
+            type="text"
+            className="v2-accounts-search"
+            placeholder="Search accounts, domains, industries..."
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+          />
+          <OutreachDateFilter
+            value={outreachPreset}
+            onChange={setOutreachPreset}
+            dateFrom={outreachDateFrom}
+            dateTo={outreachDateTo}
+            onDateFromChange={setOutreachDateFrom}
+            onDateToChange={setOutreachDateTo}
+          />
+        </div>
       </div>
 
       {error ? (

@@ -655,8 +655,7 @@
 }
 
 /* Toolbar: integrated bar (not bare floating elements) -- real (filtered) account count on
-   the left, constrained search on the right. No Filters control -- none of the current
-   filters are backend-supported beyond search, and an inert button would be worse than none. */
+   the left, search + outreach-date filter grouped on the right. */
 .v2-accounts-toolbar {
   display: flex;
   align-items: center;
@@ -667,6 +666,31 @@
   background: var(--v2-surface);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-sm);
+  flex-wrap: wrap;
+}
+
+.v2-accounts-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+  flex-wrap: wrap;
+}
+
+/* Real filter on CampaignPush.pushed_at (when an account was actually sent), not just search --
+   2026-09-16, explicit instruction: "how many accounts were sent in the past day/week/month". */
+.v2-outreach-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-space-2);
+}
+
+.v2-outreach-filter .v2-select {
+  min-width: 150px;
+}
+
+.v2-outreach-filter input[type="date"] {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.82rem;
 }
 
 .v2-accounts-count {
@@ -3863,8 +3887,17 @@ a.v2-job-example.linked:hover .v2-job-example-arrow {
     padding-left: 0;
   }
 
+  .v2-accounts-toolbar-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .v2-accounts-search {
     max-width: none;
+  }
+
+  .v2-outreach-filter {
+    flex-wrap: wrap;
   }
 
   .v2-account-header {
