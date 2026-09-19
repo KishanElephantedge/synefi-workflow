@@ -228,7 +228,10 @@ function PillarCard({ summary, userEmail, onChanged }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }} onClick={toggle}>
         <div>
           <div style={{ fontWeight: 600 }}>{summary.title}</div>
-          <div className="v2-placeholder-note" style={{ margin: '0.2rem 0 0' }}>{summary.primary_keyword} · drives toward {summary.commercial_goal}</div>
+          <div className="v2-placeholder-note" style={{ margin: '0.2rem 0 0' }}>
+            {summary.primary_keyword} · drives toward {summary.commercial_goal}
+            {summary.grounded_function ? ` · grounded in real "${summary.grounded_function}" account pattern` : ''}
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span className={`v2-badge ${STATUS_BADGE[summary.status] || 'v2-badge-neutral'}`}>{summary.status.replace('_', ' ')}</span>
@@ -243,6 +246,7 @@ function PillarCard({ summary, userEmail, onChanged }) {
             <div className="v2-skeleton-row" style={{ height: 80 }} />
           ) : (
             <>
+              {detail.why_now && <p style={{ margin: '0 0 0.6rem' }}><strong>Why now (real account pattern):</strong> {detail.why_now}</p>}
               <p style={{ margin: '0 0 0.6rem' }}><strong>Core narrative:</strong> {detail.core_narrative}</p>
               <div className="v2-placeholder-note" style={{ marginBottom: '0.6rem' }}>
                 Sections: {detail.sections?.join(' → ')}
@@ -285,16 +289,22 @@ export function ContentClustersSection() {
   const [theme, setTheme] = useState('')
   const [generating, setGenerating] = useState(false)
 
-  const load = () => getContentPillars().then(data => setPillars(data.pillars)).catch(err => setError(formatApiError(err)))
+  const load = () => {
+    getContentPillars().then(data => setPillars(data.pillars)).catch(err => setError(formatApiError(err)))
+  }
   useEffect(load, [])
 
   const doGenerate = async () => {
-    if (!theme.trim()) return
     setGenerating(true); setError(null)
     try {
-      const res = await generateContentPillar(theme.trim())
-      if (res.status !== 'ok') setError(res.reason || res.status)
-      setTheme('')
+      const res = await generateContentPillar(theme.trim() || undefined)
+      if (res.status !== 'ok') {
+        // insufficient_data / no_business_context / no_offerings_configured / llm_unavailable / discarded --
+        // real, honest reasons a pillar wasn't grounded well enough, not a generic error
+        setError(res.reason || res.status)
+      } else {
+        setTheme('')
+      }
       load()
     } catch (err) { setError(formatApiError(err)) } finally { setGenerating(false) }
   }
@@ -303,17 +313,18 @@ export function ContentClustersSection() {
     <div>
       <div className="v2-section-title">Content Clusters</div>
       <p className="v2-placeholder-note" style={{ marginBottom: '0.9rem' }}>
-        One Master Pillar Page + 9 linked sub-blogs per theme, built for compounding search traffic.
+        One Master Pillar Page + 9 linked sub-blogs, grounded in a real pattern across the accounts
+        we're reaching (same account intelligence as Quick Drafts) -- not just a typed theme.
       </p>
 
       <div className="v2-btn-row" style={{ marginBottom: '1rem' }}>
         <input
           className="v2-input" style={{ minWidth: 280 }} value={theme} onChange={e => setTheme(e.target.value)}
-          placeholder="Content pillar theme, e.g. Founder-Led Sales → Sales Engine"
+          placeholder="Optional: steer toward a theme, e.g. Founder-Led Sales → Sales Engine"
           onKeyDown={e => e.key === 'Enter' && doGenerate()}
         />
-        <button type="button" className="v2-btn v2-btn-primary" disabled={generating || !theme.trim()} onClick={doGenerate}>
-          {generating ? 'Planning…' : 'Plan pillar'}
+        <button type="button" className="v2-btn v2-btn-primary" disabled={generating} onClick={doGenerate}>
+          {generating ? 'Finding a real pattern…' : 'Plan pillar from our accounts'}
         </button>
       </div>
 
