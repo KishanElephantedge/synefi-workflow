@@ -113,6 +113,42 @@ export function generateContentOpportunityDraft(id, platform = 'blog') {
   return client.post(`/gtm-os/content-opportunities/${id}/generate-draft`, { platform }).then(res => res.data)
 }
 
+// Quick Drafts, account-intelligence source (2026-09-19) -- real, on-demand generation grounded
+// in aggregate patterns across the actual company pipeline, not external trend/competitor search.
+export function generateAccountIntelligenceTopics() {
+  return client.post('/gtm-os/content-opportunities/account-intelligence/generate').then(res => res.data)
+}
+
+// Content Clusters (2026-09-19) -- Master Pillar Page + 9 linked sub-blogs per theme. Backed by
+// content_pillar.py; same review lifecycle as content opportunities above.
+export function getContentPillars() {
+  return client.get('/gtm-os/content-pillars').then(res => res.data)
+}
+
+export function getContentPillarDetail(id) {
+  return client.get(`/gtm-os/content-pillars/${id}`).then(res => res.data)
+}
+
+export function generateContentPillar(theme) {
+  return client.post('/gtm-os/content-pillars/generate', { theme }).then(res => res.data)
+}
+
+export function reviewContentPillar(id, { action, reviewedBy, note }) {
+  return client.post(`/gtm-os/content-pillars/${id}/review`, { action, reviewed_by: reviewedBy, note }).then(res => res.data)
+}
+
+export function generateContentPillarDraft(id) {
+  return client.post(`/gtm-os/content-pillars/${id}/generate-draft`).then(res => res.data)
+}
+
+export function reviewContentCluster(id, { action, reviewedBy, note }) {
+  return client.post(`/gtm-os/content-clusters/${id}/review`, { action, reviewed_by: reviewedBy, note }).then(res => res.data)
+}
+
+export function generateContentClusterDraft(id) {
+  return client.post(`/gtm-os/content-clusters/${id}/generate-draft`).then(res => res.data)
+}
+
 // Phase 4 -- backed by GET /gtm-os/demand-grid, a thin wrapper over get_demand_grid() (ICP x
 // Offering configuration facts, reused unmodified from Batch 8/9's own config readers).
 export function getDemandGrid() {
