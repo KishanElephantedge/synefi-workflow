@@ -368,12 +368,27 @@ a.partnerLogoutBtn {
   background: var(--p-paper);
 }
 
+/* table-layout: fixed + explicit column widths below (2026-09-21 fix) -- the previous auto-
+   layout + white-space: nowrap sized every column off its widest cell across ALL rows,
+   including the long "Firmographic ICP discovery (hiring signal)" source label. That forced
+   the table wider than any container short of the full viewport, so widening .partnerMain
+   alone couldn't fix it -- the table just kept demanding more room. Fixed layout gives each
+   column a real cap and lets long text wrap onto a second line instead of pushing the row
+   past the visible area. */
 .partnerTable {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13.5px;
-  white-space: nowrap;
 }
+
+.partnerTable th:nth-child(1), .partnerTable td:nth-child(1) { width: 24%; }
+.partnerTable th:nth-child(2), .partnerTable td:nth-child(2) { width: 14%; }
+.partnerTable th:nth-child(3), .partnerTable td:nth-child(3) { width: 10%; }
+.partnerTable th:nth-child(4), .partnerTable td:nth-child(4) { width: 13%; }
+.partnerTable th:nth-child(5), .partnerTable td:nth-child(5) { width: 19%; }
+.partnerTable th:nth-child(6), .partnerTable td:nth-child(6) { width: 8%; }
+.partnerTable th:nth-child(7), .partnerTable td:nth-child(7) { width: 12%; }
 
 .partnerTable th {
   text-align: left;
@@ -392,6 +407,7 @@ a.partnerLogoutBtn {
   border-bottom: 1px solid var(--p-line-soft);
   color: var(--p-ink);
   vertical-align: middle;
+  overflow-wrap: break-word;
 }
 
 .partnerTable tr:last-child td {
