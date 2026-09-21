@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { getMarketIntelligence, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
 
 // Real partner-facing Content Intelligence -- mirrors v2/pages/ContentStrategy.jsx's structure
@@ -78,7 +78,27 @@ function MinimizeIcon() {
   )
 }
 
-function ContentChat({ onTopicsChanged }) {
+// Sparkle avatar for the chat card's header -- same "AI assistant" visual language as the
+// content tools this redesign takes inspiration from (Taplio, AuthoredUp): a branded icon
+// avatar identifies the assistant at a glance instead of the card reading as a plain text field.
+function SparkleIcon(props) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M12 2l1.8 5.6L19.4 9.4 13.8 11.2 12 17 10.2 11.2 4.6 9.4 10.2 7.6z" />
+      <path d="M19 15l.8 2.4L22 18l-2.2.6L19 21l-.8-2.4L16 18l2.2-.6z" opacity="0.7" />
+    </svg>
+  )
+}
+
+function SendIcon(props) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  )
+}
+
+const ContentChat = forwardRef(function ContentChat({ onTopicsChanged }, ref) {
   const [expanded, setExpanded] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [conversationId, setConversationId] = useState(null)
@@ -131,6 +151,12 @@ function ContentChat({ onTopicsChanged }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
+  // Lets a topic card ("Draft a post about this") drive the chat from outside this component,
+  // without lifting all of its message state up to the parent.
+  useImperativeHandle(ref, () => ({
+    ask: (text) => send(text),
+  }))
+
   const messageList = (
     <div className="partnerContentChatMessages">
       {loaded && messages.length === 0 && (
@@ -170,7 +196,15 @@ function ContentChat({ onTopicsChanged }) {
         onKeyDown={handleKeyDown}
         disabled={sending}
       />
-      <button type="button" className="partnerSendBtn" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send">↑</button>
+      <button type="button" className="partnerSendBtn" onClick={() => send()} disabled={sending || !input.trim()} aria-label="Send"><SendIcon /></button>
+    </div>
+  )
+
+  const suggestionRow = (
+    <div className="partnerContentSuggestionRow partnerContentSuggestionRowStandalone">
+      {PROMPT_SUGGESTIONS.map(s => (
+        <button key={s} type="button" className="partnerSuggestionChip" onClick={() => send(s)}>{s}</button>
+      ))}
     </div>
   )
 
@@ -180,7 +214,10 @@ function ContentChat({ onTopicsChanged }) {
     return (
       <div className="partnerContentChatFullscreen">
         <div className="partnerContentChatPanelHead">
-          <span>Conversation</span>
+          <span className="partnerContentHeroHead">
+            <span className="partnerContentAvatar"><SparkleIcon /></span>
+            Content Strategist
+          </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
             <button type="button" className="partnerLinkBtn" onClick={startNewChat}>New conversation</button>
             <button type="button" className="partnerLinkBtn partnerMinimizeBtn" onClick={() => setFullscreen(false)}>
@@ -197,9 +234,10 @@ function ContentChat({ onTopicsChanged }) {
   return (
     <div className="partnerContentChatShell">
       <button type="button" className="partnerContentChatTrigger" onClick={() => setExpanded(o => !o)}>
+        <span className="partnerContentAvatar"><SparkleIcon /></span>
         <span className="partnerContentChatTriggerText">
-          <strong>Ask about your content</strong>
-          <span>What should you publish next -- and why?</span>
+          <strong>Ask your Content Strategist</strong>
+          <span>What should you publish next -- and why will it actually land?</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span
@@ -215,7 +253,7 @@ function ContentChat({ onTopicsChanged }) {
         </span>
       </button>
 
-      {expanded && (
+      {expanded ? (
         <div className="partnerContentChatPanel">
           <div className="partnerContentChatPanelHead">
             <span>Conversation</span>
@@ -223,19 +261,38 @@ function ContentChat({ onTopicsChanged }) {
           </div>
           {messageList}
         </div>
+      ) : (
+        // Collapsed state still shows a couple of prompt ideas so the card reads as a live
+        // tool to try, not a dead search box -- the empty-panel version of this row only
+        // appears once someone has already opened the conversation.
+        suggestionRow
       )}
 
       {inputRow}
     </div>
   )
+})
+
+// One icon per tier, swapped in for the old plain dot -- a small visual borrowed from
+// content-idea boards (Taplio/AuthoredUp) where a topic's momentum reads at a glance instead
+// of needing the section heading for context.
+function TierIcon({ tier }) {
+  const common = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  if (tier === 'strong') return <svg {...common}><path d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5c0-1.5-1-2-1-3.5 0-1-.5-2-1-2.5.5 2-1 2.5-1 4a2 2 0 0 1-2-2c0-1.5.5-2 .5-3.5C9 8.5 8.5 10 8.5 11.5c0 1.5.5 2 0 3z" /></svg>
+  if (tier === 'some') return <svg {...common}><path d="M3 12h4l3 8 4-16 3 8h4" /></svg>
+  if (tier === 'declining') return <svg {...common}><path d="M3 7l6 6 4-4 8 8" /><path d="M15 17h6v-6" /></svg>
+  return <svg {...common}><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" /><circle cx="12" cy="12" r="2.5" /></svg>
 }
 
-function TopicCard({ topic }) {
+function TopicCard({ topic, onAsk }) {
   const meta = TREND_META[topic.state] || TREND_META.insufficient_evidence
   const hasAccountEvidence = topic.account_bridge?.linked_account_count > 0
   return (
     <div className={`partnerTopicCard tier-${meta.tier}`}>
-      <span className="partnerTopicName">{topic.canonical_name}</span>
+      <div className="partnerTopicCardHead">
+        <span className={`partnerTopicIcon tier-${meta.tier}`}><TierIcon tier={meta.tier} /></span>
+        <span className="partnerTopicName">{topic.canonical_name}</span>
+      </div>
       <div className="partnerTopicStats">
         {topic.recent_observation_count > 0 && (
           <span className="partnerTopicStat">{topic.recent_observation_count} mention{topic.recent_observation_count === 1 ? '' : 's'} · {topic.recent_independent_entity_count} source{topic.recent_independent_entity_count === 1 ? '' : 's'}</span>
@@ -244,11 +301,14 @@ function TopicCard({ topic }) {
           <span className="partnerTopicStat partnerTopicStatAccent">{topic.account_bridge.linked_account_count} real account{topic.account_bridge.linked_account_count === 1 ? '' : 's'} circling this</span>
         )}
       </div>
+      <button type="button" className="partnerTopicDraftBtn" onClick={() => onAsk(`Write a LinkedIn post about "${topic.canonical_name}"`)}>
+        Draft a post <span className="partnerAccountArrow">→</span>
+      </button>
     </div>
   )
 }
 
-function TrendingTopics({ refreshKey }) {
+function TrendingTopics({ refreshKey, onAsk }) {
   const [topics, setTopics] = useState(null)
   const [error, setError] = useState(null)
 
@@ -263,7 +323,15 @@ function TrendingTopics({ refreshKey }) {
     return <div className="partnerCardWrap"><div className="partnerLoadingState">Loading...</div></div>
   }
   if (topics.length === 0) {
-    return <div className="partnerCardWrap"><div className="partnerEmptyState">Nothing sensed yet -- ask the chat above to check for fresh trends, and real topics will show up here once it finds something.</div></div>
+    return (
+      <div className="partnerContentEmptyBoard">
+        <span className="partnerContentAvatar partnerContentAvatarLg"><SparkleIcon /></span>
+        <p>Nothing sensed yet. Ask the strategist above to check for fresh trends, and real topics will show up here once it finds something.</p>
+        <button type="button" className="partnerSuggestionChip" onClick={() => onAsk('What should we write about this week?')}>
+          What should we write about this week?
+        </button>
+      </div>
+    )
   }
 
   const byTier = {}
@@ -286,7 +354,7 @@ function TrendingTopics({ refreshKey }) {
           </div>
           <p className="partnerTopicSectionBlurb">{section.blurb}</p>
           <div className="partnerTopicGrid">
-            {byTier[section.tier].map(t => <TopicCard key={t.content_topic_id} topic={t} />)}
+            {byTier[section.tier].map(t => <TopicCard key={t.content_topic_id} topic={t} onAsk={onAsk} />)}
           </div>
         </div>
       ))}
@@ -296,6 +364,14 @@ function TrendingTopics({ refreshKey }) {
 
 export default function PartnerContent() {
   const [refreshKey, setRefreshKey] = useState(0)
+  const chatRef = useRef(null)
+
+  const askChat = (text) => {
+    chatRef.current?.ask(text)
+    // Scroll the chat card into view -- a topic card halfway down the page shouldn't leave
+    // someone wondering where their question went.
+    document.querySelector('.partnerContentChatShell')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <div>
@@ -304,10 +380,10 @@ export default function PartnerContent() {
         <p>Content ideas grounded in your real trending topics, competitors, and positioning.</p>
       </div>
 
-      <ContentChat onTopicsChanged={() => setRefreshKey(k => k + 1)} />
+      <ContentChat ref={chatRef} onTopicsChanged={() => setRefreshKey(k => k + 1)} />
 
       <h2 className="partnerSectionTitle" style={{ marginTop: '1.75rem' }}>Trending topics</h2>
-      <TrendingTopics refreshKey={refreshKey} />
+      <TrendingTopics refreshKey={refreshKey} onAsk={askChat} />
     </div>
   )
 }

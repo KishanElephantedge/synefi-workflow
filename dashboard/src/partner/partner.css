@@ -953,11 +953,45 @@ a.partnerLogoutBtn {
   gap: 5px;
 }
 
+/* Redesigned 2026-09-21 with an "AI content assistant" hero card, taking cues from LinkedIn
+   content tools like Taplio/AuthoredUp: a branded avatar identifies the assistant, a subtle
+   top accent gives the card presence instead of reading as a plain bordered box, and prompt
+   chips stay visible by default so the card feels like a live tool, not an empty search field. */
 .partnerContentChatShell {
   border: 1px solid var(--p-line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--p-paper);
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.partnerContentAvatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2b2b2b, #000);
+  color: #fff;
+}
+
+.partnerContentAvatarLg {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.partnerContentHeroHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--p-ink);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .partnerContentChatTrigger {
@@ -966,19 +1000,21 @@ a.partnerLogoutBtn {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
-  background: none;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.035), transparent 65%);
   border: none;
   text-align: left;
   cursor: pointer;
 }
 
 .partnerContentChatTrigger:hover {
-  background: var(--p-hover);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.06), var(--p-hover) 65%);
 }
 
 .partnerContentChatTriggerText {
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
 }
@@ -1036,6 +1072,12 @@ a.partnerLogoutBtn {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Shown under the trigger when the card is still collapsed -- same chip row as the empty
+   conversation state, just outside the (not-yet-open) panel. */
+.partnerContentSuggestionRowStandalone {
+  padding: 0 16px 14px;
 }
 
 .partnerSuggestionChip {
@@ -1233,10 +1275,37 @@ a.partnerLogoutBtn {
   border: 1px solid var(--p-line);
   border-left: 3px solid var(--tier-color, var(--p-line));
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.partnerTopicCard:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+
+.partnerTopicCardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tier icon badge, tinted with the same --tier-color the card's own left border already
+   uses -- a quick-scan replacement for the old plain dot, borrowed from content-idea board
+   UIs where momentum reads at a glance. */
+.partnerTopicIcon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tier-color, var(--p-muted-2));
+  background: color-mix(in srgb, var(--tier-color, var(--p-line)) 14%, transparent);
 }
 
 .partnerTopicName {
@@ -1258,4 +1327,49 @@ a.partnerLogoutBtn {
 .partnerTopicStatAccent {
   color: var(--p-ink-soft);
   font-weight: 600;
+}
+
+.partnerTopicDraftBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-ink-soft);
+  cursor: pointer;
+}
+
+.partnerTopicDraftBtn:hover {
+  color: var(--p-ink);
+}
+
+.partnerTopicDraftBtn:hover .partnerAccountArrow {
+  transform: translateX(3px);
+}
+
+/* Empty trending-topics state -- matches the chat card's own avatar/icon language instead of
+   a bare line of muted text, and offers a one-click way into the chat rather than just saying
+   "ask the chat above". */
+.partnerContentEmptyBoard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 36px 24px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-paper);
+}
+
+.partnerContentEmptyBoard p {
+  max-width: 380px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--p-muted-2);
 }
