@@ -249,6 +249,46 @@ a.partnerLogoutBtn {
   flex-wrap: wrap;
 }
 
+/* Accounts source filter (2026-09-22) -- "All" / the two real objectives. Same black-fill-on-
+   white active treatment as the sidebar's own .partnerNavLinkActive, so a selected filter reads
+   the same way a selected nav item already does elsewhere in this app. */
+.partnerFilterPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.partnerFilterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-muted);
+  cursor: pointer;
+}
+
+.partnerFilterPill:hover {
+  background: var(--p-hover);
+}
+
+.partnerFilterPillActive,
+.partnerFilterPillActive:hover {
+  background: var(--p-ink);
+  border-color: var(--p-ink);
+  color: var(--p-paper);
+}
+
+.partnerFilterPillCount {
+  opacity: 0.65;
+  font-weight: 500;
+}
+
 .partnerCheckboxLabel {
   display: inline-flex;
   align-items: center;

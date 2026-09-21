@@ -4,7 +4,6 @@ import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
 import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
-import PartnerEngagementLeads from './PartnerEngagementLeads.jsx'
 import PartnerContent from './PartnerContent.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
@@ -18,15 +17,12 @@ import './partner.css'
 const FEATURE_PAGES = {
   accounts: {
     label: 'Accounts', path: 'accounts', element: <PartnerAccounts />,
-    extraRoutes: [{ path: 'accounts/:companyId', element: <PartnerAccountDetail /> }],
-  },
-  // Engagement mining's own output (2026-09-22) -- these people never become a Company row
-  // (the comment actor doesn't pre-enrich an employer), so Accounts has nowhere to show them.
-  // Tied to the SAME "accounts" flag rather than its own new gateway-side enabledFeatures value
-  // -- both objectives feed one shared daily target, so there's no real case where a partner
-  // has firmographic discovery on and this off.
-  engagement_leads: {
-    label: 'Engagement Leads', path: 'engagement-leads', element: <PartnerEngagementLeads />,
+    // Engagement mining's leads live in this SAME list, behind a source filter (2026-09-22,
+    // explicit correction -- a first version put them on their own sidebar tab; "I never told
+    // you to separate that into a different tab... add filters, All and these two" is the real
+    // instruction). :accountId is the account.jsx generic id (e.g. "company:1616" or
+    // "engagement:42"), not a companyId -- PartnerAccountDetail dispatches on the prefix.
+    extraRoutes: [{ path: 'accounts/:accountId', element: <PartnerAccountDetail /> }],
   },
   content: {
     label: 'LinkedIn Content', path: 'content', element: <PartnerContent />,
@@ -71,13 +67,7 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
   // -- set once here rather than in each page, so a new partner page never has to remember it.
   setActiveTenant(tenant.slug)
 
-  // engagement_leads is its OWN real flag (2026-09-22 correction) -- it used to auto-follow
-  // "accounts" on the assumption that no partner would have firmographic discovery on without
-  // engagement mining too. That assumption was wrong: Jeff Ballard has accounts enabled but no
-  // engagement mining ever configured for him, and saw an empty "Engagement Leads" tab meant for
-  // nobody. Only tenants with it explicitly listed in enabled_features see the tab now.
-  const enabledSet = new Set((tenant.enabledFeatures || []).filter((f) => FEATURE_PAGES[f]))
-  const features = Object.keys(FEATURE_PAGES).filter((f) => enabledSet.has(f))
+  const features = (tenant.enabledFeatures || []).filter((f) => FEATURE_PAGES[f])
   const firstFeature = features[0]
   // Settings (profile + ICP) is a baseline capability, not a staged product feature -- it's
   // not gated by enabledFeatures the way "accounts" is, and stays available even before any

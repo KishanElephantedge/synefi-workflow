@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listAccounts, formatApiError } from '../v2/api.js'
+import { getPartnerAccounts, formatApiError } from '../v2/api.js'
 
 // Deliberately minimal, not a reuse of v2/pages/Accounts.jsx. That page's summary tiles and
 // hot-lead/no-contact filters read from /gtm-os/accounts/summary and jobs_to_be_done state --
@@ -8,23 +8,26 @@ import { listAccounts, formatApiError } from '../v2/api.js'
 // ICP/opportunity pipeline populated to summarize anyway. This shows exactly what stage 1
 // promises: the accounts fetched for this tenant, and a click into each one.
 //
+// ONE list, not one page per objective (2026-09-22, explicit correction after a first version
+// put engagement-mining leads on their own sidebar tab -- "I never told you to separate that
+// into a different tab... add filters. All and these two. So all will be listed. All tab will
+// be default. And the design will be same"). Rows can be either a Company (firmographic ICP
+// discovery) or an engagement-mining lead (no Company row at all -- see getPartnerAccounts'
+// own backend docstring) -- the SOURCE column and filter pills are what distinguish them, the
+// table shape stays the same either way.
+//
 // Table, not a card grid (2026-09-13, explicit instruction: "what if when we scale up... to
 // hundreds of accounts, this is not currently [set up] to present it"). A card grid caps out
 // readably around a couple dozen tiles; a table keeps hundreds of rows scannable at a glance.
-// Only real, already-returned fields are shown -- no status/evidence columns like V2's own
-// Accounts table, since those come from list_account_states() which is hardcoded to Elephant
-// Edge's tenant_id (app/routes/api.py) and would show meaningless data for a partner's own
-// companies. Outreach status is also omitted: partners never get pushed to a campaign (their
-// accounts land in the database only), so "reached out" has no real meaning here.
-function formatSize(company) {
+function formatSize(row) {
   const parts = []
-  if (company.employee_count) parts.push(`${company.employee_count} emp`)
-  if (company.estimated_revenue_lower_usd) {
+  if (row.employee_count) parts.push(`${row.employee_count} emp`)
+  if (row.estimated_revenue_lower_usd) {
     const fmt = (n) => n >= 1_000_000 ? `$${Math.round(n / 1_000_000)}M` : `$${Math.round(n / 1000)}K`
     parts.push(
-      company.estimated_revenue_higher_usd && company.estimated_revenue_higher_usd !== company.estimated_revenue_lower_usd
-        ? `${fmt(company.estimated_revenue_lower_usd)}-${fmt(company.estimated_revenue_higher_usd)}`
-        : fmt(company.estimated_revenue_lower_usd)
+      row.estimated_revenue_higher_usd && row.estimated_revenue_higher_usd !== row.estimated_revenue_lower_usd
+        ? `${fmt(row.estimated_revenue_lower_usd)}-${fmt(row.estimated_revenue_higher_usd)}`
+        : fmt(row.estimated_revenue_lower_usd)
     )
   }
   return parts.join(' · ')
@@ -32,11 +35,16 @@ function formatSize(company) {
 
 const PAGE_SIZE = 25
 
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'firmographic', label: 'Firmographic ICP discovery' },
+  { value: 'engagement', label: 'Engagement mining' },
+]
+
 // "When we click yesterday it shows the discovery... and the list of that period below" (2026-
-// 09-16, explicit instruction: "for the partners let for them also be filters"). Filters on
-// Company.created_at (when a company was actually fetched for this partner), the one date-based
-// fact that's real for a partner tenant -- unlike a "sent" filter, which would always show zero
-// since partner accounts never get pushed to a campaign (see this file's own note above).
+// 09-16, explicit instruction: "for the partners let for them also be filters"). Kept across
+// the source-filter merge (2026-09-22) -- filters on when a row was actually found, the one
+// real date fact both objectives share.
 const PERIOD_PRESETS = [
   { value: '1', label: 'Today' },
   { value: '7', label: 'Past 7 days' },
@@ -45,10 +53,12 @@ const PERIOD_PRESETS = [
 ]
 
 export default function PartnerAccounts({ basePath = '/partner' }) {
-  const [companies, setCompanies] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [total, setTotal] = useState(0)
+  const [counts, setCounts] = useState(null)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [periodPreset, setPeriodPreset] = useState('')
@@ -61,11 +71,12 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listAccounts({ page, pageSize: PAGE_SIZE, search, periodDays, periodDateFrom, periodDateTo })
+    getPartnerAccounts({ page, pageSize: PAGE_SIZE, search, sourceFilter, periodDays, periodDateFrom, periodDateTo })
       .then((data) => {
         if (cancelled) return
-        setCompanies(data.companies || [])
+        setAccounts(data.accounts || [])
         setTotal(data.total || 0)
+        setCounts(data.counts || null)
         setPeriodStats(data.period_stats || null)
       })
       .catch((err) => {
@@ -74,7 +85,7 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
       })
       .finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
-  }, [page, search, periodDays, periodDateFrom, periodDateTo])
+  }, [page, search, sourceFilter, periodDays, periodDateFrom, periodDateTo])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -82,7 +93,21 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
     <div>
       <div className="partnerAccountsHeader">
         <h1>Accounts</h1>
-        <p>Companies matched to your ICP, with the decision-makers we found and enriched at each one.</p>
+        <p>Companies matched to your ICP and people found through LinkedIn engagement mining, in one list.</p>
+      </div>
+
+      <div className="partnerFilterPills">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            className={`partnerFilterPill${sourceFilter === f.value ? ' partnerFilterPillActive' : ''}`}
+            onClick={() => { setPage(1); setSourceFilter(f.value) }}
+          >
+            {f.label}
+            {counts && <span className="partnerFilterPillCount">{counts[f.value]}</span>}
+          </button>
+        ))}
       </div>
 
       <div className="partnerSearchRow">
@@ -125,10 +150,10 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
         <div className="partnerLoadingState">Loading...</div>
       ) : error ? (
         <div className="partnerErrorState">{error}</div>
-      ) : companies.length === 0 ? (
+      ) : accounts.length === 0 ? (
         <div className="partnerCardWrap">
           <div className="partnerEmptyState">
-            {search ? 'No companies match that search.' : 'No accounts yet -- check back soon.'}
+            {search ? 'No accounts match that search.' : 'No accounts yet -- check back soon.'}
           </div>
         </div>
       ) : (
@@ -146,34 +171,28 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
               </tr>
             </thead>
             <tbody>
-              {companies.map((c) => {
-                const size = formatSize(c)
-                const signal = [
-                  c.hot_lead && 'Hot lead',
-                  c.hiring_signal_role && `Hiring: ${c.hiring_signal_role.replace(/_/g, ' ')}`,
-                ].filter(Boolean).join(' · ')
-                const objectiveLabel = c.discovered_via?.objective_label
+              {accounts.map((row) => {
+                const size = formatSize(row)
+                const isCompany = row.kind === 'company'
                 return (
-                  <tr key={c.id}>
+                  <tr key={row.id}>
                     <td>
                       <div className="partnerTableCompanyRow">
-                        <div className="partnerAccountLogo partnerAccountLogoSm">{c.name.slice(0, 1).toUpperCase()}</div>
+                        <div className="partnerAccountLogo partnerAccountLogoSm">{(row.name || '?').slice(0, 1).toUpperCase()}</div>
                         <div>
-                          <div className="partnerAccountName">{c.name}</div>
-                          <div className="partnerAccountDomain">{c.domain || '—'}</div>
+                          <div className="partnerAccountName">{row.name || '—'}</div>
+                          <div className="partnerAccountDomain">{isCompany ? (row.domain || '—') : 'LinkedIn engagement'}</div>
                         </div>
                       </div>
                     </td>
-                    <td className={c.industry ? '' : 'partnerTableMuted'}>{c.industry || '—'}</td>
+                    <td className={row.industry ? '' : 'partnerTableMuted'}>{row.industry || '—'}</td>
                     <td className={size ? '' : 'partnerTableMuted'}>{size || '—'}</td>
-                    <td className={signal ? '' : 'partnerTableMuted'}>{signal || '—'}</td>
-                    <td className={objectiveLabel ? '' : 'partnerTableMuted'} title={c.discovered_via?.posting_url || ''}>
-                      {objectiveLabel || '—'}
-                    </td>
-                    <td className={c.contact_count ? '' : 'partnerTableMuted'}>{c.contact_count || 0}</td>
+                    <td className={row.signal ? '' : 'partnerTableMuted'}>{row.signal || '—'}</td>
+                    <td className={row.source_label ? '' : 'partnerTableMuted'}>{row.source_label || '—'}</td>
+                    <td className={row.contact_count ? '' : 'partnerTableMuted'}>{row.contact_count ?? '—'}</td>
                     <td>
-                      <Link className="partnerTableAction" to={`${basePath}/accounts/${c.id}`}>
-                        View decision-makers <span className="partnerAccountArrow">→</span>
+                      <Link className="partnerTableAction" to={`${basePath}/accounts/${row.id}`}>
+                        {isCompany ? 'View decision-makers' : 'View lead'} <span className="partnerAccountArrow">→</span>
                       </Link>
                     </td>
                   </tr>

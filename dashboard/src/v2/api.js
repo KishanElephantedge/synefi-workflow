@@ -35,20 +35,24 @@ export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilt
   }).then(res => res.data)
 }
 
-// Backs the partner dashboard's account click-through. Its own minimal route
-// (/companies/{id}/detail), not getAccountBrief below -- see that route's own docstring for why
-// the full V2 brief doesn't fit a stage-1 partner tenant.
-export function getPartnerCompanyDetail(companyId) {
-  return client.get(`/companies/${companyId}/detail`).then(res => res.data)
+// Backs the partner dashboard's Accounts list -- ONE list merging both real objectives
+// (firmographic ICP discovery's Company rows, and engagement mining's GtmSignal rows, which
+// never become a Company at all) behind a source_filter, per explicit correction 2026-09-22:
+// "I never told you to separate that into a different tab... add filters, All and these two."
+export function getPartnerAccounts({ page = 1, pageSize = 25, search = '', sourceFilter = 'all', periodDays = 0, periodDateFrom = '', periodDateTo = '' } = {}) {
+  return client.get('/gtm-os/partner/accounts', {
+    params: {
+      page, page_size: pageSize, search, source_filter: sourceFilter,
+      period_days: periodDays, period_date_from: periodDateFrom, period_date_to: periodDateTo,
+    },
+  }).then(res => res.data)
 }
 
-// Engagement mining's real output (2026-09-22) -- these people never become a Company row (the
-// comment actor doesn't pre-enrich an employer), so they have nowhere to show up in Accounts.
-// This is that objective's own list, straight off GtmSignal.
-export function getPartnerEngagementLeads({ page = 1, pageSize = 25, qualifiedOnly = false } = {}) {
-  return client.get('/gtm-os/partner/engagement-leads', {
-    params: { page, page_size: pageSize, qualified_only: qualifiedOnly },
-  }).then(res => res.data)
+// Backs the click-through from that list -- ONE route for both row kinds. `accountId` is the
+// prefixed id getPartnerAccounts already returns ("company:1616" / "engagement:42"); the
+// backend dispatches on the prefix, so this page never needs to know which table backs a row.
+export function getPartnerAccountDetail(accountId) {
+  return client.get(`/gtm-os/partner/accounts/${accountId}/detail`).then(res => res.data)
 }
 
 // Partner Settings page. ICP calls are tenant-scoped (same /gtm-os/partner/icp route the

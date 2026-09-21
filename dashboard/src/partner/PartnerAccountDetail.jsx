@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getPartnerCompanyDetail, formatApiError } from '../v2/api.js'
+import { getPartnerAccountDetail, formatApiError } from '../v2/api.js'
 
 function formatRevenue(lo, hi) {
   if (!lo && !hi) return null
@@ -40,7 +40,7 @@ function LinkedInBadge() {
 }
 
 export default function PartnerAccountDetail({ basePath = '/partner' }) {
-  const { companyId } = useParams()
+  const { accountId } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
@@ -48,11 +48,11 @@ export default function PartnerAccountDetail({ basePath = '/partner' }) {
     let cancelled = false
     setData(null)
     setError(null)
-    getPartnerCompanyDetail(companyId)
+    getPartnerAccountDetail(accountId)
       .then((d) => !cancelled && setData(d))
       .catch((err) => !cancelled && setError(formatApiError(err)))
     return () => { cancelled = true }
-  }, [companyId])
+  }, [accountId])
 
   if (error) {
     return (
@@ -72,6 +72,12 @@ export default function PartnerAccountDetail({ basePath = '/partner' }) {
     )
   }
 
+  return data.kind === 'engagement_lead'
+    ? <EngagementLeadDetail data={data} basePath={basePath} />
+    : <CompanyDetail data={data} basePath={basePath} />
+}
+
+function CompanyDetail({ data, basePath }) {
   const revenue = formatRevenue(data.estimated_revenue_lower_usd, data.estimated_revenue_higher_usd)
   const verifiedContacts = data.contacts.filter((c) => c.verified)
   const unverifiedContacts = data.contacts.filter((c) => !c.verified)
@@ -146,6 +152,73 @@ export default function PartnerAccountDetail({ basePath = '/partner' }) {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// Same visual shell as CompanyDetail (header/fact-row/found-via) -- an engagement-mining lead
+// has no company to show, so the header is the PERSON, and "Decision-makers" becomes the one
+// real thing evidence exists for: the comment itself and the post it came from.
+function EngagementLeadDetail({ data, basePath }) {
+  const via = data.discovered_via || {}
+  return (
+    <div>
+      <Link className="partnerBackLink" to={`${basePath}/accounts`}>← Back to accounts</Link>
+
+      <div className="partnerDetailHeader">
+        <div className="partnerAccountLogo partnerAccountLogoLg">{(data.name || '?').slice(0, 1).toUpperCase()}</div>
+        <div>
+          <h1>{data.name || 'Unknown'}</h1>
+          <div className="partnerDetailMetaRow">
+            {data.profile_url && (
+              <a href={data.profile_url} target="_blank" rel="noreferrer" className="partnerLinkedinLink">
+                <LinkedInBadge /> LinkedIn profile
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="partnerFactRow">
+        <div className="partnerFact">
+          <span>Intent</span>
+          {via.intent_qualified ? 'Qualified' : 'Not qualified'}
+        </div>
+        {via.post_author_name && <div className="partnerFact"><span>Commented on</span>{via.post_author_name}'s post</div>}
+        {data.found_at && <div className="partnerFact"><span>Found</span>{formatDate(data.found_at)}</div>}
+      </div>
+
+      <div className="partnerFoundVia">
+        <span className="partnerFoundViaLabel">Found via</span>
+        <span>{via.objective_label || 'Engagement mining'}</span>
+        {via.post_url && (
+          <a href={via.post_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink">
+            View post →
+          </a>
+        )}
+      </div>
+
+      <h2 className="partnerSectionTitle">Their comment</h2>
+      <div className="partnerCardWrap">
+        <div className="partnerContactDetail" style={{ padding: '16px 18px' }}>
+          <div className="partnerDetailRow">
+            <span>Comment</span>
+            <span>{via.comment_text || '—'}</span>
+          </div>
+          {via.intent_categories && via.intent_categories.length > 0 && (
+            <div className="partnerDetailRow">
+              <span>Matched as</span>
+              <span>{via.intent_categories.join(', ')}</span>
+            </div>
+          )}
+          {via.post_text && (
+            <div className="partnerDetailRow">
+              <span>Post</span>
+              <span>{via.post_text}</span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
