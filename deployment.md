@@ -47,3 +47,26 @@ this needs Render's paid "Starter" tier (~$7/month) or an external cron-ping to 
 
 ## Status
 Not yet executed — accounts pending from team lead.
+
+## Git push gotcha (found 2026-09-21)
+
+Pushing to `github.com/KishanElephantedge/synefi-workflow` from this machine failed with a real
+403 (`Permission ... denied to kishan-bm`) even though push access genuinely exists — the personal
+account `kishan-bm` is not the account with access to this repo. **Use the `KishanElephantedge`
+account itself**, not `kishan-bm`, when authenticating.
+
+Password auth is not supported for git over HTTPS (GitHub requirement, not specific to this repo)
+— when prompted:
+- Username: `KishanElephantedge`
+- Password: a GitHub Personal Access Token (Settings → Developer settings → Personal access
+  tokens), never the actual account password.
+
+If `git push` doesn't prompt at all and instead fails with a `vscode-git-*.sock` /
+`Antigravity IDE.app/.../askpass.sh` error, the IDE's integrated terminal has injected a stale
+`GIT_ASKPASS` env var. Force a plain terminal prompt for one push with:
+
+```
+GIT_ASKPASS= GIT_TERMINAL_PROMPT=1 git -c credential.helper= push origin main
+```
+
+or just push from a plain macOS Terminal.app window instead of the IDE's terminal.

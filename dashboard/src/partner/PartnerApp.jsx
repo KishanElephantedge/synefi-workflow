@@ -71,8 +71,12 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
   // -- set once here rather than in each page, so a new partner page never has to remember it.
   setActiveTenant(tenant.slug)
 
+  // engagement_leads is its OWN real flag (2026-09-22 correction) -- it used to auto-follow
+  // "accounts" on the assumption that no partner would have firmographic discovery on without
+  // engagement mining too. That assumption was wrong: Jeff Ballard has accounts enabled but no
+  // engagement mining ever configured for him, and saw an empty "Engagement Leads" tab meant for
+  // nobody. Only tenants with it explicitly listed in enabled_features see the tab now.
   const enabledSet = new Set((tenant.enabledFeatures || []).filter((f) => FEATURE_PAGES[f]))
-  if (enabledSet.has('accounts')) enabledSet.add('engagement_leads')
   const features = Object.keys(FEATURE_PAGES).filter((f) => enabledSet.has(f))
   const firstFeature = features[0]
   // Settings (profile + ICP) is a baseline capability, not a staged product feature -- it's
