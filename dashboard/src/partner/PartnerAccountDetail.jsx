@@ -191,11 +191,18 @@ function EngagementLeadDetail({ data, basePath }) {
       <div className="partnerFoundVia">
         <span className="partnerFoundViaLabel">Found via</span>
         <span>{via.objective_label || 'Engagement mining'}</span>
-        {via.post_url && (
-          <a href={via.post_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink">
-            View post →
-          </a>
-        )}
+        <span style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
+          {via.comment_url && (
+            <a href={via.comment_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink" style={{ marginLeft: 0 }}>
+              View comment →
+            </a>
+          )}
+          {via.post_url && (
+            <a href={via.post_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink" style={{ marginLeft: 0 }}>
+              View post →
+            </a>
+          )}
+        </span>
       </div>
 
       <h2 className="partnerSectionTitle">Their comment</h2>
