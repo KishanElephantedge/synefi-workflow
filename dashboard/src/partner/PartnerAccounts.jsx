@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getPartnerAccounts, formatApiError } from '../v2/api.js'
 
 // Deliberately minimal, not a reuse of v2/pages/Accounts.jsx. That page's summary tiles and
@@ -53,6 +53,7 @@ const PERIOD_PRESETS = [
 ]
 
 export default function PartnerAccounts({ basePath = '/partner' }) {
+  const navigate = useNavigate()
   const [accounts, setAccounts] = useState([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState(null)
@@ -174,8 +175,16 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
               {accounts.map((row) => {
                 const size = formatSize(row)
                 const isCompany = row.kind === 'company'
+                const goTo = () => navigate(`${basePath}/accounts/${row.id}`)
                 return (
-                  <tr key={row.id}>
+                  <tr
+                    key={row.id}
+                    className="partnerTableRowLink"
+                    onClick={goTo}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo() } }}
+                  >
                     <td>
                       <div className="partnerTableCompanyRow">
                         <div className="partnerAccountLogo partnerAccountLogoSm">{(row.name || '?').slice(0, 1).toUpperCase()}</div>
@@ -191,9 +200,9 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                     <td className={row.source_label ? '' : 'partnerTableMuted'}>{row.source_label || '—'}</td>
                     <td className={row.contact_count ? '' : 'partnerTableMuted'}>{row.contact_count ?? '—'}</td>
                     <td>
-                      <Link className="partnerTableAction" to={`${basePath}/accounts/${row.id}`}>
+                      <span className="partnerTableAction">
                         {isCompany ? 'View decision-makers' : 'View lead'} <span className="partnerAccountArrow">→</span>
-                      </Link>
+                      </span>
                     </td>
                   </tr>
                 )

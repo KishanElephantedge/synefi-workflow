@@ -215,7 +215,11 @@ a.partnerLogoutBtn {
 .partnerMain {
   flex: 1;
   padding: 32px 40px;
-  max-width: 1080px;
+  /* Was 1080px -- on a wide screen that left a big dead gap to the right of the accounts
+     table (2026-09-21 explicit feedback) while the table itself still needed horizontal
+     scroll to reach the action column. Widened rather than removed the cap entirely, so
+     narrower pages (Settings forms, the content chat) don't stretch to full width either. */
+  max-width: 1440px;
 }
 
 .partnerEmptyFeatures {
@@ -396,6 +400,14 @@ a.partnerLogoutBtn {
 
 .partnerTable tr:hover td {
   background: var(--p-hover);
+}
+
+/* Whole row navigates to the account detail page (2026-09-21 explicit feedback -- clicking
+   only "View decision-makers" at the far right, past a table that could scroll under a
+   capped-width container, wasn't discoverable). cursor:pointer is the only visual cue needed
+   beyond the existing hover background, since every cell in the row goes to the same place. */
+.partnerTableRowLink {
+  cursor: pointer;
 }
 
 .partnerTable td.partnerTableMuted {
