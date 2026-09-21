@@ -670,6 +670,15 @@ a.partnerLogoutBtn {
   text-decoration: underline;
 }
 
+/* Without its own :hover rule, index.css's global `a:hover { color: var(--primary-hover) }`
+   (indigo/purple) wins on specificity over the plain `.partnerFoundViaLink` class alone --
+   same root cause already documented on the sidebar nav links. This partner shell is
+   black-and-white throughout, so every hover here stays on that scale, never the app-wide
+   purple accent. */
+.partnerFoundViaLink:hover {
+  color: var(--p-ink-soft);
+}
+
 .partnerSectionTitle {
   font-size: 16px;
   font-weight: 700;
