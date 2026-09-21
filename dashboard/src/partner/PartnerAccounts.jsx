@@ -140,6 +140,7 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                 <th>Industry</th>
                 <th>Size</th>
                 <th>Signal</th>
+                <th>Source</th>
                 <th>Contacts</th>
                 <th></th>
               </tr>
@@ -151,6 +152,7 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                   c.hot_lead && 'Hot lead',
                   c.hiring_signal_role && `Hiring: ${c.hiring_signal_role.replace(/_/g, ' ')}`,
                 ].filter(Boolean).join(' · ')
+                const objectiveLabel = c.discovered_via?.objective_label
                 return (
                   <tr key={c.id}>
                     <td>
@@ -165,6 +167,9 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                     <td className={c.industry ? '' : 'partnerTableMuted'}>{c.industry || '—'}</td>
                     <td className={size ? '' : 'partnerTableMuted'}>{size || '—'}</td>
                     <td className={signal ? '' : 'partnerTableMuted'}>{signal || '—'}</td>
+                    <td className={objectiveLabel ? '' : 'partnerTableMuted'} title={c.discovered_via?.posting_url || ''}>
+                      {objectiveLabel || '—'}
+                    </td>
                     <td className={c.contact_count ? '' : 'partnerTableMuted'}>{c.contact_count || 0}</td>
                     <td>
                       <Link className="partnerTableAction" to={`${basePath}/accounts/${c.id}`}>

@@ -102,6 +102,19 @@ export default function PartnerAccountDetail({ basePath = '/partner' }) {
         {data.location && <div className="partnerFact"><span>Location</span>{data.location}</div>}
       </div>
 
+      {data.discovered_via?.objective_label && (
+        <div className="partnerFoundVia">
+          <span className="partnerFoundViaLabel">Found via</span>
+          <span>{data.discovered_via.objective_label}</span>
+          {data.discovered_via.job_title && <span className="partnerFoundViaSub"> — “{data.discovered_via.job_title}”</span>}
+          {data.discovered_via.posting_url && (
+            <a href={data.discovered_via.posting_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink">
+              View posting →
+            </a>
+          )}
+        </div>
+      )}
+
       <h2 className="partnerSectionTitle">
         Decision-makers <span className="partnerSectionCount">({data.contacts.length})</span>
       </h2>

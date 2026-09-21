@@ -42,6 +42,15 @@ export function getPartnerCompanyDetail(companyId) {
   return client.get(`/companies/${companyId}/detail`).then(res => res.data)
 }
 
+// Engagement mining's real output (2026-09-22) -- these people never become a Company row (the
+// comment actor doesn't pre-enrich an employer), so they have nowhere to show up in Accounts.
+// This is that objective's own list, straight off GtmSignal.
+export function getPartnerEngagementLeads({ page = 1, pageSize = 25, qualifiedOnly = false } = {}) {
+  return client.get('/gtm-os/partner/engagement-leads', {
+    params: { page, page_size: pageSize, qualified_only: qualifiedOnly },
+  }).then(res => res.data)
+}
+
 // Partner Settings page. ICP calls are tenant-scoped (same /gtm-os/partner/icp route the
 // onboarding wizard's step 3 already writes to); the profile call is not -- name lives on the
 // gateway's own User row, which this product backend has no model for, same reasoning as
