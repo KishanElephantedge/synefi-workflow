@@ -111,7 +111,10 @@ export function PlatformOpportunitiesList({ platform }) {
   const [generating, setGenerating] = useState(false)
 
   const load = () => {
-    getContentOpportunities().then(data => setOpportunities(data.opportunities)).catch(err => setError(formatApiError(err)))
+    // Defensive: a malformed/unexpected API response (e.g. a backend-side error surfaced as a
+    // 200 with a different shape) must never crash the whole page -- fall back to an empty list
+    // and let the "no opportunities" state render instead of `.length` on undefined.
+    getContentOpportunities().then(data => setOpportunities(data.opportunities || [])).catch(err => setError(formatApiError(err)))
   }
   useEffect(load, [])
 
@@ -290,7 +293,7 @@ export function ContentClustersSection() {
   const [generating, setGenerating] = useState(false)
 
   const load = () => {
-    getContentPillars().then(data => setPillars(data.pillars)).catch(err => setError(formatApiError(err)))
+    getContentPillars().then(data => setPillars(data.pillars || [])).catch(err => setError(formatApiError(err)))
   }
   useEffect(load, [])
 
