@@ -47,6 +47,7 @@ function ReviewRow({ onReview, busy }) {
 function OpportunityCard({ o, platform, userEmail, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [expanded, setExpanded] = useState(false)
   const draft = o.drafts?.[platform]
 
   const doReview = async (action, note) => {
@@ -92,8 +93,19 @@ function OpportunityCard({ o, platform, userEmail, onChanged }) {
 
       {draft && (
         <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>
-          {draft}
+          <div
+            style={
+              expanded
+                ? undefined
+                : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+            }
+          >
+            {draft}
+          </div>
           <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
+            <button type="button" className="v2-btn" onClick={() => setExpanded(e => !e)}>
+              {expanded ? 'Show less' : 'More'}
+            </button>
             <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}>
               <IconRefreshCw width={13} height={13} /> Regenerate
             </button>
@@ -145,7 +157,11 @@ export function PlatformOpportunitiesList({ platform }) {
       ) : opportunities.length === 0 ? (
         <div className="v2-card"><div className="v2-state">No content opportunities yet. Ask the Content Strategist for a topic, or find patterns from your own accounts above.</div></div>
       ) : (
-        opportunities.map(o => <OpportunityCard key={o.id} o={o} platform={platform} userEmail={user?.email} onChanged={load} />)
+        // Most recently drafted/regenerated bubbles to the top -- otherwise a freshly-written
+        // draft on an older topic stays buried below untouched newer candidates.
+        [...opportunities]
+          .sort((a, b) => new Date(b.draft_generated_at || b.created_at) - new Date(a.draft_generated_at || a.created_at))
+          .map(o => <OpportunityCard key={o.id} o={o} platform={platform} userEmail={user?.email} onChanged={load} />)
       )}
     </div>
   )
@@ -156,6 +172,7 @@ export function PlatformOpportunitiesList({ platform }) {
 function ClusterRow({ cluster, userEmail, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [draftExpanded, setDraftExpanded] = useState(false)
 
   const doReview = async (action) => {
     setBusy(true); setError(null)
@@ -190,8 +207,19 @@ function ClusterRow({ cluster, userEmail, onChanged }) {
       )}
       {cluster.draft_text && (
         <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap' }}>
-          {cluster.draft_text}
+          <div
+            style={
+              draftExpanded
+                ? undefined
+                : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+            }
+          >
+            {cluster.draft_text}
+          </div>
           <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
+            <button type="button" className="v2-btn" onClick={() => setDraftExpanded(e => !e)}>
+              {draftExpanded ? 'Show less' : 'More'}
+            </button>
             <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}><IconRefreshCw width={13} height={13} /> Regenerate</button>
           </div>
         </div>
@@ -205,6 +233,7 @@ function PillarCard({ summary, userEmail, onChanged }) {
   const [detail, setDetail] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [draftExpanded, setDraftExpanded] = useState(false)
 
   const loadDetail = () => getContentPillarDetail(summary.id).then(setDetail).catch(err => setError(formatApiError(err)))
 
@@ -268,8 +297,19 @@ function PillarCard({ summary, userEmail, onChanged }) {
               )}
               {detail.draft_text && (
                 <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap', marginBottom: '0.9rem' }}>
-                  {detail.draft_text}
+                  <div
+                    style={
+                      draftExpanded
+                        ? undefined
+                        : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+                    }
+                  >
+                    {detail.draft_text}
+                  </div>
                   <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
+                    <button type="button" className="v2-btn" onClick={() => setDraftExpanded(e => !e)}>
+                      {draftExpanded ? 'Show less' : 'More'}
+                    </button>
                     <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}><IconRefreshCw width={13} height={13} /> Regenerate</button>
                   </div>
                 </div>
@@ -338,7 +378,9 @@ export function ContentClustersSection() {
       ) : pillars.length === 0 ? (
         <div className="v2-card"><div className="v2-state">No content pillars planned yet.</div></div>
       ) : (
-        pillars.map(p => <PillarCard key={p.id} summary={p} userEmail={user?.email} onChanged={load} />)
+        [...pillars]
+          .sort((a, b) => new Date(b.draft_generated_at || b.created_at) - new Date(a.draft_generated_at || a.created_at))
+          .map(p => <PillarCard key={p.id} summary={p} userEmail={user?.email} onChanged={load} />)
       )}
     </div>
   )
