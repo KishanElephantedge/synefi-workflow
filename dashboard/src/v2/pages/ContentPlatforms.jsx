@@ -3,7 +3,7 @@ import {
   getContentOpportunities, reviewContentOpportunity, generateContentOpportunityDraft,
   generateAccountIntelligenceTopics, getContentPillars, getContentPillarDetail,
   generateContentPillar, reviewContentPillar, generateContentPillarDraft,
-  reviewContentCluster, generateContentClusterDraft, formatApiError,
+  reviewContentCluster, generateContentClusterDraft, publishContentOpportunityToWordPress, formatApiError,
 } from '../api.js'
 import { IconCheck, IconX, IconRefreshCw, IconChevronDown, IconSparkles, IconCopy } from '../icons.jsx'
 import { useTenant } from '../../context/TenantContext.jsx'
@@ -104,6 +104,7 @@ function ReviewRow({ onReview, busy }) {
 function OpportunityCard({ o, platform, userEmail, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [published, setPublished] = useState(null)
   const draft = o.drafts?.[platform]
 
   const doReview = async (action, note) => {
@@ -115,10 +116,19 @@ function OpportunityCard({ o, platform, userEmail, onChanged }) {
   }
 
   const doGenerateDraft = async () => {
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setPublished(null)
     try {
       await generateContentOpportunityDraft(o.id, platform)
       onChanged()
+    } catch (err) { setError(formatApiError(err)) } finally { setBusy(false) }
+  }
+
+  const doPublishWordPress = async () => {
+    setBusy(true); setError(null)
+    try {
+      const res = await publishContentOpportunityToWordPress(o.id, o.topic_name)
+      if (res.status === 'ok') setPublished(res.post_url)
+      else setError(res.reason || res.status)
     } catch (err) { setError(formatApiError(err)) } finally { setBusy(false) }
   }
 
@@ -155,7 +165,17 @@ function OpportunityCard({ o, platform, userEmail, onChanged }) {
             <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}>
               <IconRefreshCw width={13} height={13} /> Regenerate
             </button>
+            {platform === 'blog' && !published && (
+              <button type="button" className="v2-btn v2-btn-primary" disabled={busy} onClick={doPublishWordPress}>
+                {busy ? 'Publishing…' : 'Publish to WordPress'}
+              </button>
+            )}
           </div>
+          {published && (
+            <div className="v2-form-message" style={{ marginTop: '0.5rem' }}>
+              Published. <a href={published} target="_blank" rel="noreferrer">View live post</a>
+            </div>
+          )}
         </div>
       )}
     </div>

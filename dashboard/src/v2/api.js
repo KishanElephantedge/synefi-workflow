@@ -126,6 +126,13 @@ export function generateContentOpportunityDraft(id, platform = 'blog') {
   return client.post(`/gtm-os/content-opportunities/${id}/generate-draft`, { platform }).then(res => res.data)
 }
 
+// Direct publish (2026-09-22, explicit instruction) -- sends the already-generated blog draft
+// straight to a live WordPress post via the site's own REST API (Settings > Connections >
+// WordPress). Returns {status: "not_configured"|"request_failed"|"wordpress_error"|"ok", ...}.
+export function publishContentOpportunityToWordPress(id, title) {
+  return client.post(`/gtm-os/content-opportunities/${id}/publish-wordpress`, { title }).then(res => res.data)
+}
+
 // Quick Drafts, account-intelligence source (2026-09-19) -- real, on-demand generation grounded
 // in aggregate patterns across the actual company pipeline, not external trend/competitor search.
 export function generateAccountIntelligenceTopics() {

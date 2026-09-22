@@ -428,6 +428,7 @@ const CONNECTION_GROUPS = [
   { label: 'Email (SMTP)', names: ['smtp_email', 'smtp_app_password'], note: 'V2 outbound email -- sends directly from this Gmail mailbox.' },
   { label: 'Slack', names: ['slack_webhook_url', 'slack_webhook_url_2'], note: 'Notifications.' },
   { label: 'Google Calendar', names: ['google_calendar_client_id', 'google_calendar_client_secret', 'google_calendar_refresh_token', 'google_calendar_id'], note: 'Meeting sync -- see Meetings.' },
+  { label: 'WordPress', names: ['wordpress_site_url', 'wordpress_username', 'wordpress_app_password'], note: 'Publishes blog drafts directly, live -- see Market Intelligence > Blogs.' },
 ]
 
 function formatDateTime(value) {
@@ -493,6 +494,11 @@ const MULTI_CREDENTIAL_GROUPS = {
   'Email (SMTP)': [
     { name: 'smtp_email', label: 'Gmail address', type: 'text' },
     { name: 'smtp_app_password', label: 'App password', type: 'password' },
+  ],
+  'WordPress': [
+    { name: 'wordpress_site_url', label: 'Site URL (e.g. https://elephantedge.ai)', type: 'text' },
+    { name: 'wordpress_username', label: 'Username', type: 'text' },
+    { name: 'wordpress_app_password', label: 'Application password (WP Admin -> Users -> Profile -> Application Passwords)', type: 'password' },
   ],
 }
 
