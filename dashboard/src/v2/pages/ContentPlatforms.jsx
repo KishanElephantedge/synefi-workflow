@@ -5,7 +5,7 @@ import {
   generateContentPillar, reviewContentPillar, generateContentPillarDraft,
   reviewContentCluster, generateContentClusterDraft, formatApiError,
 } from '../api.js'
-import { IconCheck, IconX, IconRefreshCw, IconChevronDown, IconSparkles } from '../icons.jsx'
+import { IconCheck, IconX, IconRefreshCw, IconChevronDown, IconSparkles, IconCopy } from '../icons.jsx'
 import { useTenant } from '../../context/TenantContext.jsx'
 
 // Three platform-specific tabs on Market Intelligence (2026-09-19, explicit instruction), all
@@ -17,6 +17,63 @@ import { useTenant } from '../../context/TenantContext.jsx'
 
 const ORIGIN_LABEL = { trend: 'Trending', competitor: 'Competitor', account_intelligence: 'Our accounts' }
 const STATUS_BADGE = { candidate: 'v2-badge-warning', approved: 'v2-badge-success', rejected: 'v2-badge-danger', changes_requested: 'v2-badge-neutral' }
+
+// Truncates to ~2 lines' worth of characters with an inline "...more" at the cut point (never a
+// separate button below the text) -- click expands in place, with a matching "Show less" inline
+// at the end. Character-based rather than CSS line-clamp specifically so the "...more"/"Show
+// less" text can sit inline, in the actual text flow, exactly where a real reader expects it.
+const TRUNCATE_CHARS = 180
+
+function ExpandableText({ text }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!text) return null
+  const needsTruncation = text.length > TRUNCATE_CHARS
+  if (!needsTruncation || expanded) {
+    return (
+      <>
+        {text}
+        {needsTruncation && (
+          <span
+            role="button" tabIndex={0} onClick={() => setExpanded(false)}
+            style={{ color: 'var(--v2-accent)', cursor: 'pointer', fontWeight: 600, marginLeft: '0.3rem' }}
+          >
+            Show less
+          </span>
+        )}
+      </>
+    )
+  }
+  let cut = text.slice(0, TRUNCATE_CHARS)
+  const lastSpace = cut.lastIndexOf(' ')
+  if (lastSpace > 40) cut = cut.slice(0, lastSpace)
+  return (
+    <>
+      {cut}
+      <span
+        role="button" tabIndex={0} onClick={() => setExpanded(true)}
+        style={{ color: 'var(--v2-accent)', cursor: 'pointer', fontWeight: 600 }}
+      >
+        …more
+      </span>
+    </>
+  )
+}
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+  const doCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard permission denied -- silently no-op, nothing else to fall back to */ }
+  }
+  return (
+    <button type="button" className="v2-btn" onClick={doCopy}>
+      <IconCopy width={13} height={13} /> {copied ? 'Copied!' : 'Copy'}
+    </button>
+  )
+}
 
 function ReviewRow({ onReview, busy }) {
   const [note, setNote] = useState('')
@@ -47,7 +104,6 @@ function ReviewRow({ onReview, busy }) {
 function OpportunityCard({ o, platform, userEmail, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [expanded, setExpanded] = useState(false)
   const draft = o.drafts?.[platform]
 
   const doReview = async (action, note) => {
@@ -93,19 +149,9 @@ function OpportunityCard({ o, platform, userEmail, onChanged }) {
 
       {draft && (
         <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>
-          <div
-            style={
-              expanded
-                ? undefined
-                : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-            }
-          >
-            {draft}
-          </div>
+          <ExpandableText text={draft} />
           <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
-            <button type="button" className="v2-btn" onClick={() => setExpanded(e => !e)}>
-              {expanded ? 'Show less' : 'More'}
-            </button>
+            <CopyButton text={draft} />
             <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}>
               <IconRefreshCw width={13} height={13} /> Regenerate
             </button>
@@ -172,7 +218,6 @@ export function PlatformOpportunitiesList({ platform }) {
 function ClusterRow({ cluster, userEmail, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [draftExpanded, setDraftExpanded] = useState(false)
 
   const doReview = async (action) => {
     setBusy(true); setError(null)
@@ -207,19 +252,9 @@ function ClusterRow({ cluster, userEmail, onChanged }) {
       )}
       {cluster.draft_text && (
         <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap' }}>
-          <div
-            style={
-              draftExpanded
-                ? undefined
-                : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-            }
-          >
-            {cluster.draft_text}
-          </div>
+          <ExpandableText text={cluster.draft_text} />
           <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
-            <button type="button" className="v2-btn" onClick={() => setDraftExpanded(e => !e)}>
-              {draftExpanded ? 'Show less' : 'More'}
-            </button>
+            <CopyButton text={cluster.draft_text} />
             <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}><IconRefreshCw width={13} height={13} /> Regenerate</button>
           </div>
         </div>
@@ -233,7 +268,6 @@ function PillarCard({ summary, userEmail, onChanged }) {
   const [detail, setDetail] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [draftExpanded, setDraftExpanded] = useState(false)
 
   const loadDetail = () => getContentPillarDetail(summary.id).then(setDetail).catch(err => setError(formatApiError(err)))
 
@@ -297,19 +331,9 @@ function PillarCard({ summary, userEmail, onChanged }) {
               )}
               {detail.draft_text && (
                 <div className="v2-message-text" style={{ whiteSpace: 'pre-wrap', marginBottom: '0.9rem' }}>
-                  <div
-                    style={
-                      draftExpanded
-                        ? undefined
-                        : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-                    }
-                  >
-                    {detail.draft_text}
-                  </div>
+                  <ExpandableText text={detail.draft_text} />
                   <div className="v2-btn-row" style={{ marginTop: '0.6rem' }}>
-                    <button type="button" className="v2-btn" onClick={() => setDraftExpanded(e => !e)}>
-                      {draftExpanded ? 'Show less' : 'More'}
-                    </button>
+                    <CopyButton text={detail.draft_text} />
                     <button type="button" className="v2-btn" disabled={busy} onClick={doGenerateDraft}><IconRefreshCw width={13} height={13} /> Regenerate</button>
                   </div>
                 </div>

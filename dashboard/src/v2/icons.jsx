@@ -346,6 +346,17 @@ export function IconRefreshCw(props) {
   )
 }
 
+// Not in the reference deck -- own choice for the copy-to-clipboard action on generated content
+// drafts (2026-09-22), the standard lucide "copy" glyph (two overlapping rectangles).
+export function IconCopy(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  )
+}
+
 // Not in the reference deck -- own choice for the Briefing "Data gaps" card header (visual
 // polish pass, 2026-08-18), the standard stacked-cylinder database glyph, unconfirmed against
 // any reference source.
