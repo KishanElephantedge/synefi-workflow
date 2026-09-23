@@ -4,6 +4,7 @@ import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
 import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
+import CrmLeads from './CrmLeads.jsx'
 import PartnerContent from './PartnerContent.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
@@ -26,6 +27,13 @@ const FEATURE_PAGES = {
   },
   content: {
     label: 'LinkedIn Content', path: 'content', element: <PartnerContent />,
+  },
+  // Sandy Yu's webinar outreach CRM (2026-09-23) -- her own stated pain point (per Slack): no
+  // structured way to see where each outreach target is in the process. Gated behind its own
+  // "crm" enabledFeatures flag, not tied to "accounts", since this is a per-partner opt-in
+  // built for one specific engagement, not a stage-1 default.
+  crm: {
+    label: 'CRM', path: 'crm', element: <CrmLeads />,
   },
 }
 

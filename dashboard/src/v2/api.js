@@ -55,6 +55,19 @@ export function getPartnerAccountDetail(accountId) {
   return client.get(`/gtm-os/partner/accounts/${accountId}/detail`).then(res => res.data)
 }
 
+// Sandy Yu's webinar outreach CRM (2026-09-23) -- her own stated pain point: no structured way
+// to see where each outreach target is in the process. See CrmLead's own docstring (app/db/
+// models.py) for the full stage design.
+export function getCrmLeads({ page = 1, pageSize = 50, search = '', event = '', stage = '', sourceFile = '' } = {}) {
+  return client.get('/gtm-os/partner/crm/leads', {
+    params: { page, page_size: pageSize, search, event, stage, source_file: sourceFile },
+  }).then(res => res.data)
+}
+
+export function updateCrmLead(leadId, updates) {
+  return client.patch(`/gtm-os/partner/crm/leads/${leadId}`, updates).then(res => res.data)
+}
+
 // Partner Settings page. ICP calls are tenant-scoped (same /gtm-os/partner/icp route the
 // onboarding wizard's step 3 already writes to); the profile call is not -- name lives on the
 // gateway's own User row, which this product backend has no model for, same reasoning as
