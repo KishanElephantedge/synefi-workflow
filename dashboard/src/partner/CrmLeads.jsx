@@ -53,30 +53,46 @@ function StageSelect({ lead, onChanged }) {
   )
 }
 
+// role_fit/company_fit filter options -- "pending" maps to the backend's NULL check, not a
+// literal stored value (see list_crm_leads' own docstring).
+const FIT_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: 'pass', label: 'Fit' },
+  { value: 'fail', label: 'No fit' },
+  { value: 'pending', label: 'Pending' },
+]
+
 export default function CrmLeads() {
   const [leads, setLeads] = useState([])
   const [total, setTotal] = useState(0)
   const [stageCounts, setStageCounts] = useState({})
+  const [sourceFiles, setSourceFiles] = useState([])
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [stage, setStage] = useState('')
+  // "which list" -- explicit ask 2026-09-23: "add an select dropdown to select particular
+  // list so only that will be shown instead of mixing all". '' means every list, mixed.
+  const [sourceFile, setSourceFile] = useState('')
+  const [roleFit, setRoleFit] = useState('')
+  const [companyFit, setCompanyFit] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const load = () => {
     setLoading(true)
     setError(null)
-    getCrmLeads({ page, pageSize: PAGE_SIZE, search, stage })
+    getCrmLeads({ page, pageSize: PAGE_SIZE, search, stage, sourceFile, roleFit, companyFit })
       .then((data) => {
         setLeads(data.leads || [])
         setTotal(data.total || 0)
         setStageCounts(data.stage_counts || {})
+        setSourceFiles(data.source_files || [])
       })
       .catch((err) => setError(formatApiError(err)))
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [page, search, stage])
+  useEffect(load, [page, search, stage, sourceFile, roleFit, companyFit])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -117,6 +133,31 @@ export default function CrmLeads() {
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value) }}
         />
+        <select
+          className="partnerPeriodSelect"
+          value={sourceFile}
+          onChange={(e) => { setPage(1); setSourceFile(e.target.value) }}
+          aria-label="Filter by which imported list"
+        >
+          <option value="">All lists</option>
+          {sourceFiles.map((f) => <option key={f} value={f}>{f}</option>)}
+        </select>
+        <select
+          className="partnerPeriodSelect"
+          value={roleFit}
+          onChange={(e) => { setPage(1); setRoleFit(e.target.value) }}
+          aria-label="Filter by role fit"
+        >
+          {FIT_OPTIONS.map((f) => <option key={f.value} value={f.value}>Role fit: {f.label}</option>)}
+        </select>
+        <select
+          className="partnerPeriodSelect"
+          value={companyFit}
+          onChange={(e) => { setPage(1); setCompanyFit(e.target.value) }}
+          aria-label="Filter by company fit"
+        >
+          {FIT_OPTIONS.map((f) => <option key={f.value} value={f.value}>Company fit: {f.label}</option>)}
+        </select>
       </div>
 
       {loading ? (

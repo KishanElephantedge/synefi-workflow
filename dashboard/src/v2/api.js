@@ -58,9 +58,9 @@ export function getPartnerAccountDetail(accountId) {
 // Sandy Yu's webinar outreach CRM (2026-09-23) -- her own stated pain point: no structured way
 // to see where each outreach target is in the process. See CrmLead's own docstring (app/db/
 // models.py) for the full stage design.
-export function getCrmLeads({ page = 1, pageSize = 50, search = '', event = '', stage = '', sourceFile = '' } = {}) {
+export function getCrmLeads({ page = 1, pageSize = 50, search = '', event = '', stage = '', sourceFile = '', roleFit = '', companyFit = '' } = {}) {
   return client.get('/gtm-os/partner/crm/leads', {
-    params: { page, page_size: pageSize, search, event, stage, source_file: sourceFile },
+    params: { page, page_size: pageSize, search, event, stage, source_file: sourceFile, role_fit: roleFit, company_fit: companyFit },
   }).then(res => res.data)
 }
 
