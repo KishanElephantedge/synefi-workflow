@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCrmLeads, updateCrmLead, formatApiError } from '../v2/api.js'
+import { getCrmLeads, getCrmLeadsExportUrl, updateCrmLead, formatApiError } from '../v2/api.js'
 
 const PAGE_SIZE = 50
 
@@ -104,9 +104,17 @@ export default function CrmLeads() {
 
   return (
     <div>
-      <div className="partnerAccountsHeader">
-        <h1>CRM</h1>
-        <p>Every outreach target for the Enterprise Edge webinar series, tracked stage by stage.</p>
+      <div className="partnerAccountsHeader partnerAccountsHeaderRow">
+        <div>
+          <h1>Data</h1>
+          <p>Every outreach target for the Enterprise Edge webinar series, tracked stage by stage.</p>
+        </div>
+        <a
+          className="partnerBtnSecondary"
+          href={getCrmLeadsExportUrl({ search, stage, sourceFile, roleFit, companyFit })}
+        >
+          Download CSV
+        </a>
       </div>
 
       <div className="partnerFilterPills">
@@ -172,7 +180,7 @@ export default function CrmLeads() {
         </div>
       ) : (
         <div className="partnerTableWrap">
-          <table className="partnerTable">
+          <table className="partnerTable crmTable">
             <thead>
               <tr>
                 <th>Name</th>

@@ -15,7 +15,7 @@ import axios from 'axios'
 // rewrites (proxies) to the real gateway server-side -- the browser only ever talks to its
 // own origin, so the cookie becomes a normal first-party cookie on every browser. Local dev
 // (Vite dev server, no Vercel proxy in front of it) still talks to the gateway directly.
-const GATEWAY_URL = import.meta.env.DEV ? 'http://localhost:9000' : '/gw'
+export const GATEWAY_URL = import.meta.env.DEV ? 'http://localhost:9000' : '/gw'
 
 const client = axios.create({
   baseURL: GATEWAY_URL,

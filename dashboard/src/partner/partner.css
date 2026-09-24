@@ -245,6 +245,38 @@ a.partnerLogoutBtn {
   margin: 0;
 }
 
+/* Only the CRM/Data page's header needs a title + action button on one row -- every other
+   page using .partnerAccountsHeader has just h1/p as direct children, so this is a separate
+   modifier rather than a change to the shared class (which would stack THEIR h1 and p
+   side by side instead of vertically). */
+.partnerAccountsHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.partnerBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.partnerBtnSecondary:hover {
+  background: var(--p-hover);
+}
+
 .partnerSearchRow {
   margin-bottom: 16px;
   display: flex;
@@ -389,6 +421,27 @@ a.partnerLogoutBtn {
 .partnerTable th:nth-child(5), .partnerTable td:nth-child(5) { width: 19%; }
 .partnerTable th:nth-child(6), .partnerTable td:nth-child(6) { width: 8%; }
 .partnerTable th:nth-child(7), .partnerTable td:nth-child(7) { width: 12%; }
+
+/* Real bug, found live 2026-09-25: the CRM/Data table has 12 columns (Name..Stage), but it was
+   inheriting the 7-column width rules above meant for the Accounts table. table-layout: fixed
+   + no declared width for columns 8-12 collapsed them toward 0, and overflow-wrap: break-word
+   then wrapped every column's text one character per line (visible as a vertical letter-stack
+   in the Company fit/Fit notes columns, with the Stage dropdown crushed into whatever pixel
+   was left). Higher-specificity selectors + an explicit min-width so the table can't be
+   squeezed below a usable size -- .partnerTableWrap's overflow-x: auto handles the rest. */
+.partnerTable.crmTable { min-width: 1400px; }
+.partnerTable.crmTable th:nth-child(1), .partnerTable.crmTable td:nth-child(1) { width: 8%; }
+.partnerTable.crmTable th:nth-child(2), .partnerTable.crmTable td:nth-child(2) { width: 12%; }
+.partnerTable.crmTable th:nth-child(3), .partnerTable.crmTable td:nth-child(3) { width: 9%; }
+.partnerTable.crmTable th:nth-child(4), .partnerTable.crmTable td:nth-child(4) { width: 8%; }
+.partnerTable.crmTable th:nth-child(5), .partnerTable.crmTable td:nth-child(5) { width: 6%; }
+.partnerTable.crmTable th:nth-child(6), .partnerTable.crmTable td:nth-child(6) { width: 6%; }
+.partnerTable.crmTable th:nth-child(7), .partnerTable.crmTable td:nth-child(7) { width: 6%; }
+.partnerTable.crmTable th:nth-child(8), .partnerTable.crmTable td:nth-child(8) { width: 6%; }
+.partnerTable.crmTable th:nth-child(9), .partnerTable.crmTable td:nth-child(9) { width: 16%; }
+.partnerTable.crmTable th:nth-child(10), .partnerTable.crmTable td:nth-child(10) { width: 12%; }
+.partnerTable.crmTable th:nth-child(11), .partnerTable.crmTable td:nth-child(11) { width: 6%; }
+.partnerTable.crmTable th:nth-child(12), .partnerTable.crmTable td:nth-child(12) { width: 5%; }
 
 .partnerTable th {
   text-align: left;

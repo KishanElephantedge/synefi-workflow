@@ -33,7 +33,7 @@ const FEATURE_PAGES = {
   // "crm" enabledFeatures flag, not tied to "accounts", since this is a per-partner opt-in
   // built for one specific engagement, not a stage-1 default.
   crm: {
-    label: 'CRM', path: 'crm', element: <CrmLeads />,
+    label: 'Data', path: 'crm', element: <CrmLeads />,
   },
 }
 

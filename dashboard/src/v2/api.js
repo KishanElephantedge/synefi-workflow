@@ -2,7 +2,7 @@
 // uses -- no second API abstraction, no duplicated auth/tenant-scoping logic. `client` already
 // prefixes tenant-scoped calls with `/api/{activeTenantSlug}/...` via its own interceptor (see
 // setActiveTenant in V2App.jsx).
-import client from '../api/client'
+import client, { GATEWAY_URL, getActiveTenant } from '../api/client'
 
 // Normalizes an API error into a plain, human-readable string. Handles FastAPI's two real
 // response shapes: a plain string `detail` (every V2 route in this app), and the list-of-objects
@@ -66,6 +66,18 @@ export function getCrmLeads({ page = 1, pageSize = 50, search = '', event = '', 
 
 export function updateCrmLead(leadId, updates) {
   return client.patch(`/gtm-os/partner/crm/leads/${leadId}`, updates).then(res => res.data)
+}
+
+// A plain navigation URL, not an axios call -- the browser needs to hit this directly (via a
+// download link) so it can follow the backend's Content-Disposition header itself and stream
+// the file straight to disk instead of us buffering the whole CSV as a JS string first. The
+// httpOnly session cookie rides along automatically since this is same-origin (through /gw),
+// same as every other request -- see client.js's own cookie-routing comment.
+export function getCrmLeadsExportUrl({ search = '', event = '', stage = '', sourceFile = '', roleFit = '', companyFit = '' } = {}) {
+  const params = new URLSearchParams({
+    search, event, stage, source_file: sourceFile, role_fit: roleFit, company_fit: companyFit,
+  })
+  return `${GATEWAY_URL}/api/${getActiveTenant()}/gtm-os/partner/crm/leads/export?${params.toString()}`
 }
 
 // Partner Settings page. ICP calls are tenant-scoped (same /gtm-os/partner/icp route the
