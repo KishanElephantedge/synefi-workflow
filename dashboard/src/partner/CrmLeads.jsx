@@ -178,8 +178,12 @@ export default function CrmLeads() {
                 <th>Name</th>
                 <th>Company</th>
                 <th>Title</th>
+                <th>Industry</th>
+                <th>Revenue</th>
+                <th>Size</th>
                 <th>Role fit</th>
                 <th>Company fit</th>
+                <th title="Why a fit check passed/failed/is pending">Fit notes</th>
                 <th>Email</th>
                 <th>Source</th>
                 <th>Stage</th>
@@ -191,10 +195,27 @@ export default function CrmLeads() {
                   <td>
                     <div className="partnerAccountName">{[lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}</div>
                   </td>
-                  <td className={lead.company_name ? '' : 'partnerTableMuted'}>{lead.company_name || '—'}</td>
+                  <td className={lead.company_name ? '' : 'partnerTableMuted'}>
+                    {lead.company_name
+                      ? (lead.company_linkedin_url
+                          ? <a
+                              href={lead.company_linkedin_url.startsWith('http') ? lead.company_linkedin_url : `https://${lead.company_linkedin_url}`}
+                              target="_blank" rel="noreferrer" className="partnerTableAction"
+                            >
+                              {lead.company_name}
+                            </a>
+                          : lead.company_name)
+                      : '—'}
+                  </td>
                   <td className={lead.title ? '' : 'partnerTableMuted'}>{lead.title || '—'}</td>
+                  <td className={lead.industry ? '' : 'partnerTableMuted'}>{lead.industry || '—'}</td>
+                  <td className={lead.estimated_revenue ? '' : 'partnerTableMuted'}>{lead.estimated_revenue || '—'}</td>
+                  <td className={lead.employee_count ? '' : 'partnerTableMuted'}>{lead.employee_count || '—'}</td>
                   <td><FitBadge value={lead.role_fit} /></td>
                   <td><FitBadge value={lead.company_fit} /></td>
+                  <td className="partnerTableMuted" style={{ maxWidth: 260 }} title={lead.fit_notes || ''}>
+                    {lead.fit_notes ? (lead.fit_notes.length > 70 ? `${lead.fit_notes.slice(0, 70)}…` : lead.fit_notes) : '—'}
+                  </td>
                   <td className={lead.email ? '' : 'partnerTableMuted'}>{lead.email || '—'}</td>
                   <td className="partnerTableMuted">{lead.source_file}</td>
                   <td><StageSelect lead={lead} onChanged={handleLeadUpdated} /></td>
