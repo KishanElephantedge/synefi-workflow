@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getCrmLeads, getCrmLeadsExportUrl, updateCrmLead, formatApiError } from '../v2/api.js'
+import PartnerDropdown from './PartnerDropdown.jsx'
 
 const PAGE_SIZE = 50
 
@@ -27,29 +28,104 @@ function FitBadge({ value }) {
   return <span className="partnerTableMuted">Pending</span>
 }
 
+// Explicit ask 2026-09-26: picking "Outreached" shouldn't just be a status flip -- it should
+// immediately ask which channel the outreach actually went out on, since LinkedIn and Email are
+// tracked/attributed separately downstream. Every other stage commits on a single click; only
+// Outreached opens this second-level channel menu before writing anything.
+const CHANNEL_OPTIONS = [
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'email', label: 'Email' },
+]
+const CHANNEL_LABEL = Object.fromEntries(CHANNEL_OPTIONS.map((c) => [c.value, c.label]))
+
 function StageSelect({ lead, onChanged }) {
   const [saving, setSaving] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [pendingChannel, setPendingChannel] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setPendingChannel(false) } }
+    const onKey = (e) => { if (e.key === 'Escape') { setOpen(false); setPendingChannel(false) } }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const commit = async (updates) => {
+    setSaving(true)
+    try {
+      const updated = await updateCrmLead(lead.id, updates)
+      onChanged(updated)
+    } catch (err) {
+      alert(formatApiError(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const pickStage = (stageValue) => {
+    if (stageValue === 'outreached') {
+      setPendingChannel(true)
+      return
+    }
+    setOpen(false)
+    commit({ stage: stageValue })
+  }
+
+  const pickChannel = (channel) => {
+    setOpen(false)
+    setPendingChannel(false)
+    commit({ stage: 'outreached', outreach_channel: channel })
+  }
+
+  const triggerLabel = lead.stage === 'outreached' && lead.outreach_channel
+    ? `Outreached · ${CHANNEL_LABEL[lead.outreach_channel]}`
+    : (STAGE_LABEL[lead.stage] || lead.stage)
+
   return (
-    <select
-      className="partnerPeriodSelect"
-      value={lead.stage}
-      disabled={saving}
-      onChange={async (e) => {
-        setSaving(true)
-        try {
-          const updated = await updateCrmLead(lead.id, { stage: e.target.value })
-          onChanged(updated)
-        } catch (err) {
-          alert(formatApiError(err))
-        } finally {
-          setSaving(false)
-        }
-      }}
-    >
-      {STAGES.filter((s) => s.value).map((s) => (
-        <option key={s.value} value={s.value}>{s.label}</option>
-      ))}
-    </select>
+    <div className="partnerDropdown partnerDropdownStage" ref={ref}>
+      <button
+        type="button"
+        className="partnerDropdownTrigger"
+        disabled={saving}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => { setOpen((o) => !o); setPendingChannel(false) }}
+      >
+        <span className="partnerDropdownTriggerLabel">{triggerLabel}</span>
+        <span className="partnerDropdownArrow" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <ul className="partnerDropdownMenu partnerDropdownMenuRight" role="listbox">
+          {!pendingChannel ? (
+            STAGES.filter((s) => s.value).map((s) => (
+              <li key={s.value} role="option" aria-selected={lead.stage === s.value}>
+                <button
+                  type="button"
+                  className={`partnerDropdownOption${lead.stage === s.value ? ' partnerDropdownOptionActive' : ''}`}
+                  onClick={() => pickStage(s.value)}
+                >
+                  {s.label}
+                </button>
+              </li>
+            ))
+          ) : (
+            CHANNEL_OPTIONS.map((c) => (
+              <li key={c.value} role="option">
+                <button type="button" className="partnerDropdownOption" onClick={() => pickChannel(c.value)}>
+                  {c.label}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -173,31 +249,24 @@ export default function CrmLeads() {
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value) }}
         />
-        <select
-          className="partnerPeriodSelect"
+        <PartnerDropdown
+          ariaLabel="Filter by which imported list"
           value={sourceFile}
-          onChange={(e) => { setPage(1); setSourceFile(e.target.value) }}
-          aria-label="Filter by which imported list"
-        >
-          <option value="">All lists</option>
-          {sourceFiles.map((f) => <option key={f} value={f}>{listLabel[f]}</option>)}
-        </select>
-        <select
-          className="partnerPeriodSelect"
+          onChange={(v) => { setPage(1); setSourceFile(v) }}
+          options={[{ value: '', label: 'All lists' }, ...sourceFiles.map((f) => ({ value: f, label: listLabel[f] }))]}
+        />
+        <PartnerDropdown
+          ariaLabel="Filter by role fit"
           value={roleFit}
-          onChange={(e) => { setPage(1); setRoleFit(e.target.value) }}
-          aria-label="Filter by role fit"
-        >
-          {FIT_OPTIONS.map((f) => <option key={f.value} value={f.value}>Role fit: {f.label}</option>)}
-        </select>
-        <select
-          className="partnerPeriodSelect"
+          onChange={(v) => { setPage(1); setRoleFit(v) }}
+          options={FIT_OPTIONS.map((f) => ({ value: f.value, label: `Role fit: ${f.label}` }))}
+        />
+        <PartnerDropdown
+          ariaLabel="Filter by company fit"
           value={companyFit}
-          onChange={(e) => { setPage(1); setCompanyFit(e.target.value) }}
-          aria-label="Filter by company fit"
-        >
-          {FIT_OPTIONS.map((f) => <option key={f.value} value={f.value}>Company fit: {f.label}</option>)}
-        </select>
+          onChange={(v) => { setPage(1); setCompanyFit(v) }}
+          options={FIT_OPTIONS.map((f) => ({ value: f.value, label: `Company fit: ${f.label}` }))}
+        />
       </div>
 
       {loading ? (

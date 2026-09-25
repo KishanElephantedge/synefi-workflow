@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getPartnerAccounts, formatApiError } from '../v2/api.js'
+import PartnerDropdown from './PartnerDropdown.jsx'
 
 // Deliberately minimal, not a reuse of v2/pages/Accounts.jsx. That page's summary tiles and
 // hot-lead/no-contact filters read from /gtm-os/accounts/summary and jobs_to_be_done state --
@@ -119,15 +120,12 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
           value={search}
           onChange={(e) => { setPage(1); setSearch(e.target.value) }}
         />
-        <select
-          className="partnerPeriodSelect"
+        <PartnerDropdown
+          ariaLabel="Filter accounts by when they were fetched"
           value={periodPreset}
-          onChange={(e) => { setPage(1); setPeriodPreset(e.target.value); setPeriodDateFrom(''); setPeriodDateTo('') }}
-          aria-label="Filter accounts by when they were fetched"
-        >
-          <option value="">Fetched — any time</option>
-          {PERIOD_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
+          onChange={(v) => { setPage(1); setPeriodPreset(v); setPeriodDateFrom(''); setPeriodDateTo('') }}
+          options={[{ value: '', label: 'Fetched — any time' }, ...PERIOD_PRESETS]}
+        />
         {periodPreset === 'custom' && (
           <>
             <input type="date" className="partnerSearchInput" style={{ maxWidth: 160 }} value={periodDateFrom}

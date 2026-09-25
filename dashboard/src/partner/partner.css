@@ -393,6 +393,105 @@ a.partnerLogoutBtn {
   color: var(--p-ink);
 }
 
+/* ---- custom dropdown (replaces native <select> -- see PartnerDropdown.jsx for why) ---- */
+.partnerDropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.partnerDropdownTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 160px;
+  background: var(--p-paper);
+  color: var(--p-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.partnerDropdownTrigger:hover {
+  background: var(--p-hover);
+}
+
+.partnerDropdownTrigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.partnerDropdownTriggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partnerDropdownArrow {
+  font-size: 10px;
+  color: var(--p-muted-2);
+  flex-shrink: 0;
+}
+
+.partnerDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 4px;
+  margin: 0;
+  z-index: 40;
+  list-style: none;
+}
+
+/* For triggers near the right edge of a scrollable table (the Stage column, e.g.) -- opens
+   leftward so the menu doesn't get clipped by .partnerTableWrap's own horizontal scroll. */
+.partnerDropdownMenuRight {
+  left: auto;
+  right: 0;
+}
+
+.partnerDropdownOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 13.5px;
+  color: var(--p-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.partnerDropdownOption:hover {
+  background: var(--p-hover);
+}
+
+.partnerDropdownOptionActive {
+  font-weight: 600;
+  background: var(--p-hover);
+}
+
+/* Row-level Stage dropdown needs less width than a page filter and sits in a narrow table
+   column. */
+.partnerDropdownStage .partnerDropdownTrigger {
+  min-width: 130px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
 /* The 3 real period numbers -- pushed_to_campaigns is always 0 here by design (partner accounts
    are database-only, never pushed to a campaign), shown plainly rather than hidden. */
 .partnerPeriodStats {
