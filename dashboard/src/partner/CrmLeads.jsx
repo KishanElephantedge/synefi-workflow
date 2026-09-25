@@ -66,6 +66,7 @@ export default function CrmLeads() {
   const [leads, setLeads] = useState([])
   const [total, setTotal] = useState(0)
   const [stageCounts, setStageCounts] = useState({})
+  const [stats, setStats] = useState({})
   const [sourceFiles, setSourceFiles] = useState([])
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -86,6 +87,7 @@ export default function CrmLeads() {
         setLeads(data.leads || [])
         setTotal(data.total || 0)
         setStageCounts(data.stage_counts || {})
+        setStats(data.stats || {})
         setSourceFiles(data.source_files || [])
       })
       .catch((err) => setError(formatApiError(err)))
@@ -95,6 +97,13 @@ export default function CrmLeads() {
   useEffect(load, [page, search, stage, sourceFile, roleFit, companyFit])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  // This is a partner-facing page (Sandy sees it) -- the real source_file values are internal
+  // tooling names (Clay, Prospeo, SalesIntel exports, ...) that shouldn't leak into a client
+  // view. The backend already returns source_files in a stable, first-imported-first order
+  // (see list_crm_leads), so "List 1" always means the same underlying list across reloads.
+  // Only the label shown is generic -- filtering and the CSV export still use the real value.
+  const listLabel = Object.fromEntries(sourceFiles.map((f, i) => [f, `List ${i + 1}`]))
 
   const handleLeadUpdated = (updated) => {
     setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))
@@ -115,6 +124,29 @@ export default function CrmLeads() {
         >
           Download CSV
         </a>
+      </div>
+
+      <div className="partnerStatsRow">
+        <div className="partnerStatCard">
+          <div className="partnerStatCardValue">{stats.company_fit_pass ?? 0}</div>
+          <div className="partnerStatCardLabel">Company fit confirmed</div>
+        </div>
+        <div className="partnerStatCard">
+          <div className="partnerStatCardValue">{stats.role_fit_pass ?? 0}</div>
+          <div className="partnerStatCardLabel">Role fit confirmed</div>
+        </div>
+        <div className="partnerStatCard">
+          <div className="partnerStatCardValue">{stats.contacts_needed ?? 0}</div>
+          <div className="partnerStatCardLabel">Accounts fit, no contact found yet</div>
+        </div>
+        <div className="partnerStatCard">
+          <div className="partnerStatCardValue">{stats.emails_found ?? 0}</div>
+          <div className="partnerStatCardLabel">Emails found</div>
+        </div>
+        <div className="partnerStatCard">
+          <div className="partnerStatCardValue">{stats.reached_out ?? 0}</div>
+          <div className="partnerStatCardLabel">Reached out</div>
+        </div>
       </div>
 
       <div className="partnerFilterPills">
@@ -148,7 +180,7 @@ export default function CrmLeads() {
           aria-label="Filter by which imported list"
         >
           <option value="">All lists</option>
-          {sourceFiles.map((f) => <option key={f} value={f}>{f}</option>)}
+          {sourceFiles.map((f) => <option key={f} value={f}>{listLabel[f]}</option>)}
         </select>
         <select
           className="partnerPeriodSelect"
@@ -225,7 +257,7 @@ export default function CrmLeads() {
                     {lead.fit_notes ? (lead.fit_notes.length > 70 ? `${lead.fit_notes.slice(0, 70)}…` : lead.fit_notes) : '—'}
                   </td>
                   <td className={lead.email ? '' : 'partnerTableMuted'}>{lead.email || '—'}</td>
-                  <td className="partnerTableMuted">{lead.source_file}</td>
+                  <td className="partnerTableMuted">{listLabel[lead.source_file] || lead.source_file}</td>
                   <td><StageSelect lead={lead} onChanged={handleLeadUpdated} /></td>
                 </tr>
               ))}

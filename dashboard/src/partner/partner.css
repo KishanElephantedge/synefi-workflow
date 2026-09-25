@@ -214,6 +214,14 @@ a.partnerLogoutBtn {
 
 .partnerMain {
   flex: 1;
+  /* Without this, a flex item's default min-width is its content's min-content size -- so the
+     CRM table's min-width: 1400px (added to fix the column-crush bug) was forcing .partnerMain
+     itself to refuse to shrink below ~1400px, pushing the WHOLE PAGE wider than the viewport
+     and scrolling the entire layout horizontally (sidebar included) instead of just the table.
+     min-width: 0 lets this flex item shrink to the viewport so .partnerTableWrap's own
+     overflow-x: auto can do its job and contain the scroll to the table alone. Found live
+     2026-09-25. */
+  min-width: 0;
   padding: 32px 40px;
   /* Was 1080px -- on a wide screen that left a big dead gap to the right of the accounts
      table (2026-09-21 explicit feedback) while the table itself still needed horizontal
@@ -275,6 +283,37 @@ a.partnerLogoutBtn {
 
 .partnerBtnSecondary:hover {
   background: var(--p-hover);
+}
+
+/* Headline stat cards (2026-09-25) -- "how many fit, how many reached out, how many still need
+   a contact found" answered at a glance instead of having to read stage pills/filters. Values
+   come from list_crm_leads' `stats`, computed server-side over the same filtered base_query as
+   stage_counts, so these track whichever list/fit filter is active. */
+.partnerStatsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.partnerStatCard {
+  flex: 1 1 160px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-paper);
+  padding: 14px 16px;
+}
+
+.partnerStatCardValue {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.partnerStatCardLabel {
+  font-size: 12.5px;
+  color: var(--p-muted);
+  margin-top: 2px;
 }
 
 .partnerSearchRow {
