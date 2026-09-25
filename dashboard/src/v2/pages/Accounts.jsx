@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { listAccounts, getAccountsSummary, formatApiError } from '../api.js'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { listAccounts, getAccountsSummary, getCompaniesExportUrl, formatApiError } from '../api.js'
 import { formatRecency } from '../format.js'
 import { IconAlertTriangle, IconChevronLeft, IconChevronRight, IconX } from '../icons.jsx'
 
@@ -111,16 +111,36 @@ function formatSize(company) {
 // away. "Open" stays a real link to the same detail page (Account Agent), per explicit
 // instruction to keep that click-through for the deep-dive view.
 function AccountRow({ company }) {
+  const navigate = useNavigate()
   const accountStatus = company.account_status || 'insufficient_context'
   const isQuiet = QUIET_STATES.has(accountStatus)
   const hasEvidence = !isQuiet && ((company.signal_count > 0) || (company.opportunity_count > 0))
   const added = formatRecency(company.created_at)
   const size = formatSize(company)
+  const linkedinHref = company.linkedin_url
+    ? (company.linkedin_url.startsWith('http') ? company.linkedin_url : `https://${company.linkedin_url}`)
+    : null
 
+  // Whole row opens the detail page (explicit ask 2026-09-26: "wherever we click on that row it
+  // should open"), while the company-name link (LinkedIn) and the explicit Open button/chevron
+  // stay their own separate clicks -- stopPropagation on those so a LinkedIn click doesn't also
+  // navigate to the detail page underneath it.
   return (
-    <tr className={`v2-account-state-${accountStatus}`}>
+    <tr
+      className={`v2-account-state-${accountStatus} v2-account-row-clickable`}
+      onClick={() => navigate(`/v2/accounts/${company.id}`)}
+    >
       <td>
-        <div className="v2-account-name">{company.name}</div>
+        {linkedinHref ? (
+          <a
+            href={linkedinHref} target="_blank" rel="noreferrer"
+            className="v2-account-name" onClick={e => e.stopPropagation()}
+          >
+            {company.name}
+          </a>
+        ) : (
+          <div className="v2-account-name">{company.name}</div>
+        )}
         <div className="v2-table-muted">{[company.domain, company.industry].filter(Boolean).join(' · ') || '—'}</div>
       </td>
       <td className={size ? '' : 'v2-table-muted'}>{size || '—'}</td>
@@ -150,7 +170,10 @@ function AccountRow({ company }) {
       </td>
       <td className="v2-table-muted" title={added?.exact}>{added ? added.label : '—'}</td>
       <td>
-        <Link to={`/v2/accounts/${company.id}`} className="v2-btn" style={{ padding: '0.35rem 0.6rem', whiteSpace: 'nowrap' }}>
+        <Link
+          to={`/v2/accounts/${company.id}`} className="v2-btn" style={{ padding: '0.35rem 0.6rem', whiteSpace: 'nowrap' }}
+          onClick={e => e.stopPropagation()}
+        >
           Open <IconChevronRight width={12} height={12} />
         </Link>
       </td>
@@ -223,6 +246,120 @@ function PeriodStatsBar({ stats }) {
         <span className="v2-period-stat-value">{stats.pushed_to_campaigns}</span>
         <span className="v2-period-stat-label">Pushed to campaigns</span>
       </div>
+    </div>
+  )
+}
+
+// Same column keys as app/routes/api.py's _COMPANY_EXPORT_COLUMNS / _CONTACT_EXPORT_COLUMNS --
+// a fixed, mirrored contract (this codebase's established pattern, same as STAGES/FIT_OPTIONS
+// elsewhere), not derived from a schema call, since the export is a stable, small column set.
+const EXPORT_COMPANY_COLUMNS = [
+  ['company_id', 'Company ID'], ['company_name', 'Company Name'], ['domain', 'Domain'], ['industry', 'Industry'],
+  ['company_linkedin_url', 'Company LinkedIn URL'], ['employee_count', 'Employee Count'],
+  ['revenue_lower_usd', 'Revenue Lower (USD)'], ['revenue_higher_usd', 'Revenue Higher (USD)'],
+  ['account_status', 'Account Status'], ['qualified', 'Qualified'], ['resolved_offering_name', 'Offering'],
+  ['hiring_signal_role', 'Hiring Signal Role'], ['hot_lead', 'Hot Lead'], ['hot_lead_reasoning', 'Hot Lead Reasoning'],
+  ['contact_count', 'Contact Count'], ['company_outreached', 'Company Outreached'], ['source', 'Source'],
+  ['company_added_at', 'Company Added'],
+]
+const EXPORT_CONTACT_COLUMNS = [
+  ['contact_id', 'Contact ID'], ['first_name', 'First Name'], ['last_name', 'Last Name'], ['title', 'Title'],
+  ['contact_linkedin_url', 'Contact LinkedIn URL'], ['email', 'Email'], ['email_source', 'Email Source'],
+  ['contact_outreached', 'Contact Outreached'], ['contact_added_at', 'Contact Added'],
+]
+const EXPORT_SCOPES = [
+  { value: 'all', label: 'All (companies + decision-makers)' },
+  { value: 'companies', label: 'Companies only' },
+  { value: 'contacts', label: 'Contacts only' },
+]
+
+// "add a new feature to download the csv file and in that add what and all we can download"
+// (explicit ask 2026-09-26) -- scope picker (all/companies/contacts) + per-column checkboxes,
+// respecting whatever search/filter is currently active on the page, same as the download does
+// on the Sandy CRM page.
+function ExportPanel({ filters }) {
+  const [open, setOpen] = useState(false)
+  const [scope, setScope] = useState('all')
+  const [selectedColumns, setSelectedColumns] = useState(() => new Set([
+    ...EXPORT_COMPANY_COLUMNS.map(c => c[0]), ...EXPORT_CONTACT_COLUMNS.map(c => c[0]),
+  ]))
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onKey = e => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const visibleColumnGroups = scope === 'companies'
+    ? [['Company columns', EXPORT_COMPANY_COLUMNS]]
+    : scope === 'contacts'
+      ? [['Contact columns', EXPORT_CONTACT_COLUMNS]]
+      : [['Company columns', EXPORT_COMPANY_COLUMNS], ['Contact columns', EXPORT_CONTACT_COLUMNS]]
+
+  const toggleColumn = key => setSelectedColumns(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key); else next.add(key)
+    return next
+  })
+  const setAllInScope = (checked) => setSelectedColumns(prev => {
+    const next = new Set(prev)
+    const keys = visibleColumnGroups.flatMap(([, cols]) => cols.map(c => c[0]))
+    keys.forEach(k => checked ? next.add(k) : next.delete(k))
+    return next
+  })
+
+  const relevantSelected = visibleColumnGroups.flatMap(([, cols]) => cols.map(c => c[0])).filter(k => selectedColumns.has(k))
+  const downloadUrl = getCompaniesExportUrl({ ...filters, scope, columns: relevantSelected })
+
+  return (
+    <div className="v2-export-panel-wrap" ref={ref}>
+      <button type="button" className="v2-btn" onClick={() => setOpen(o => !o)}>Download CSV</button>
+      {open && (
+        <div className="v2-export-panel">
+          <div className="v2-export-panel-section-title">What to download</div>
+          <div className="v2-export-scope-options">
+            {EXPORT_SCOPES.map(s => (
+              <label key={s.value} className="v2-export-scope-option">
+                <input type="radio" name="export-scope" value={s.value} checked={scope === s.value} onChange={() => setScope(s.value)} />
+                {s.label}
+              </label>
+            ))}
+          </div>
+          <div className="v2-export-panel-section-title" style={{ marginTop: '0.75rem' }}>
+            Columns
+            <button type="button" className="v2-link-btn" onClick={() => setAllInScope(true)}>All</button>
+            <button type="button" className="v2-link-btn" onClick={() => setAllInScope(false)}>None</button>
+          </div>
+          <div className="v2-export-columns">
+            {visibleColumnGroups.map(([groupLabel, cols]) => (
+              <div key={groupLabel} className="v2-export-column-group">
+                <div className="v2-export-column-group-title">{groupLabel}</div>
+                {cols.map(([key, label]) => (
+                  <label key={key} className="v2-export-column-option">
+                    <input type="checkbox" checked={selectedColumns.has(key)} onChange={() => toggleColumn(key)} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+          <a
+            className="v2-btn v2-btn-primary v2-export-download-btn"
+            href={relevantSelected.length ? downloadUrl : undefined}
+            aria-disabled={relevantSelected.length === 0}
+            onClick={e => { if (!relevantSelected.length) e.preventDefault(); else setOpen(false) }}
+          >
+            Download {relevantSelected.length === 0 ? '(select at least one column)' : `(${relevantSelected.length} columns)`}
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -333,6 +470,7 @@ export default function Accounts() {
             onDateFromChange={setPeriodDateFrom}
             onDateToChange={setPeriodDateTo}
           />
+          <ExportPanel filters={{ search, accountFilter, periodDays, periodDateFrom, periodDateTo }} />
         </div>
       </div>
 

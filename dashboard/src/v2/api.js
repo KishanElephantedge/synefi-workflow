@@ -35,6 +35,19 @@ export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilt
   }).then(res => res.data)
 }
 
+// Accounts CSV export (2026-09-26) -- a plain navigation URL, not an axios call, same reasoning
+// as getCrmLeadsExportUrl: the browser needs to hit this directly so it can follow the backend's
+// Content-Disposition header and stream the file itself. `scope`: 'all' | 'companies' |
+// 'contacts'. `columns` is an array of column keys (empty = every column for that scope, see
+// _COMPANY_EXPORT_COLUMNS/_CONTACT_EXPORT_COLUMNS in app/routes/api.py for the real key list).
+export function getCompaniesExportUrl({ scope = 'all', columns = [], search = '', accountFilter = '', periodDays = 0, periodDateFrom = '', periodDateTo = '' } = {}) {
+  const params = new URLSearchParams({
+    scope, columns: columns.join(','), search, account_filter: accountFilter,
+    period_days: String(periodDays || ''), period_date_from: periodDateFrom, period_date_to: periodDateTo,
+  })
+  return `${GATEWAY_URL}/api/${getActiveTenant()}/companies/export?${params.toString()}`
+}
+
 // Backs the partner dashboard's Accounts list -- ONE list merging both real objectives
 // (firmographic ICP discovery's Company rows, and engagement mining's GtmSignal rows, which
 // never become a Company at all) behind a source_filter, per explicit correction 2026-09-22:

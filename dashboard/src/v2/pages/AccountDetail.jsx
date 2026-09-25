@@ -623,8 +623,17 @@ function ContactsTab({ brief, companyId }) {
             return (
               <div key={c.id} className="v2-evidence-item">
                 <div className="v2-evidence-item-head">
-                  <span className="v2-evidence-item-title">{[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed contact'}</span>
-                  {c.has_email && <span className="v2-badge v2-badge-success">Email on file</span>}
+                  {c.linkedin_url ? (
+                    <a
+                      href={c.linkedin_url.startsWith('http') ? c.linkedin_url : `https://${c.linkedin_url}`}
+                      target="_blank" rel="noreferrer" className="v2-evidence-item-title"
+                    >
+                      {[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed contact'}
+                    </a>
+                  ) : (
+                    <span className="v2-evidence-item-title">{[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed contact'}</span>
+                  )}
+                  {c.has_email && <span className="v2-badge v2-badge-success">{c.email || 'Email on file'}</span>}
                 </div>
                 <div className="v2-evidence-item-body">{c.title || 'Title unknown'}</div>
                 {!c.has_email && dismissals !== null && (
@@ -1100,7 +1109,14 @@ export default function AccountDetail() {
       <div className="v2-account-header">
         <div className="v2-account-header-identity">
           <div className="v2-page-title">
-            {company.name}
+            {company.linkedin_url ? (
+              <a
+                href={company.linkedin_url.startsWith('http') ? company.linkedin_url : `https://${company.linkedin_url}`}
+                target="_blank" rel="noreferrer"
+              >
+                {company.name}
+              </a>
+            ) : company.name}
             <StatusBadge status={accountStatus} />
           </div>
           <div className="v2-account-header-meta">
