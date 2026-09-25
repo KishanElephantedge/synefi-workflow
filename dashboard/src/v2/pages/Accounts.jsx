@@ -264,7 +264,7 @@ const EXPORT_COMPANY_COLUMNS = [
 ]
 const EXPORT_CONTACT_COLUMNS = [
   ['contact_id', 'Contact ID'], ['first_name', 'First Name'], ['last_name', 'Last Name'], ['title', 'Title'],
-  ['contact_linkedin_url', 'Contact LinkedIn URL'], ['email', 'Email'], ['email_source', 'Email Source'],
+  ['contact_linkedin_url', 'Contact LinkedIn URL'], ['email', 'Email'],
   ['contact_outreached', 'Contact Outreached'], ['contact_added_at', 'Contact Added'],
 ]
 const EXPORT_SCOPES = [
