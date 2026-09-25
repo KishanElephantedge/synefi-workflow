@@ -43,7 +43,7 @@ export function listAccounts({ page = 1, pageSize = 25, search = '', accountFilt
 export function getCompaniesExportUrl({ scope = 'all', columns = [], search = '', accountFilter = '', periodDays = 0, periodDateFrom = '', periodDateTo = '' } = {}) {
   const params = new URLSearchParams({
     scope, columns: columns.join(','), search, account_filter: accountFilter,
-    period_days: String(periodDays || ''), period_date_from: periodDateFrom, period_date_to: periodDateTo,
+    period_days: String(periodDays || 0), period_date_from: periodDateFrom, period_date_to: periodDateTo,
   })
   return `${GATEWAY_URL}/api/${getActiveTenant()}/companies/export?${params.toString()}`
 }
