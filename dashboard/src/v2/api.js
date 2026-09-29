@@ -720,3 +720,16 @@ export function startNewNetworkChat() {
 export function sendNetworkChatMessage(conversationId, message) {
   return client.post(`/chat/conversations/${conversationId}/messages`, { message, scope: 'network' }).then(res => res.data)
 }
+
+
+// Webinars tab (2026-09-29) -- real event metadata + live sent/click stats computed straight
+// from webinar_link_clicks (backed by app/routes/api.py's _webinar_stats). No attendee/RSVP
+// data yet -- Luma's free tier has no API access for that; the detail response says so
+// explicitly (attendee_data_available: false) rather than silently omitting the section.
+export function listWebinars() {
+  return client.get('/gtm-os/partner/webinars').then(res => res.data)
+}
+
+export function getWebinarDetail(webinarId) {
+  return client.get(`/gtm-os/partner/webinars/${webinarId}`).then(res => res.data)
+}

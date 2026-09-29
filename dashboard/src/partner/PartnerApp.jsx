@@ -6,6 +6,8 @@ import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
 import CrmLeads from './CrmLeads.jsx'
 import PartnerContent from './PartnerContent.jsx'
+import PartnerWebinars from './PartnerWebinars.jsx'
+import PartnerWebinarDetail from './PartnerWebinarDetail.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
 import './partner.css'
@@ -35,6 +37,15 @@ const FEATURE_PAGES = {
   crm: {
     label: 'Data', path: 'crm', element: <CrmLeads />,
   },
+  // Real webinars tab (2026-09-29, explicit instruction) -- was a non-interactive placeholder
+  // (see PLACEHOLDER_TABS below) until now. Shows real invite performance -- sent/clicked counts
+  // straight from webinar_link_clicks, the same table scripts/send_webinar_invites.py writes to
+  // on every real send. Its own flag, not tied to "accounts" -- built for one specific campaign
+  // (Majji's), not a stage-1 default every partner should see yet.
+  webinars: {
+    label: 'Webinars', path: 'webinars', element: <PartnerWebinars />,
+    extraRoutes: [{ path: 'webinars/:webinarId', element: <PartnerWebinarDetail /> }],
+  },
 }
 
 // Placeholder-only sidebar entries (2026-09-11, explicit instruction) -- shown to every partner
@@ -43,7 +54,7 @@ const FEATURE_PAGES = {
 // built; a plain, non-interactive div rather than a NavLink/Link makes that literal -- there is
 // no href to navigate and no route for "*" to fall through to, so clicking one is structurally a
 // no-op rather than a broken link.
-const PLACEHOLDER_TABS = ['Proposals', 'Webinars', 'Newsletters']
+const PLACEHOLDER_TABS = ['Proposals', 'Newsletters']
 
 // tenantOverride + basePath let an internal admin view a partner's real dashboard read-through
 // their own logged-in session (see v2/AdminPartnerView.jsx) instead of needing a second login --
