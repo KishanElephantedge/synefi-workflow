@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getWebinarDetail, formatApiError } from '../v2/api.js'
+import { getWebinarDetail, getWebinarRecipients, formatApiError } from '../v2/api.js'
 
 // Real webinar detail page (2026-09-29) -- description/agenda/speaker are static event metadata;
 // the stat cards below poll every 20s so they visibly move as real sends/clicks happen during an
@@ -13,6 +13,13 @@ export default function PartnerWebinarDetail({ basePath }) {
   const [webinar, setWebinar] = useState(null)
   const [error, setError] = useState(null)
   const timerRef = useRef(null)
+  // Which stat card's real list is expanded below, if any -- 'sent' | 'clicked' | null. Fetched
+  // on demand rather than upfront: the aggregate stat cards already answer "how many" cheaply on
+  // every poll; the itemized list is heavier and only worth a real request once someone actually
+  // asks "who are those N?" by clicking a card.
+  const [expanded, setExpanded] = useState(null)
+  const [recipients, setRecipients] = useState(null)
+  const [recipientsLoading, setRecipientsLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -31,6 +38,16 @@ export default function PartnerWebinarDetail({ basePath }) {
 
   const { stats } = webinar
   const variants = Object.entries(stats.by_variant || {})
+
+  const toggleExpanded = (view) => {
+    if (expanded === view) { setExpanded(null); return }
+    setExpanded(view)
+    setRecipientsLoading(true)
+    getWebinarRecipients(webinarId, view === 'clicked')
+      .then(data => setRecipients(data.recipients))
+      .catch(e => setError(formatApiError(e)))
+      .finally(() => setRecipientsLoading(false))
+  }
 
   return (
     <div>
@@ -65,19 +82,63 @@ export default function PartnerWebinarDetail({ basePath }) {
 
       <h3 style={{ marginBottom: '0.5rem' }}>Live stats</h3>
       <div className="partnerStatsRow">
-        <div className="partnerStatCard">
+        <button
+          type="button"
+          className="partnerStatCard"
+          style={{ cursor: 'pointer', textAlign: 'left', border: expanded === 'sent' ? '1px solid currentColor' : undefined }}
+          onClick={() => toggleExpanded('sent')}
+        >
           <div className="partnerStatCardValue">{stats.total_sent}</div>
-          <div className="partnerStatCardLabel">Invites sent</div>
-        </div>
-        <div className="partnerStatCard">
+          <div className="partnerStatCardLabel">Invites sent -- click to see who</div>
+        </button>
+        <button
+          type="button"
+          className="partnerStatCard"
+          style={{ cursor: 'pointer', textAlign: 'left', border: expanded === 'clicked' ? '1px solid currentColor' : undefined }}
+          onClick={() => toggleExpanded('clicked')}
+        >
           <div className="partnerStatCardValue">{stats.total_clicked}</div>
-          <div className="partnerStatCardLabel">Clicked the link</div>
-        </div>
+          <div className="partnerStatCardLabel">Clicked the link -- click to see who</div>
+        </button>
         <div className="partnerStatCard">
           <div className="partnerStatCardValue">{stats.click_rate != null ? `${Math.round(stats.click_rate * 100)}%` : '--'}</div>
           <div className="partnerStatCardLabel">Overall click rate</div>
         </div>
       </div>
+
+      {expanded && (
+        <div className="partnerTableWrap" style={{ marginTop: '1rem' }}>
+          {recipientsLoading ? (
+            <p className="partnerEmptyFeatures">Loading...</p>
+          ) : (
+            <table className="partnerTable">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Variant</th>
+                  <th>Sent at</th>
+                  <th>Clicks</th>
+                  <th>First clicked</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(recipients || []).map(r => (
+                  <tr key={r.email}>
+                    <td>{r.email}</td>
+                    <td>{r.variant ? r.variant.toUpperCase() : '--'}</td>
+                    <td className="partnerTableMuted">{r.sent_at ? new Date(r.sent_at).toLocaleString() : '--'}</td>
+                    <td>{r.click_count}</td>
+                    <td className="partnerTableMuted">{r.first_clicked_at ? new Date(r.first_clicked_at).toLocaleString() : '--'}</td>
+                  </tr>
+                ))}
+                {(recipients || []).length === 0 && (
+                  <tr><td colSpan={5} className="partnerTableMuted">Nobody yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {variants.length > 1 && (
         <>

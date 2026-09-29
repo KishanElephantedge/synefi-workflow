@@ -733,3 +733,7 @@ export function listWebinars() {
 export function getWebinarDetail(webinarId) {
   return client.get(`/gtm-os/partner/webinars/${webinarId}`).then(res => res.data)
 }
+
+export function getWebinarRecipients(webinarId, clickedOnly = false) {
+  return client.get(`/gtm-os/partner/webinars/${webinarId}/recipients`, { params: { clicked_only: clickedOnly } }).then(res => res.data)
+}
