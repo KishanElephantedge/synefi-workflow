@@ -95,10 +95,6 @@ export default function PartnerWebinarDetail({ basePath }) {
           </div>
         </>
       )}
-
-      <p className="partnerEmptyFeatures" style={{ marginTop: '1.5rem' }}>
-        {webinar.attendee_data_note}
-      </p>
     </div>
   )
 }
