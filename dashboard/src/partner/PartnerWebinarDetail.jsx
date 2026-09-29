@@ -82,24 +82,30 @@ export default function PartnerWebinarDetail({ basePath }) {
 
       <h3 style={{ marginBottom: '0.5rem' }}>Live stats</h3>
       <div className="partnerStatsRow">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           className="partnerStatCard"
-          style={{ cursor: 'pointer', textAlign: 'left', border: expanded === 'sent' ? '1px solid currentColor' : undefined }}
+          style={{ cursor: 'pointer', border: expanded === 'sent' ? '1px solid currentColor' : undefined }}
           onClick={() => toggleExpanded('sent')}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleExpanded('sent')}
         >
           <div className="partnerStatCardValue">{stats.total_sent}</div>
-          <div className="partnerStatCardLabel">Invites sent -- click to see who</div>
-        </button>
-        <button
-          type="button"
+          <div className="partnerStatCardLabel">Invites sent</div>
+          <div className="partnerStatCardLabel" style={{ opacity: 0.6 }}>Click here to see who</div>
+        </div>
+        <div
+          role="button"
+          tabIndex={0}
           className="partnerStatCard"
-          style={{ cursor: 'pointer', textAlign: 'left', border: expanded === 'clicked' ? '1px solid currentColor' : undefined }}
+          style={{ cursor: 'pointer', border: expanded === 'clicked' ? '1px solid currentColor' : undefined }}
           onClick={() => toggleExpanded('clicked')}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleExpanded('clicked')}
         >
           <div className="partnerStatCardValue">{stats.total_clicked}</div>
-          <div className="partnerStatCardLabel">Clicked the link -- click to see who</div>
-        </button>
+          <div className="partnerStatCardLabel">Clicked the link</div>
+          <div className="partnerStatCardLabel" style={{ opacity: 0.6 }}>Click here to see who</div>
+        </div>
         <div className="partnerStatCard">
           <div className="partnerStatCardValue">{stats.click_rate != null ? `${Math.round(stats.click_rate * 100)}%` : '--'}</div>
           <div className="partnerStatCardLabel">Overall click rate</div>
