@@ -105,6 +105,12 @@ export function savePartnerIcp(icp) {
   return client.put('/gtm-os/partner/icp', icp).then(res => res.data)
 }
 
+// Free-text (or pasted-doc-text) -> structured ICP preview, 2026-09-29. Read-only -- the caller
+// puts the result into the structured form for review, never auto-saves it.
+export function parsePartnerIcp(text) {
+  return client.post('/gtm-os/partner/icp/parse', { text }).then(res => res.data)
+}
+
 export function updateMyProfile({ name }) {
   return client.patch('/auth/me', { name }, { tenantScoped: false }).then(res => res.data)
 }

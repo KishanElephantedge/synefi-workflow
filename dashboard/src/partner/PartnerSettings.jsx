@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTenant } from '../context/TenantContext'
-import { getPartnerIcp, savePartnerIcp, updateMyProfile, formatApiError } from '../v2/api.js'
+import { getPartnerIcp, savePartnerIcp, parsePartnerIcp, updateMyProfile, formatApiError } from '../v2/api.js'
+
+// Parsed-ICP preview -> the same shape icpToForm() already produces from a real saved ICP, so
+// applying an AI parse result to the form is identical to loading one from the server.
+function parsedToForm(parsed) {
+  return icpToForm(parsed)
+}
 
 function icpToForm(icp) {
   return {
@@ -8,6 +14,12 @@ function icpToForm(icp) {
     geographies: (icp?.geographies || []).join(', '),
     revenue_min_usd: icp?.revenue_min_usd ?? '',
     revenue_max_usd: icp?.revenue_max_usd ?? '',
+    employee_min: icp?.employee_min ?? '',
+    employee_max: icp?.employee_max ?? '',
+    sales_team_size_min: icp?.sales_team_size_min ?? '',
+    sales_team_size_max: icp?.sales_team_size_max ?? '',
+    decision_maker_titles: (icp?.decision_maker_titles || []).join(', '),
+    notes: icp?.notes ?? '',
   }
 }
 
@@ -80,6 +92,11 @@ function IcpCard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  const [describeText, setDescribeText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [parseError, setParseError] = useState(null)
+  const [applied, setApplied] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     getPartnerIcp()
@@ -89,6 +106,32 @@ function IcpCard() {
   }, [])
 
   const set = (field) => (e) => { setForm((f) => ({ ...f, [field]: e.target.value })); setSaved(false) }
+
+  const onFileChosen = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setDescribeText((t) => (t ? t + '\n\n' : '') + String(reader.result || ''))
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const parseDescription = async () => {
+    if (!describeText.trim()) return
+    setParsing(true)
+    setParseError(null)
+    setApplied(false)
+    try {
+      const parsed = await parsePartnerIcp(describeText)
+      setForm(parsedToForm(parsed))
+      setApplied(true)
+      setSaved(false)
+    } catch (err) {
+      setParseError(formatApiError(err))
+    } finally {
+      setParsing(false)
+    }
+  }
 
   const save = async () => {
     setSaving(true)
@@ -100,6 +143,12 @@ function IcpCard() {
         geographies: form.geographies.split(',').map((s) => s.trim()).filter(Boolean),
         revenue_min_usd: form.revenue_min_usd ? Number(form.revenue_min_usd) : null,
         revenue_max_usd: form.revenue_max_usd ? Number(form.revenue_max_usd) : null,
+        employee_min: form.employee_min ? Number(form.employee_min) : null,
+        employee_max: form.employee_max ? Number(form.employee_max) : null,
+        sales_team_size_min: form.sales_team_size_min ? Number(form.sales_team_size_min) : null,
+        sales_team_size_max: form.sales_team_size_max ? Number(form.sales_team_size_max) : null,
+        decision_maker_titles: form.decision_maker_titles.split(',').map((s) => s.trim()).filter(Boolean),
+        notes: form.notes || null,
       })
       setSaved(true)
     } catch (err) {
@@ -121,6 +170,44 @@ function IcpCard() {
       </p>
 
       <div className="partnerFormRow">
+        <label className="partnerFormLabel">Describe your ICP</label>
+        <textarea
+          className="partnerSearchInput"
+          rows={4}
+          placeholder="Write it however you'd describe it -- e.g. 'SaaS founders doing $3-30M ARR, small sales team of 2-3, mostly US.' Or upload a doc below."
+          value={describeText}
+          onChange={(e) => { setDescribeText(e.target.value); setApplied(false) }}
+        />
+        <div className="partnerFormActions" style={{ marginTop: 8 }}>
+          <button className="partnerPrimaryBtn" onClick={parseDescription} disabled={parsing || !describeText.trim()}>
+            {parsing ? 'Reading...' : 'Fill fields from this'}
+          </button>
+          <button
+            type="button"
+            className="partnerPrimaryBtn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={parsing}
+          >
+            Upload a doc
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.csv"
+            onChange={onFileChosen}
+            style={{ display: 'none' }}
+          />
+        </div>
+        {parseError && <div className="partnerFormError">{parseError}</div>}
+        {applied && (
+          <div className="partnerSavedNote">
+            Filled in below from what you described -- check it over, then hit Save ICP.
+          </div>
+        )}
+        <div className="partnerHint">Text or markdown files only for now.</div>
+      </div>
+
+      <div className="partnerFormRow">
         <label className="partnerFormLabel">Industries</label>
         <input className="partnerSearchInput" type="text" placeholder="B2B SaaS, Fintech" value={form.industries} onChange={set('industries')} />
       </div>
@@ -137,6 +224,34 @@ function IcpCard() {
           <label className="partnerFormLabel">Revenue max (USD)</label>
           <input className="partnerSearchInput" type="number" placeholder="250000000" value={form.revenue_max_usd} onChange={set('revenue_max_usd')} />
         </div>
+      </div>
+      <div className="partnerFormRowSplit">
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Employees min</label>
+          <input className="partnerSearchInput" type="number" placeholder="30" value={form.employee_min} onChange={set('employee_min')} />
+        </div>
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Employees max</label>
+          <input className="partnerSearchInput" type="number" placeholder="100" value={form.employee_max} onChange={set('employee_max')} />
+        </div>
+      </div>
+      <div className="partnerFormRowSplit">
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Sales team size min</label>
+          <input className="partnerSearchInput" type="number" placeholder="2" value={form.sales_team_size_min} onChange={set('sales_team_size_min')} />
+        </div>
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Sales team size max</label>
+          <input className="partnerSearchInput" type="number" placeholder="3" value={form.sales_team_size_max} onChange={set('sales_team_size_max')} />
+        </div>
+      </div>
+      <div className="partnerFormRow">
+        <label className="partnerFormLabel">Decision maker titles</label>
+        <input className="partnerSearchInput" type="text" placeholder="Owner, Founder, CEO, Co-Founder" value={form.decision_maker_titles} onChange={set('decision_maker_titles')} />
+      </div>
+      <div className="partnerFormRow">
+        <label className="partnerFormLabel">Notes</label>
+        <textarea className="partnerSearchInput" rows={3} value={form.notes} onChange={set('notes')} />
       </div>
 
       {error && <div className="partnerFormError">{error}</div>}
