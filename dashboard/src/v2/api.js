@@ -743,3 +743,18 @@ export function getWebinarDetail(webinarId) {
 export function getWebinarRecipients(webinarId, clickedOnly = false) {
   return client.get(`/gtm-os/partner/webinars/${webinarId}/recipients`, { params: { clicked_only: clickedOnly } }).then(res => res.data)
 }
+
+
+// Email campaigns tab (2026-10-05) -- live Smartlead stats for Majji's two "Fractional
+// Partner" campaigns (backend hardcodes exactly these two ids; see app/routes/api.py).
+export function listEmailCampaigns() {
+  return client.get('/gtm-os/partner/email-campaigns').then(res => res.data)
+}
+
+export function getEmailCampaignDetail(campaignId) {
+  return client.get(`/gtm-os/partner/email-campaigns/${campaignId}`).then(res => res.data)
+}
+
+export function getEmailCampaignLeads(campaignId, offset = 0, limit = 100) {
+  return client.get(`/gtm-os/partner/email-campaigns/${campaignId}/leads`, { params: { offset, limit } }).then(res => res.data)
+}

@@ -8,6 +8,8 @@ import CrmLeads from './CrmLeads.jsx'
 import PartnerContent from './PartnerContent.jsx'
 import PartnerWebinars from './PartnerWebinars.jsx'
 import PartnerWebinarDetail from './PartnerWebinarDetail.jsx'
+import PartnerEmailCampaigns from './PartnerEmailCampaigns.jsx'
+import PartnerEmailCampaignDetail from './PartnerEmailCampaignDetail.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
 import './partner.css'
@@ -45,6 +47,13 @@ const FEATURE_PAGES = {
   webinars: {
     label: 'Webinars', path: 'webinars', element: <PartnerWebinars />,
     extraRoutes: [{ path: 'webinars/:webinarId', element: <PartnerWebinarDetail /> }],
+  },
+  // Real Smartlead campaign stats (2026-10-05, explicit instruction) for Majji's two
+  // "Fractional Partner" campaigns. Own flag, not tied to "accounts" -- same reasoning as
+  // webinars: built for this one partner's specific campaigns, not a stage-1 default.
+  emailCampaigns: {
+    label: 'Email', path: 'email-campaigns', element: <PartnerEmailCampaigns />,
+    extraRoutes: [{ path: 'email-campaigns/:campaignId', element: <PartnerEmailCampaignDetail /> }],
   },
 }
 
