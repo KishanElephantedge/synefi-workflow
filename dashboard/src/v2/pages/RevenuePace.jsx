@@ -171,8 +171,8 @@ export default function RevenuePace() {
               </p>
             ) : (
               <>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--v2-text)' }}>
-                  {formatUsd(data.actual_usd)} <span style={{ color: 'var(--v2-text-muted)', fontWeight: 500, fontSize: '1rem' }}>of {formatUsd(data.target_usd)}</span>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--v2-text)' }}>
+                  {formatUsd(data.actual_usd)} <span style={{ color: 'var(--v2-text-muted)', fontWeight: 500, fontSize: '0.85rem' }}>of {formatUsd(data.target_usd)}</span>
                 </div>
                 <div style={{ background: 'var(--v2-surface-elevated)', borderRadius: 999, height: 10, marginTop: 12, overflow: 'hidden' }}>
                   <div style={{ background: 'var(--v2-accent)', height: '100%', width: `${Math.min(data.pace_percent || 0, 100)}%`, borderRadius: 999 }} />
