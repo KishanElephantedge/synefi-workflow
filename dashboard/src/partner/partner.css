@@ -4,7 +4,13 @@
    about how much is actually here, and it would need updating every time V2's own sidebar
    design changes even though nothing here depends on it. */
 
+/* color-scheme tells the browser this page has a real light AND dark palette, so Chrome's
+   (and other browsers') "auto dark theme for web contents" heuristic stops force-inverting it --
+   that heuristic is what produced near-black-on-black table text (found live 2026-10-07,
+   screenshot showed the Accounts table unreadable in a dark browser/OS theme) when the page only
+   ever declared light-mode tokens with no dark variant to fall back to. */
 :root {
+  color-scheme: light dark;
   --p-paper: #FFFFFF;
   --p-ink: #000000;
   --p-muted: #6B6B6B;
@@ -15,6 +21,34 @@
   --p-warn-bg: #F2F2F2;
   --p-warn-ink: #4A4A4A;
   --p-ink-soft: #3A3A3A;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --p-paper: #0B0D11;
+    --p-ink: #EDEEF0;
+    --p-muted: #9AA0AA;
+    --p-muted-2: #7D838D;
+    --p-line: #262A31;
+    --p-line-soft: #1B1E24;
+    --p-hover: #171A20;
+    --p-warn-bg: #20242B;
+    --p-warn-ink: #C2C6CC;
+    --p-ink-soft: #C7CBD1;
+  }
+}
+
+:root[data-theme="dark"] {
+  --p-paper: #0B0D11;
+  --p-ink: #EDEEF0;
+  --p-muted: #9AA0AA;
+  --p-muted-2: #7D838D;
+  --p-line: #262A31;
+  --p-line-soft: #1B1E24;
+  --p-hover: #171A20;
+  --p-warn-bg: #20242B;
+  --p-warn-ink: #C2C6CC;
+  --p-ink-soft: #C7CBD1;
 }
 
 .partnerShell {
