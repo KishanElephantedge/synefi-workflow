@@ -4,13 +4,22 @@
    about how much is actually here, and it would need updating every time V2's own sidebar
    design changes even though nothing here depends on it. */
 
-/* color-scheme tells the browser this page has a real light AND dark palette, so Chrome's
-   (and other browsers') "auto dark theme for web contents" heuristic stops force-inverting it --
-   that heuristic is what produced near-black-on-black table text (found live 2026-10-07,
-   screenshot showed the Accounts table unreadable in a dark browser/OS theme) when the page only
-   ever declared light-mode tokens with no dark variant to fall back to. */
-:root {
-  color-scheme: light dark;
+/* Theme tokens scoped to .partnerShell, same isolation rule v2.css uses for .v2-shell: every
+   token is a custom property defined ONLY here, never on :root/html/body, so it can't leak into
+   or be overridden by anything else on the page. The active theme is a real user-chosen toggle
+   (PartnerThemeContext.jsx, persisted in localStorage), applied as data-partner-theme on this
+   same element -- NOT derived from the browser/OS's prefers-color-scheme. An earlier version
+   keyed off prefers-color-scheme directly (2026-10-07); corrected same day because that meant
+   the page's appearance depended on the browser's theme setting instead of a toggle the partner
+   actually controls, unlike V2's own dashboard. */
+.partnerShell {
+  /* Explicit and FIXED to 'light' here (not 'light dark') -- the point is this never changes
+     with the OS/browser preference, only with our own data-partner-theme attribute below. Found
+     live 2026-10-07: without this, a dark-preference browser still painted unstyled surfaces
+     (table rows) with its own dark default even while every token above correctly said "light",
+     because color-scheme was unset and Chromium fell back to prefers-color-scheme for anything
+     this stylesheet doesn't explicitly paint. */
+  color-scheme: light;
   --p-paper: #FFFFFF;
   --p-ink: #000000;
   --p-muted: #6B6B6B;
@@ -23,22 +32,8 @@
   --p-ink-soft: #3A3A3A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --p-paper: #0B0D11;
-    --p-ink: #EDEEF0;
-    --p-muted: #9AA0AA;
-    --p-muted-2: #7D838D;
-    --p-line: #262A31;
-    --p-line-soft: #1B1E24;
-    --p-hover: #171A20;
-    --p-warn-bg: #20242B;
-    --p-warn-ink: #C2C6CC;
-    --p-ink-soft: #C7CBD1;
-  }
-}
-
-:root[data-theme="dark"] {
+.partnerShell[data-partner-theme='dark'] {
+  color-scheme: dark;
   --p-paper: #0B0D11;
   --p-ink: #EDEEF0;
   --p-muted: #9AA0AA;
@@ -153,6 +148,35 @@
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--p-line-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partnerThemeToggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-muted-2);
+  cursor: pointer;
+}
+
+.partnerThemeToggle:hover {
+  background: var(--p-hover);
+}
+
+/* .partnerLogoutBtn keeps width: 100% from below -- flex-grow lets it fill the remaining row
+   next to the fixed-size toggle rather than wrapping under it. */
+.partnerSidebarFooter .partnerLogoutBtn {
+  flex: 1;
+  width: auto;
 }
 
 .partnerLogoutBtn {
@@ -584,6 +608,13 @@ a.partnerLogoutBtn {
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 13.5px;
+  /* Real bug, found live 2026-10-07: App.css has a global, unscoped `table { background:
+     var(--surface) }` rule for V1's own pages. .partnerTable IS a <table>, so it inherited
+     that rule (V1's --surface flips dark via the browser's OWN prefers-color-scheme, not this
+     toggle) since partner.css never gave .partnerTable its own background to override it with.
+     An explicit declaration here beats the bare-tag selector by specificity regardless of
+     source order or browser theme. */
+  background: var(--p-paper);
 }
 
 .partnerTable th:nth-child(1), .partnerTable td:nth-child(1) { width: 24%; }

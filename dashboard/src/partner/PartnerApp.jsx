@@ -12,6 +12,8 @@ import PartnerEmailCampaigns from './PartnerEmailCampaigns.jsx'
 import PartnerEmailCampaignDetail from './PartnerEmailCampaignDetail.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
+import { PartnerThemeProvider, usePartnerTheme } from './PartnerThemeContext.jsx'
+import { IconSun, IconMoon } from '../v2/icons.jsx'
 import './partner.css'
 
 // One entry per possible enabledFeatures value. Stage-by-stage rollout means this map only
@@ -71,9 +73,35 @@ const PLACEHOLDER_TABS = ['Proposals', 'Newsletters']
 // frontend routing gap, not a new access grant. adminMode disables the one control
 // (ProfileCard's name edit) that would otherwise silently edit the ADMIN's own account while
 // looking at someone else's dashboard.
-export default function PartnerApp({ tenantOverride, basePath = '/partner', adminMode = false }) {
+// Theme toggle shown in the sidebar footer -- same icon pair and on/off logic as V2Header's,
+// just not sharing the component since the partner shell has no header bar to put it in.
+function PartnerThemeToggle() {
+  const { theme, toggleTheme } = usePartnerTheme()
+  return (
+    <button
+      type="button"
+      className="partnerThemeToggle"
+      onClick={toggleTheme}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? <IconSun width={16} height={16} /> : <IconMoon width={16} height={16} />}
+    </button>
+  )
+}
+
+export default function PartnerApp(props) {
+  return (
+    <PartnerThemeProvider>
+      <PartnerAppInner {...props} />
+    </PartnerThemeProvider>
+  )
+}
+
+function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = false }) {
   const { user, logout } = useTenant()
   const tenant = tenantOverride || user?.tenant
+  const { theme } = usePartnerTheme()
 
   // Gate() already checks role === 'partner' before rendering this component for a real partner
   // login, but a partner user with no tenant assigned (shouldn't happen -- create_partner_user
@@ -81,7 +109,7 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
   // gets a clear message instead of a blank shell or a crash reading tenant.slug below.
   if (!tenant) {
     return (
-      <div className="partnerShell">
+      <div className="partnerShell" data-partner-theme={theme}>
         <div className="partnerMain">
           <p className="partnerEmptyFeatures">
             Your account has no workspace assigned yet. Contact Fractional Partners to get set up.
@@ -103,7 +131,7 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
   const defaultPath = firstFeature ? FEATURE_PAGES[firstFeature].path : 'settings'
 
   return (
-    <div className="partnerShell">
+    <div className="partnerShell" data-partner-theme={theme}>
       <aside className="partnerSidebar">
         <div className="partnerBrand">
           <div className="partnerBrandRow">
@@ -144,11 +172,12 @@ export default function PartnerApp({ tenantOverride, basePath = '/partner', admi
           </NavLink>
         </nav>
 
-        {!adminMode && (
-          <div className="partnerSidebarFooter">
+        <div className="partnerSidebarFooter">
+          <PartnerThemeToggle />
+          {!adminMode && (
             <button className="partnerLogoutBtn" onClick={logout}>Log out</button>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
 
       <main className="partnerMain">
