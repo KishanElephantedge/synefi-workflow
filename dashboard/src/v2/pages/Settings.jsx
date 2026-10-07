@@ -6,6 +6,7 @@ import {
 } from '../api.js'
 import { IconAlertTriangle, IconEdit, IconCheck } from '../icons.jsx'
 import IcpOfferings from './IcpOfferings.jsx'
+import PartnerFeatures from './PartnerFeatures.jsx'
 import Knowledge from './Knowledge.jsx'
 import Users from './Users.jsx'
 import UsageAndLinks from './UsageAndLinks.jsx'
@@ -15,7 +16,7 @@ import UsageAndLinks from './UsageAndLinks.jsx'
 // Efficiency above), so they moved here as tabs instead of their own standalone nav items. Their
 // full existing page components are reused as-is (imported directly) -- no internal logic
 // rewritten, just re-hosted under this tab bar.
-const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge', 'Users', 'Usage & Links']
+const TABS = ['Strategy', 'Playbook', 'Connections', 'Performance', 'Efficiency', 'ICPs & Offerings', 'Knowledge', 'Partner Features', 'Users', 'Usage & Links']
 
 const CONTEXT_TABS = new Set(['Strategy', 'Playbook', 'Connections'])
 
@@ -23,7 +24,7 @@ const CONTEXT_TABS = new Set(['Strategy', 'Playbook', 'Connections'])
 // /v2/settings?tab=efficiency -- same pattern IcpOfferings.jsx already uses.
 const TAB_SLUGS = {
   strategy: 'Strategy', playbook: 'Playbook', connections: 'Connections', performance: 'Performance', efficiency: 'Efficiency',
-  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge', users: 'Users', usage: 'Usage & Links',
+  'icps-offerings': 'ICPs & Offerings', knowledge: 'Knowledge', 'partner-features': 'Partner Features', users: 'Users', usage: 'Usage & Links',
 }
 
 // ---------- shared field primitives ----------
@@ -902,6 +903,7 @@ export default function Settings() {
         </>
       ))}
 
+      {tab === 'Partner Features' && <PartnerFeatures />}
       {tab === 'Performance' && <PerformanceTab />}
       {tab === 'Efficiency' && <EfficiencyTab />}
       {tab === 'ICPs & Offerings' && <IcpOfferings />}

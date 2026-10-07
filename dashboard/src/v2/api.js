@@ -111,6 +111,17 @@ export function parsePartnerIcp(text) {
   return client.post('/gtm-os/partner/icp/parse', { text }).then(res => res.data)
 }
 
+// Admin-only: configure another tenant's features. Elephant Edge runs partners' back office, so
+// these are driven from the V2 admin side today; partner self-serve arrives with the subscription
+// model. The backend gates them on the Elephant Edge tenant.
+export function getPartnerFeatures(tenantId) {
+  return client.get(`/gtm-os/admin/partners/${tenantId}/features`).then(res => res.data)
+}
+
+export function savePartnerFeatures(tenantId, body) {
+  return client.put(`/gtm-os/admin/partners/${tenantId}/features`, body).then(res => res.data)
+}
+
 export function updateMyProfile({ name }) {
   return client.patch('/auth/me', { name }, { tenantScoped: false }).then(res => res.data)
 }
