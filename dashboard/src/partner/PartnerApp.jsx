@@ -12,6 +12,7 @@ import PartnerWebinarDetail from './PartnerWebinarDetail.jsx'
 import PartnerEmailCampaigns from './PartnerEmailCampaigns.jsx'
 import PartnerEmailCampaignDetail from './PartnerEmailCampaignDetail.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
+import RequestAccess from './RequestAccess.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
 import { PartnerThemeProvider, usePartnerTheme } from './PartnerThemeContext.jsx'
 import { IconSun, IconMoon } from '../v2/icons.jsx'
@@ -25,6 +26,7 @@ import './partner.css'
 const FEATURE_PAGES = {
   accounts: {
     label: 'Accounts', path: 'accounts', element: <PartnerAccounts />,
+    description: 'The companies and contacts sourced against your ICP.',
     // Engagement mining's leads live in this SAME list, behind a source filter (2026-09-22,
     // explicit correction -- a first version put them on their own sidebar tab; "I never told
     // you to separate that into a different tab... add filters, All and these two" is the real
@@ -34,6 +36,7 @@ const FEATURE_PAGES = {
   },
   content: {
     label: 'LinkedIn Content', path: 'content', element: <PartnerContent />,
+    description: 'Trending topics and drafts for your own LinkedIn voice.',
     // Full-page drafting (2026-10-12, explicit instruction): the slide-over drawer was too
     // small for actually reviewing/editing a draft -- "Generate Draft" now navigates here
     // instead of opening the drawer, same click-through pattern as the accounts detail route.
@@ -45,6 +48,7 @@ const FEATURE_PAGES = {
   // built for one specific engagement, not a stage-1 default.
   crm: {
     label: 'Data', path: 'crm', element: <CrmLeads />,
+    description: 'Your uploaded lead lists, enriched and scored.',
   },
   // Real webinars tab (2026-09-29, explicit instruction) -- was a non-interactive placeholder
   // (see PLACEHOLDER_TABS below) until now. Shows real invite performance -- sent/clicked counts
@@ -53,6 +57,7 @@ const FEATURE_PAGES = {
   // (Majji's), not a stage-1 default every partner should see yet.
   webinars: {
     label: 'Webinars', path: 'webinars', element: <PartnerWebinars />,
+    description: 'Invite performance for your webinar campaigns.',
     extraRoutes: [{ path: 'webinars/:webinarId', element: <PartnerWebinarDetail /> }],
   },
   // Real Smartlead campaign stats (2026-10-05) for a partner's own campaigns. Key MUST match
@@ -65,17 +70,22 @@ const FEATURE_PAGES = {
   // wasn't actually enabled under its real key, not a routing bug).
   email_campaigns: {
     label: 'Email', path: 'email-campaigns', element: <PartnerEmailCampaigns />,
+    description: 'Your email campaign sends, opens, and replies.',
     extraRoutes: [{ path: 'email-campaigns/:campaignId', element: <PartnerEmailCampaignDetail /> }],
   },
 }
 
-// Placeholder-only sidebar entries (2026-09-11, explicit instruction) -- shown to every partner
-// regardless of enabledFeatures, next to no real page, no route, and no click behavior. These
-// exist purely to preview the module list from Majji's reference mockups before any of them are
-// built; a plain, non-interactive div rather than a NavLink/Link makes that literal -- there is
-// no href to navigate and no route for "*" to fall through to, so clicking one is structurally a
-// no-op rather than a broken link.
-const PLACEHOLDER_TABS = ['Proposals', 'Newsletters']
+// Placeholder-only sidebar entries (2026-09-11, originally explicit instruction to show them as
+// non-interactive). CHANGED 2026-10-12, explicit instruction, generalized for every partner: a
+// tab without a real page yet should still be clickable and open a real "Request Access" page
+// (heading, subheading, a button that notifies Elephant Edge) instead of being a dead div. No
+// `element`/`path` here because there is no real page behind these yet -- RequestAccess is
+// rendered for ANY feature key that isn't in the partner's own enabledFeatures, whether it's one
+// of these placeholders or a real FEATURE_PAGES entry they just haven't been enabled for.
+const PLACEHOLDER_TABS = [
+  { key: 'proposals', label: 'Proposals', description: 'Generate and track proposals for your prospects.' },
+  { key: 'newsletters', label: 'Newsletters', description: 'Draft and send newsletters to your list.' },
+]
 
 // tenantOverride + basePath let an internal admin view a partner's real dashboard read-through
 // their own logged-in session (see v2/AdminPartnerView.jsx) instead of needing a second login --
@@ -140,6 +150,17 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
   // stage is turned on for a tenant.
   const defaultPath = firstFeature ? FEATURE_PAGES[firstFeature].path : 'settings'
 
+  // Every tab is now clickable (2026-10-12, explicit instruction, generalized for every
+  // partner): a key the partner HAS gets its real page+route; a key they don't gets the SAME
+  // RequestAccess page+route, just scoped to that feature's own label/description. One list
+  // drives both the nav AND the routes, so a tab can never silently exist in one but not the
+  // other -- the exact failure mode the old PLACEHOLDER_TABS (plain divs, no route at all) and
+  // FEATURE_PAGES (route only if enabled) split caused when they were two different lists.
+  const allTabs = [
+    ...Object.entries(FEATURE_PAGES).map(([key, page]) => ({ key, ...page })),
+    ...PLACEHOLDER_TABS.map((t) => ({ ...t, path: t.key, extraRoutes: [] })),
+  ]
+
   return (
     <div className="partnerShell" data-partner-theme={theme}>
       <aside className="partnerSidebar">
@@ -157,22 +178,14 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
         </div>
 
         <nav>
-          {features.length === 0 && (
-            <p className="partnerEmptyFeatures">Nothing to show yet -- check back soon.</p>
-          )}
-          {features.map((f) => (
+          {allTabs.map((tab) => (
             <NavLink
-              key={f}
-              to={`${basePath}/${FEATURE_PAGES[f].path}`}
+              key={tab.key}
+              to={`${basePath}/${tab.path}`}
               className={({ isActive }) => 'partnerNavLink' + (isActive ? ' partnerNavLinkActive' : '')}
             >
-              {FEATURE_PAGES[f].label}
+              {tab.label}
             </NavLink>
-          ))}
-          {PLACEHOLDER_TABS.map((label) => (
-            <div key={label} className="partnerNavLink partnerNavLinkPlaceholder">
-              {label}
-            </div>
           ))}
           <NavLink
             to={`${basePath}/settings`}
@@ -192,8 +205,16 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
 
       <main className="partnerMain">
         <Routes>
-          {features.map((f) => (
-            <Route key={f} path={FEATURE_PAGES[f].path} element={cloneElement(FEATURE_PAGES[f].element, { basePath })} />
+          {allTabs.map((tab) => (
+            <Route
+              key={tab.key}
+              path={tab.path}
+              element={
+                features.includes(tab.key)
+                  ? cloneElement(tab.element, { basePath })
+                  : <RequestAccess featureKey={tab.key} label={tab.label} description={tab.description} />
+              }
+            />
           ))}
           {features.flatMap((f) => FEATURE_PAGES[f].extraRoutes || []).map((r) => (
             <Route key={r.path} path={r.path} element={cloneElement(r.element, { basePath })} />

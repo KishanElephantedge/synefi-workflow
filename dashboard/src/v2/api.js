@@ -118,6 +118,13 @@ export function getPartnerFeatures(tenantId) {
   return client.get(`/gtm-os/admin/partners/${tenantId}/features`).then(res => res.data)
 }
 
+// A tab the partner doesn't have yet is clickable (2026-10-12, generalized for every partner)
+// and opens RequestAccess instead of a silently non-interactive placeholder. Never enables
+// anything itself -- only notifies Elephant Edge, who decides.
+export function requestFeatureAccess(featureKey) {
+  return client.post(`/gtm-os/partner/features/${featureKey}/request-access`).then(res => res.data)
+}
+
 export function savePartnerFeatures(tenantId, body) {
   return client.put(`/gtm-os/admin/partners/${tenantId}/features`, body).then(res => res.data)
 }
