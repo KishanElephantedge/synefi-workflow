@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getContentSuggestions, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
 
 // One tab per real way the system finds something to post about -- each origin from the
@@ -17,7 +18,7 @@ const PROMPT_SUGGESTIONS = [
   'Write a LinkedIn post for the top topic',
 ]
 
-function renderMarkdown(text) {
+export function renderMarkdown(text) {
   if (!text) return null
   const lines = text.split('\n')
   const blocks = []
@@ -46,7 +47,7 @@ function renderMarkdown(text) {
   return blocks
 }
 
-function SparkleIcon(props) {
+export function SparkleIcon(props) {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d="M12 2l1.8 5.6L19.4 9.4 13.8 11.2 12 17 10.2 11.2 4.6 9.4 10.2 7.6z" />
@@ -55,7 +56,7 @@ function SparkleIcon(props) {
   )
 }
 
-function SendIcon(props) {
+export function SendIcon(props) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M12 19V5M5 12l7-7 7 7" />
@@ -240,30 +241,41 @@ const ContentChat = forwardRef(function ContentChat({ onTopicsChanged, isPanelOp
   )
 })
 
-function SuggestedTopicCard({ suggestion, onAsk }) {
+function SuggestedTopicCard({ suggestion, basePath }) {
+  const navigate = useNavigate()
+  const goToDraft = () => navigate(`${basePath}/content/draft`, {
+    state: {
+      headline: suggestion.headline,
+      prompt: 'Write a LinkedIn post about "' + suggestion.headline + '" -- ' + suggestion.suggested_angle,
+    },
+  })
   return (
     <div className={'partnerSuggestedCard' + (suggestion.recommended ? ' recommended' : '')}>
       {suggestion.recommended && <div className="partnerRecommendedBadge">Recommended</div>}
       <div className="partnerSuggestedHeadline">{suggestion.headline}</div>
       <p className="partnerSuggestedWhyNow">{suggestion.why_now}</p>
-      <button
-        type="button"
-        className="partnerTopicGenerateDraftBtn"
-        onClick={() => onAsk('Write a LinkedIn post about "' + suggestion.headline + '" -- ' + suggestion.suggested_angle)}
-      >
+      <button type="button" className="partnerTopicGenerateDraftBtn" onClick={goToDraft}>
         Generate Draft
       </button>
     </div>
   )
 }
 
-function SuggestedTopicsPanel({ refreshKey, onAsk }) {
+function SuggestedTopicsPanel({ refreshKey, onAsk, basePath }) {
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState(SUGGESTION_TABS[0].key)
+  const [activeTab, setActiveTab] = useState(null)
 
   useEffect(() => {
-    getContentSuggestions().then(data => setSuggestions(data.suggestions)).catch(err => setError(formatApiError(err)))
+    getContentSuggestions().then(data => {
+      setSuggestions(data.suggestions)
+      // Default to the first tab that actually HAS something, not always "Market Trend" --
+      // landing on an empty tab when another one has real suggestions is confusing (explicit
+      // instruction, 2026-10-12). Only sets it once (on load/refresh), never overrides a
+      // partner's own tab click afterwards.
+      const firstNonEmpty = SUGGESTION_TABS.find(t => data.suggestions.some(s => t.origins.includes(s.origin)))
+      setActiveTab(firstNonEmpty?.key || SUGGESTION_TABS[0].key)
+    }).catch(err => setError(formatApiError(err)))
   }, [refreshKey])
 
   if (error) {
@@ -309,7 +321,7 @@ function SuggestedTopicsPanel({ refreshKey, onAsk }) {
       ) : (
         <div className="partnerSuggestedTopicsGrid">
           {tabSuggestions.map(s => (
-            <SuggestedTopicCard key={s.content_opportunity_id} suggestion={s} onAsk={onAsk} />
+            <SuggestedTopicCard key={s.content_opportunity_id} suggestion={s} basePath={basePath} />
           ))}
         </div>
       )}
@@ -317,15 +329,21 @@ function SuggestedTopicsPanel({ refreshKey, onAsk }) {
   )
 }
 
-export default function PartnerContent() {
+export default function PartnerContent({ basePath = '/partner' }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const chatRef = useRef(null)
+  const navigate = useNavigate()
 
   const askChat = (text) => {
     setIsPanelOpen(true)
     chatRef.current?.ask(text)
   }
+
+  // "+ New Post" and every "Generate Draft" button go to the full drafting page now (2026-10-12,
+  // explicit instruction) -- the slide-over drawer stays only for quick asks from the top
+  // AI Copilot search bar.
+  const goToDraftPage = (prompt) => navigate(`${basePath}/content/draft`, { state: prompt ? { prompt } : undefined })
 
   return (
     <div className="partnerExecFeedPage">
@@ -339,7 +357,7 @@ export default function PartnerContent() {
           <button
             type="button"
             className="partnerExecNewPostBtn"
-            onClick={() => askChat('Draft a high-impact LinkedIn post based on current trends')}
+            onClick={() => goToDraftPage('Draft a high-impact LinkedIn post based on current trends')}
           >
             + New Post
           </button>
@@ -355,7 +373,7 @@ export default function PartnerContent() {
       />
 
       {/* What should you post today -- tabbed by source, strongest suggestion flagged */}
-      <SuggestedTopicsPanel refreshKey={refreshKey} onAsk={askChat} />
+      <SuggestedTopicsPanel refreshKey={refreshKey} onAsk={askChat} basePath={basePath} />
     </div>
   )
 }

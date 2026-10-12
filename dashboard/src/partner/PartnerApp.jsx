@@ -6,6 +6,7 @@ import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
 import CrmLeads from './CrmLeads.jsx'
 import PartnerContent from './PartnerContent.jsx'
+import PartnerContentDraft from './PartnerContentDraft.jsx'
 import PartnerWebinars from './PartnerWebinars.jsx'
 import PartnerWebinarDetail from './PartnerWebinarDetail.jsx'
 import PartnerEmailCampaigns from './PartnerEmailCampaigns.jsx'
@@ -33,6 +34,10 @@ const FEATURE_PAGES = {
   },
   content: {
     label: 'LinkedIn Content', path: 'content', element: <PartnerContent />,
+    // Full-page drafting (2026-10-12, explicit instruction): the slide-over drawer was too
+    // small for actually reviewing/editing a draft -- "Generate Draft" now navigates here
+    // instead of opening the drawer, same click-through pattern as the accounts detail route.
+    extraRoutes: [{ path: 'content/draft', element: <PartnerContentDraft /> }],
   },
   // Sandy Yu's webinar outreach CRM (2026-09-23) -- her own stated pain point (per Slack): no
   // structured way to see where each outreach target is in the process. Gated behind its own
