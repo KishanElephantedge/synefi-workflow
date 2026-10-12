@@ -1,5 +1,15 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { getMarketIntelligence, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
+import { getMarketIntelligence, getContentSuggestions, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
+
+// Plain-language label per real origin -- see backend's get_suggested_content_opportunities()
+// for what each one is actually grounded in.
+const ORIGIN_META = {
+  trend: { label: 'Market trend', icon: '📈' },
+  competitor: { label: 'Competitor activity', icon: '🎯' },
+  account_intelligence: { label: 'From your pipeline', icon: '🏢' },
+  pipeline_signal: { label: 'From your pipeline', icon: '🏢' },
+  authentic_voice: { label: 'In your own voice', icon: '🎙️' },
+}
 
 const TREND_META = {
   emerging: { tier: 'strong', label: 'Emerging', momentum: 'High momentum' },
@@ -330,6 +340,60 @@ function TopicTableRow({ topic, onAsk }) {
   )
 }
 
+function SuggestedTopicCard({ suggestion, onAsk }) {
+  const meta = ORIGIN_META[suggestion.origin] || { label: suggestion.origin, icon: '💡' }
+  return (
+    <div className={'partnerSuggestedCard' + (suggestion.recommended ? ' recommended' : '')}>
+      {suggestion.recommended && (
+        <div className="partnerRecommendedBadge">
+          <span aria-hidden="true">⭐</span> Recommended
+        </div>
+      )}
+      <div className="partnerSuggestedOrigin">
+        <span aria-hidden="true">{meta.icon}</span> {meta.label}
+      </div>
+      <div className="partnerSuggestedHeadline">{suggestion.headline}</div>
+      <p className="partnerSuggestedWhyNow">{suggestion.why_now}</p>
+      <button
+        type="button"
+        className="partnerTopicGenerateDraftBtn"
+        onClick={() => onAsk('Write a LinkedIn post about "' + suggestion.headline + '" -- ' + suggestion.suggested_angle)}
+      >
+        Generate Draft
+      </button>
+    </div>
+  )
+}
+
+function SuggestedTopicsPanel({ refreshKey, onAsk }) {
+  const [suggestions, setSuggestions] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    getContentSuggestions().then(data => setSuggestions(data.suggestions)).catch(err => setError(formatApiError(err)))
+  }, [refreshKey])
+
+  if (error) return null // non-fatal -- the Trending Topics feed below still works independently
+  if (suggestions === null) {
+    return <div className="partnerCardWrap"><div className="partnerLoadingState">Finding what to suggest…</div></div>
+  }
+  if (suggestions.length === 0) return null
+
+  return (
+    <div className="partnerSuggestedTopicsSection">
+      <h2 className="partnerSuggestedTopicsHeading">Suggested for you</h2>
+      <p className="partnerExecSubheading" style={{ marginTop: 0 }}>
+        Pulled from everything the system knows about your business -- market trends, competitor activity, your own pipeline, and your own voice.
+      </p>
+      <div className="partnerSuggestedTopicsGrid">
+        {suggestions.map(s => (
+          <SuggestedTopicCard key={s.content_opportunity_id} suggestion={s} onAsk={onAsk} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function TrendingTopicsFeed({ refreshKey, onAsk }) {
   const [topics, setTopics] = useState(null)
   const [error, setError] = useState(null)
@@ -444,6 +508,9 @@ export default function PartnerContent() {
         setIsPanelOpen={setIsPanelOpen}
         onTopicsChanged={() => setRefreshKey(k => k + 1)}
       />
+
+      {/* Suggested for you -- cross-origin ranked suggestions, strongest one flagged */}
+      <SuggestedTopicsPanel refreshKey={refreshKey} onAsk={askChat} />
 
       {/* Executive Structured Feed Table */}
       <TrendingTopicsFeed refreshKey={refreshKey} onAsk={askChat} />

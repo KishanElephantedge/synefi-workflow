@@ -166,6 +166,13 @@ export function getMarketIntelligence() {
   return client.get('/gtm-os/market-intelligence').then(res => res.data)
 }
 
+// Cross-origin "what should I post next" suggestions (2026-10-12) -- merges trend/competitor/
+// account_intelligence/pipeline_signal/authentic_voice into one ranked list, with the single
+// strongest one flagged recommended:true. See backend's get_suggested_content_opportunities().
+export function getContentSuggestions() {
+  return client.get('/gtm-os/content-suggestions').then(res => res.data)
+}
+
 // Content Intelligence -- 2026-08-28, real evidence-backed content ideas (why-now + angle),
 // tagged by which real leg (trend search vs. named-competitor search) produced them. Backed by
 // GET /gtm-os/content-opportunities, POST .../review, POST .../generate-draft.
