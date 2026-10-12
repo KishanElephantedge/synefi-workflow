@@ -1386,8 +1386,14 @@ a.partnerLogoutBtn {
   cursor: not-allowed;
 }
 
-.partnerRequestAccessBtn {
-  align-self: flex-start;
+.partnerRequestAccess {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: calc(100vh - 80px);
+  text-align: center;
 }
 
 .partnerRequestAccessDone {

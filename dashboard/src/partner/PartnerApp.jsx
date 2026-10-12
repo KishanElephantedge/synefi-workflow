@@ -1,7 +1,8 @@
-import { cloneElement } from 'react'
+import { cloneElement, useEffect, useState } from 'react'
 import { Navigate, Route, Routes, NavLink } from 'react-router-dom'
 import { useTenant } from '../context/TenantContext'
 import { setActiveTenant } from '../api/client'
+import { getFeatureReadiness } from '../v2/api.js'
 import PartnerAccounts from './PartnerAccounts.jsx'
 import PartnerAccountDetail from './PartnerAccountDetail.jsx'
 import CrmLeads from './CrmLeads.jsx'
@@ -87,6 +88,19 @@ const PLACEHOLDER_TABS = [
   { key: 'newsletters', label: 'Newsletters', description: 'Draft and send newsletters to your list.' },
 ]
 
+// "accounts" is deliberately exempt from the readiness check every other feature gets
+// (2026-10-12): its backend "ready" state requires a real partner_icp, but real account data
+// can exist without one -- Paul Foreman's 124 accounts came from a direct import, bypassing the
+// ICP-driven sourcing pipeline entirely, and he genuinely has something real to see on that tab
+// even though no ICP was ever set for him. Every other feature's real page can actually render
+// broken/empty without its own config (content/email_campaigns both did, live), so those stay
+// gated on readiness -- not ready, or still loading (readiness === null), shows Request Access.
+function isTabReady(key, enabledFeatures, readiness) {
+  if (!enabledFeatures.includes(key)) return false
+  if (key === 'accounts') return true
+  return Boolean(readiness?.[key]?.ready)
+}
+
 // tenantOverride + basePath let an internal admin view a partner's real dashboard read-through
 // their own logged-in session (see v2/AdminPartnerView.jsx) instead of needing a second login --
 // gateway's proxy() already allows an internal user through to any tenant, so this is purely a
@@ -122,6 +136,18 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
   const { user, logout } = useTenant()
   const tenant = tenantOverride || user?.tenant
   const { theme } = usePartnerTheme()
+  // {key: {enabled, ready}} -- fetched once per tenant. null while loading, which the route
+  // gate below treats as "not ready yet" (same safe-default direction as everything else here:
+  // show Request Access rather than risk rendering a real page before we know it actually
+  // works). Declared before the early `!tenant` return so hook order never changes between
+  // renders.
+  const [readiness, setReadiness] = useState(null)
+
+  useEffect(() => {
+    if (!tenant?.slug) return
+    setReadiness(null)
+    getFeatureReadiness().then(setReadiness).catch(() => setReadiness({}))
+  }, [tenant?.slug])
 
   // Gate() already checks role === 'partner' before rendering this component for a real partner
   // login, but a partner user with no tenant assigned (shouldn't happen -- create_partner_user
@@ -210,9 +236,9 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
               key={tab.key}
               path={tab.path}
               element={
-                features.includes(tab.key)
+                isTabReady(tab.key, features, readiness)
                   ? cloneElement(tab.element, { basePath })
-                  : <RequestAccess featureKey={tab.key} label={tab.label} description={tab.description} />
+                  : <RequestAccess featureKey={tab.key} label={tab.label} />
               }
             />
           ))}

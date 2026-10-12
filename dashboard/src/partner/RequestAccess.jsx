@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { requestFeatureAccess, formatApiError } from '../v2/api.js'
 
-// Shown for any sidebar tab a partner doesn't have enabled yet (2026-10-12, explicit
-// instruction, generalized for every partner rather than built one-off for one). Previously
-// these tabs were either absent entirely or a non-interactive placeholder div -- now every tab
-// is clickable and opens this real page instead.
-export default function RequestAccess({ featureKey, label, description }) {
+// Shown for any sidebar tab a partner doesn't actually have working yet -- either not enabled
+// at all, or enabled but still missing real config (2026-10-12, explicit instruction,
+// generalized for every partner). Previously a not-enabled tab was absent or a non-interactive
+// placeholder, and an enabled-but-unconfigured one rendered its real page broken/empty -- both
+// now get this same page. Deliberately just a centered heading and the button, per explicit
+// instruction ("just at the center show the heading and just the button") -- no description
+// text in the layout.
+export default function RequestAccess({ featureKey, label }) {
   const [state, setState] = useState('idle') // idle | sending | requested | error
   const [error, setError] = useState('')
 
@@ -21,9 +24,8 @@ export default function RequestAccess({ featureKey, label, description }) {
   }
 
   return (
-    <div className="partnerExecFeedPage partnerRequestAccess">
+    <div className="partnerRequestAccess">
       <h1 className="partnerExecHeading">{label}</h1>
-      <p className="partnerExecSubheading">{description}</p>
 
       {state === 'requested' ? (
         <div className="partnerRequestAccessDone">Requested — we’ll be in touch.</div>

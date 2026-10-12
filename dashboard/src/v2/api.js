@@ -125,6 +125,14 @@ export function requestFeatureAccess(featureKey) {
   return client.post(`/gtm-os/partner/features/${featureKey}/request-access`).then(res => res.data)
 }
 
+// {key: {enabled, ready}} for every feature -- "enabled" alone isn't enough to decide whether
+// to show a feature's real page (2026-10-12: Paul Foreman had "content" enabled but not ready,
+// no own_linkedin_profile_url set, and the real page rendered broken/empty instead of a clean
+// request-access state).
+export function getFeatureReadiness() {
+  return client.get('/gtm-os/partner/features/readiness').then(res => res.data)
+}
+
 export function savePartnerFeatures(tenantId, body) {
   return client.put(`/gtm-os/admin/partners/${tenantId}/features`, body).then(res => res.data)
 }
