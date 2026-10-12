@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useTenant } from '../context/TenantContext'
 import { getPartnerIcp, savePartnerIcp, parsePartnerIcp, updateMyProfile, formatApiError } from '../v2/api.js'
 
-// Parsed-ICP preview -> the same shape icpToForm() already produces from a real saved ICP, so
-// applying an AI parse result to the form is identical to loading one from the server.
 function parsedToForm(parsed) {
   return icpToForm(parsed)
 }
@@ -27,21 +25,27 @@ export default function PartnerSettings({ adminMode = false }) {
   const { user } = useTenant()
 
   return (
-    <div>
-      <div className="partnerAccountsHeader">
-        <h1>Settings</h1>
-        <p>Your profile and the ICP we fetch accounts against.</p>
+    <div className="partnerSettingsExecutivePage">
+      {/* Header */}
+      <div className="partnerSettingsHeader">
+        <div className="partnerSettingsHeaderInfo">
+          <h1>Settings</h1>
+          <p>Manage your account profile and Ideal Customer Profile (ICP) criteria used for account discovery.</p>
+        </div>
       </div>
 
-      {/* Hidden in admin mode -- ProfileCard edits the CURRENT SESSION's own name via
-          PATCH /auth/me, which is the admin's own account here, not the partner's. Nothing
-          about editing a partner's display name is possible or needed from this view. */}
-      {adminMode ? (
-        <p className="partnerEmptyFeatures">Profile editing is only available to the partner themselves.</p>
-      ) : (
-        <ProfileCard user={user} />
+      {adminMode && (
+        <div className="partnerSettingsAdminNotice">
+          <span className="partnerSettingsAdminDot" />
+          <span>Viewing as Admin: Profile editing is reserved for the partner themselves. ICP configuration is active below.</span>
+        </div>
       )}
-      <IcpCard />
+
+      {/* Main Settings Grid */}
+      <div className="partnerSettingsGrid">
+        {!adminMode && <ProfileCard user={user} />}
+        <IcpCard />
+      </div>
     </div>
   )
 }
@@ -67,20 +71,37 @@ function ProfileCard({ user }) {
   }
 
   return (
-    <div className="partnerSettingsCard">
-      <h2 className="partnerSectionTitle">Profile</h2>
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Name</label>
-        <input className="partnerSearchInput" type="text" value={name} onChange={(e) => { setName(e.target.value); setSaved(false) }} />
+    <div className="partnerSettingsPanel">
+      <div className="partnerSettingsPanelHead">
+        <div>
+          <h2 className="partnerSettingsPanelTitle">Profile Details</h2>
+          <p className="partnerSettingsPanelSubtitle">Your personal partner identity across the workspace.</p>
+        </div>
       </div>
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Email</label>
-        <div className="partnerReadonlyValue">{user?.email}</div>
+
+      <div className="partnerSettingsFieldsGrid">
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Full Name</label>
+          <input
+            className="partnerSearchInput"
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setSaved(false) }}
+          />
+        </div>
+        <div className="partnerFormRow">
+          <label className="partnerFormLabel">Email Address</label>
+          <div className="partnerReadonlyValue">{user?.email}</div>
+        </div>
       </div>
-      {error && <div className="partnerFormError">{error}</div>}
-      <div className="partnerFormActions">
-        <button className="partnerPrimaryBtn" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-        {saved && <span className="partnerSavedNote">Saved</span>}
+
+      {error && <div className="partnerFormError" style={{ marginTop: 12 }}>{error}</div>}
+
+      <div className="partnerFormActions" style={{ marginTop: 16 }}>
+        <button className="partnerPrimaryBtn" onClick={save} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Profile'}
+        </button>
+        {saved && <span className="partnerSavedNote">✓ Changes saved successfully</span>}
       </div>
     </div>
   )
@@ -158,106 +179,193 @@ function IcpCard() {
     }
   }
 
-  if (loading) return <div className="partnerSettingsCard"><div className="partnerLoadingState">Loading...</div></div>
+  if (loading) return <div className="partnerSettingsPanel"><div className="partnerLoadingState">Loading ICP configuration...</div></div>
   if (!form) return null
 
   return (
-    <div className="partnerSettingsCard">
-      <h2 className="partnerSectionTitle">Your ICP</h2>
-      <p className="partnerHint">
-        Changing this doesn&apos;t re-run discovery automatically -- it notifies Elephant Edge, who will
-        fetch a fresh batch of accounts against the new criteria.
-      </p>
-
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Describe your ICP</label>
-        <textarea
-          className="partnerSearchInput"
-          rows={4}
-          placeholder="Write it however you'd describe it -- e.g. 'SaaS founders doing $3-30M ARR, small sales team of 2-3, mostly US.' Or upload a doc below."
-          value={describeText}
-          onChange={(e) => { setDescribeText(e.target.value); setApplied(false) }}
-        />
-        <div className="partnerFormActions" style={{ marginTop: 8 }}>
-          <button className="partnerPrimaryBtn" onClick={parseDescription} disabled={parsing || !describeText.trim()}>
-            {parsing ? 'Reading...' : 'Fill fields from this'}
-          </button>
-          <button
-            type="button"
-            className="partnerPrimaryBtn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={parsing}
-          >
-            Upload a doc
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".txt,.md,.csv"
-            onChange={onFileChosen}
-            style={{ display: 'none' }}
-          />
+    <div className="partnerSettingsPanel">
+      <div className="partnerSettingsPanelHead">
+        <div>
+          <h2 className="partnerSettingsPanelTitle">Ideal Customer Profile (ICP)</h2>
+          <p className="partnerSettingsPanelSubtitle">
+            Changing these criteria updates the matching filters used by Elephant Edge to fetch new target accounts.
+          </p>
         </div>
-        {parseError && <div className="partnerFormError">{parseError}</div>}
-        {applied && (
-          <div className="partnerSavedNote">
-            Filled in below from what you described -- check it over, then hit Save ICP.
+      </div>
+
+      <div className="partnerSettingsLayoutSplit">
+        {/* Natural Language ICP Parser Box */}
+        <div className="partnerSettingsAiParserBox">
+          <div className="partnerSettingsAiParserHeader">
+            <span className="partnerSettingsAiBadge">AI Parser</span>
+            <span className="partnerSettingsAiTitle">Describe your target companies in plain English</span>
           </div>
-        )}
-        <div className="partnerHint">Text or markdown files only for now.</div>
+          <p className="partnerSettingsAiDesc">
+            Our AI extracts industries, revenue bands, headcounts, and decision-maker roles straight into the structured fields.
+          </p>
+          <textarea
+            className="partnerSearchInput partnerSettingsTextarea"
+            rows={3}
+            placeholder="e.g. B2B SaaS companies doing $3M-$30M ARR with 20-100 employees in the US, targeting CEO and VP Sales..."
+            value={describeText}
+            onChange={(e) => { setDescribeText(e.target.value); setApplied(false) }}
+          />
+
+          <div className="partnerSettingsParserActions">
+            <button
+              type="button"
+              className="partnerPrimaryBtn"
+              onClick={parseDescription}
+              disabled={parsing || !describeText.trim()}
+            >
+              {parsing ? 'Extracting criteria...' : 'Auto-fill fields from description'}
+            </button>
+            <button
+              type="button"
+              className="partnerSecondaryBtn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={parsing}
+            >
+              Upload document (.md / .txt)
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.csv"
+              onChange={onFileChosen}
+              style={{ display: 'none' }}
+            />
+          </div>
+
+          {parseError && <div className="partnerFormError" style={{ marginTop: 4 }}>{parseError}</div>}
+          {applied && (
+            <div className="partnerSavedNote" style={{ marginTop: 4 }}>
+              ✓ Structured fields updated below. Review and click "Save ICP Criteria" to commit.
+            </div>
+          )}
+        </div>
+
+        {/* Structured Form Fields: Clean 2-column grid */}
+        <div className="partnerSettingsFieldsGrid">
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Target Industries</label>
+            <input
+              className="partnerSearchInput"
+              type="text"
+              placeholder="Professional Services, SaaS, Healthcare"
+              value={form.industries}
+              onChange={set('industries')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Target Geographies</label>
+            <input
+              className="partnerSearchInput"
+              type="text"
+              placeholder="United States, Canada, United Kingdom"
+              value={form.geographies}
+              onChange={set('geographies')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Revenue Min (USD)</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="2500000"
+              value={form.revenue_min_usd}
+              onChange={set('revenue_min_usd')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Revenue Max (USD)</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="5000000"
+              value={form.revenue_max_usd}
+              onChange={set('revenue_max_usd')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Company Headcount Min</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="11"
+              value={form.employee_min}
+              onChange={set('employee_min')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Company Headcount Max</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="50"
+              value={form.employee_max}
+              onChange={set('employee_max')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Sales Team Size Min</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="2"
+              value={form.sales_team_size_min}
+              onChange={set('sales_team_size_min')}
+            />
+          </div>
+
+          <div className="partnerFormRow">
+            <label className="partnerFormLabel">Sales Team Size Max</label>
+            <input
+              className="partnerSearchInput"
+              type="number"
+              placeholder="3"
+              value={form.sales_team_size_max}
+              onChange={set('sales_team_size_max')}
+            />
+          </div>
+
+          <div className="partnerFormRow partnerSettingsColSpan2">
+            <label className="partnerFormLabel">Decision Maker Titles</label>
+            <input
+              className="partnerSearchInput"
+              type="text"
+              placeholder="Owner, Founder, CEO, Co-Founder, VP Sales"
+              value={form.decision_maker_titles}
+              onChange={set('decision_maker_titles')}
+            />
+          </div>
+
+          <div className="partnerFormRow partnerSettingsColSpan2">
+            <label className="partnerFormLabel">Qualification Notes & Specific Constraints</label>
+            <textarea
+              className="partnerSearchInput"
+              rows={3}
+              placeholder="e.g. Specifically targeting companies with no dedicated marketing hire (Marketing < 1)."
+              value={form.notes}
+              onChange={set('notes')}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Industries</label>
-        <input className="partnerSearchInput" type="text" placeholder="B2B SaaS, Fintech" value={form.industries} onChange={set('industries')} />
-      </div>
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Geographies</label>
-        <input className="partnerSearchInput" type="text" placeholder="United States" value={form.geographies} onChange={set('geographies')} />
-      </div>
-      <div className="partnerFormRowSplit">
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Revenue min (USD)</label>
-          <input className="partnerSearchInput" type="number" placeholder="25000000" value={form.revenue_min_usd} onChange={set('revenue_min_usd')} />
-        </div>
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Revenue max (USD)</label>
-          <input className="partnerSearchInput" type="number" placeholder="250000000" value={form.revenue_max_usd} onChange={set('revenue_max_usd')} />
-        </div>
-      </div>
-      <div className="partnerFormRowSplit">
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Employees min</label>
-          <input className="partnerSearchInput" type="number" placeholder="30" value={form.employee_min} onChange={set('employee_min')} />
-        </div>
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Employees max</label>
-          <input className="partnerSearchInput" type="number" placeholder="100" value={form.employee_max} onChange={set('employee_max')} />
-        </div>
-      </div>
-      <div className="partnerFormRowSplit">
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Sales team size min</label>
-          <input className="partnerSearchInput" type="number" placeholder="2" value={form.sales_team_size_min} onChange={set('sales_team_size_min')} />
-        </div>
-        <div className="partnerFormRow">
-          <label className="partnerFormLabel">Sales team size max</label>
-          <input className="partnerSearchInput" type="number" placeholder="3" value={form.sales_team_size_max} onChange={set('sales_team_size_max')} />
-        </div>
-      </div>
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Decision maker titles</label>
-        <input className="partnerSearchInput" type="text" placeholder="Owner, Founder, CEO, Co-Founder" value={form.decision_maker_titles} onChange={set('decision_maker_titles')} />
-      </div>
-      <div className="partnerFormRow">
-        <label className="partnerFormLabel">Notes</label>
-        <textarea className="partnerSearchInput" rows={3} value={form.notes} onChange={set('notes')} />
-      </div>
+      {error && <div className="partnerFormError" style={{ marginTop: 14 }}>{error}</div>}
 
-      {error && <div className="partnerFormError">{error}</div>}
-      <div className="partnerFormActions">
-        <button className="partnerPrimaryBtn" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save ICP'}</button>
-        {saved && <span className="partnerSavedNote">Saved — Elephant Edge has been notified</span>}
+      <div className="partnerFormActions partnerSettingsFooterActions">
+        <button className="partnerPrimaryBtn" onClick={save} disabled={saving}>
+          {saving ? 'Saving...' : 'Save ICP Criteria'}
+        </button>
+        {saved && <span className="partnerSavedNote">✓ Saved — Elephant Edge has been notified</span>}
       </div>
     </div>
   )
