@@ -164,7 +164,6 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                 <th>Industry</th>
                 <th>Size</th>
                 <th>Signal</th>
-                <th>Source</th>
                 <th>Contacts</th>
                 <th></th>
               </tr>
@@ -195,7 +194,6 @@ export default function PartnerAccounts({ basePath = '/partner' }) {
                     <td className={row.industry ? '' : 'partnerTableMuted'}>{row.industry || '—'}</td>
                     <td className={size ? '' : 'partnerTableMuted'}>{size || '—'}</td>
                     <td className={row.signal ? '' : 'partnerTableMuted'}>{row.signal || '—'}</td>
-                    <td className={row.source_label ? '' : 'partnerTableMuted'}>{row.source_label || '—'}</td>
                     <td className={row.contact_count ? '' : 'partnerTableMuted'}>{row.contact_count ?? '—'}</td>
                     <td>
                       <span className="partnerTableAction">
