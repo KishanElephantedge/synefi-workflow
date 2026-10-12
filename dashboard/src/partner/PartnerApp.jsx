@@ -50,10 +50,15 @@ const FEATURE_PAGES = {
     label: 'Webinars', path: 'webinars', element: <PartnerWebinars />,
     extraRoutes: [{ path: 'webinars/:webinarId', element: <PartnerWebinarDetail /> }],
   },
-  // Real Smartlead campaign stats (2026-10-05, explicit instruction) for Majji's two
-  // "Fractional Partner" campaigns. Own flag, not tied to "accounts" -- same reasoning as
-  // webinars: built for this one partner's specific campaigns, not a stage-1 default.
-  emailCampaigns: {
+  // Real Smartlead campaign stats (2026-10-05) for a partner's own campaigns. Key MUST match
+  // the backend feature registry's Feature.key exactly (app/gtm_os/features/registry.py) --
+  // every other key here already does (accounts/content/crm/webinars); this one was originally
+  // written as camelCase ("emailCampaigns") and silently didn't match "email_campaigns", which
+  // is why this nav item vanished after the 2026-10-07/08 feature-registry refactor replaced
+  // the hardcoded Majji-only backend route with one gated on tenant.enabled_features (found
+  // live 2026-10-12 as a 404 on /email-campaigns -- the backend 404'd because the feature
+  // wasn't actually enabled under its real key, not a routing bug).
+  email_campaigns: {
     label: 'Email', path: 'email-campaigns', element: <PartnerEmailCampaigns />,
     extraRoutes: [{ path: 'email-campaigns/:campaignId', element: <PartnerEmailCampaignDetail /> }],
   },
