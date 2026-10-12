@@ -1,31 +1,14 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { getMarketIntelligence, getContentSuggestions, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
+import { getContentSuggestions, getLatestContentChat, startNewContentChat, sendContentChatMessage, formatApiError } from '../v2/api.js'
 
-// Plain-language label per real origin -- see backend's get_suggested_content_opportunities()
-// for what each one is actually grounded in.
-const ORIGIN_META = {
-  trend: { label: 'Market trend', icon: '📈' },
-  competitor: { label: 'Competitor activity', icon: '🎯' },
-  account_intelligence: { label: 'From your pipeline', icon: '🏢' },
-  pipeline_signal: { label: 'From your pipeline', icon: '🏢' },
-  authentic_voice: { label: 'In your own voice', icon: '🎙️' },
-}
-
-const TREND_META = {
-  emerging: { tier: 'strong', label: 'Emerging', momentum: 'High momentum' },
-  accelerating: { tier: 'strong', label: 'Accelerating', momentum: 'Surging' },
-  persistent: { tier: 'some', label: 'Persistent', momentum: 'Holding steady' },
-  stable: { tier: 'some', label: 'Stable', momentum: 'Steady' },
-  declining: { tier: 'declining', label: 'Cooling off', momentum: 'Fading' },
-  insufficient_evidence: { tier: 'insufficient', label: 'Watching', momentum: 'Early detection' },
-}
-
-const SECTION_DEF = [
-  { tier: 'all', title: 'All Topics' },
-  { tier: 'strong', title: 'Trending now' },
-  { tier: 'some', title: 'Holding steady' },
-  { tier: 'declining', title: 'Cooling off' },
-  { tier: 'insufficient', title: 'Not yet trending' },
+// One tab per real way the system finds something to post about -- each origin from the
+// backend maps into exactly one tab. A short, partner-facing (not dev-facing) line sits at
+// the top of each tab instead of one long paragraph explaining all of them at once.
+const SUGGESTION_TABS = [
+  { key: 'trend', origins: ['trend'], label: 'Market Trend', blurb: "What's trending in your market right now." },
+  { key: 'competitor', origins: ['competitor'], label: 'Competitor Activity', blurb: 'What your competitors are publishing.' },
+  { key: 'pipeline', origins: ['account_intelligence', 'pipeline_signal'], label: 'Your Pipeline', blurb: 'Patterns from the companies you’re targeting.' },
+  { key: 'voice', origins: ['authentic_voice'], label: 'Your Voice', blurb: 'More of what you already talk about.' },
 ]
 
 const PROMPT_SUGGESTIONS = [
@@ -84,31 +67,6 @@ function CloseIcon(props) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  )
-}
-
-function SparklineSvg({ tier }) {
-  if (tier === 'strong') {
-    return (
-      <svg width="60" height="20" viewBox="0 0 60 20" fill="none" className="partnerSparkline">
-        <path d="M2 17 C 15 17, 24 12, 34 8 C 42 4, 48 6, 58 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="58" cy="3" r="2" fill="currentColor" />
-      </svg>
-    )
-  }
-  if (tier === 'some') {
-    return (
-      <svg width="60" height="20" viewBox="0 0 60 20" fill="none" className="partnerSparkline">
-        <path d="M2 11 C 15 7, 25 14, 36 10 C 45 7, 50 12, 58 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="58" cy="9" r="2" fill="currentColor" />
-      </svg>
-    )
-  }
-  return (
-    <svg width="60" height="20" viewBox="0 0 60 20" fill="none" className="partnerSparkline">
-      <path d="M2 9 L 18 10 L 36 10 L 58 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3" />
-      <circle cx="58" cy="11" r="1.5" fill="currentColor" />
     </svg>
   )
 }
@@ -282,76 +240,10 @@ const ContentChat = forwardRef(function ContentChat({ onTopicsChanged, isPanelOp
   )
 })
 
-function TopicTableRow({ topic, onAsk }) {
-  const meta = TREND_META[topic.state] || TREND_META.insufficient_evidence
-  const hasAccountEvidence = topic.account_bridge?.linked_account_count > 0
-  const hasMentions = topic.recent_observation_count > 0
-
-  return (
-    <div className="partnerTopicTableRow">
-      {/* Col 1: Topic Identity */}
-      <div className="partnerTopicTableCol partnerTopicTableColName">
-        <span className="partnerTopicTableIcon"><SparkleIcon /></span>
-        <div className="partnerTopicTableTitles">
-          <span className="partnerTopicTableName">{topic.canonical_name}</span>
-          <span className="partnerTopicTableTag">{meta.label}</span>
-        </div>
-      </div>
-
-      {/* Col 2: Momentum Trajectory */}
-      <div className="partnerTopicTableCol partnerTopicTableColTrajectory">
-        <SparklineSvg tier={meta.tier} />
-        <span className={'partnerTopicTrajectoryLabel tier-' + meta.tier}>
-          {meta.tier === 'strong' ? '↗ High' : meta.tier === 'some' ? '→ Steady' : '· Watching'}
-        </span>
-      </div>
-
-      {/* Col 3: Evidence Badges */}
-      <div className="partnerTopicTableCol partnerTopicTableColEvidence">
-        <div className="partnerTopicEvidenceList">
-          {hasMentions ? (
-            <span className="partnerTopicEvidenceItem">
-              <strong>{topic.recent_observation_count}</strong> mentions · <strong>{topic.recent_independent_entity_count}</strong> sources
-            </span>
-          ) : (
-            <span className="partnerTopicEvidenceItem partnerTopicEvidenceWatching">
-              Tracking web signals & search volume
-            </span>
-          )}
-          {hasAccountEvidence && (
-            <span className="partnerTopicEvidenceItem partnerTopicEvidenceAccent">
-              <strong>{topic.account_bridge.linked_account_count}</strong> accounts circling
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Col 4: Action */}
-      <div className="partnerTopicTableCol partnerTopicTableColAction">
-        <button
-          type="button"
-          className="partnerTopicGenerateDraftBtn"
-          onClick={() => onAsk('Write a LinkedIn post about "' + topic.canonical_name + '"')}
-        >
-          Generate Draft
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function SuggestedTopicCard({ suggestion, onAsk }) {
-  const meta = ORIGIN_META[suggestion.origin] || { label: suggestion.origin, icon: '💡' }
   return (
     <div className={'partnerSuggestedCard' + (suggestion.recommended ? ' recommended' : '')}>
-      {suggestion.recommended && (
-        <div className="partnerRecommendedBadge">
-          <span aria-hidden="true">⭐</span> Recommended
-        </div>
-      )}
-      <div className="partnerSuggestedOrigin">
-        <span aria-hidden="true">{meta.icon}</span> {meta.label}
-      </div>
+      {suggestion.recommended && <div className="partnerRecommendedBadge">Recommended</div>}
       <div className="partnerSuggestedHeadline">{suggestion.headline}</div>
       <p className="partnerSuggestedWhyNow">{suggestion.why_now}</p>
       <button
@@ -368,106 +260,59 @@ function SuggestedTopicCard({ suggestion, onAsk }) {
 function SuggestedTopicsPanel({ refreshKey, onAsk }) {
   const [suggestions, setSuggestions] = useState(null)
   const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState(SUGGESTION_TABS[0].key)
 
   useEffect(() => {
     getContentSuggestions().then(data => setSuggestions(data.suggestions)).catch(err => setError(formatApiError(err)))
   }, [refreshKey])
 
-  if (error) return null // non-fatal -- the Trending Topics feed below still works independently
+  if (error) {
+    return <div className="partnerCardWrap"><div className="partnerErrorState">Could not load suggestions: {error}</div></div>
+  }
   if (suggestions === null) {
     return <div className="partnerCardWrap"><div className="partnerLoadingState">Finding what to suggest…</div></div>
   }
-  if (suggestions.length === 0) return null
+
+  const tab = SUGGESTION_TABS.find(t => t.key === activeTab) || SUGGESTION_TABS[0]
+  const tabSuggestions = suggestions.filter(s => tab.origins.includes(s.origin))
 
   return (
     <div className="partnerSuggestedTopicsSection">
-      <h2 className="partnerSuggestedTopicsHeading">Suggested for you</h2>
-      <p className="partnerExecSubheading" style={{ marginTop: 0 }}>
-        Pulled from everything the system knows about your business -- market trends, competitor activity, your own pipeline, and your own voice.
-      </p>
-      <div className="partnerSuggestedTopicsGrid">
-        {suggestions.map(s => (
-          <SuggestedTopicCard key={s.content_opportunity_id} suggestion={s} onAsk={onAsk} />
-        ))}
+      <h2 className="partnerSuggestedTopicsHeading">What should you post today?</h2>
+
+      <div className="partnerSuggestionTabBar">
+        {SUGGESTION_TABS.map(t => {
+          const count = suggestions.filter(s => t.origins.includes(s.origin)).length
+          return (
+            <button
+              key={t.key}
+              type="button"
+              className={'partnerSuggestionTab' + (activeTab === t.key ? ' active' : '')}
+              onClick={() => setActiveTab(t.key)}
+            >
+              {t.label}{count > 0 && <span className="partnerTopicPillCount">{count}</span>}
+            </button>
+          )
+        })}
       </div>
-    </div>
-  )
-}
 
-function TrendingTopicsFeed({ refreshKey, onAsk }) {
-  const [topics, setTopics] = useState(null)
-  const [error, setError] = useState(null)
-  const [selectedFilter, setSelectedFilter] = useState('all')
+      <p className="partnerSuggestionTabBlurb">{tab.blurb}</p>
 
-  useEffect(() => {
-    getMarketIntelligence().then(data => setTopics(data.topics)).catch(err => setError(formatApiError(err)))
-  }, [refreshKey])
-
-  if (error) {
-    return <div className="partnerCardWrap"><div className="partnerErrorState">Could not load trending topics: {error}</div></div>
-  }
-  if (topics === null) {
-    return <div className="partnerCardWrap"><div className="partnerLoadingState">Loading topics…</div></div>
-  }
-  if (topics.length === 0) {
-    return (
-      <div className="partnerContentEmptyBoard">
-        <span className="partnerContentAvatar partnerContentAvatarLg"><SparkleIcon /></span>
-        <p>No topics sensed yet. Ask the copilot above to check for fresh trends, and real topics will appear here.</p>
-        <button type="button" className="partnerSuggestionChip" onClick={() => onAsk('What should we write about this week?')}>
-          What should we write about this week?
-        </button>
-      </div>
-    )
-  }
-
-  const filteredTopics = topics.filter(t => {
-    if (selectedFilter === 'all') return true
-    const tier = (TREND_META[t.state] || TREND_META.insufficient_evidence).tier
-    return tier === selectedFilter
-  })
-
-  return (
-    <div className="partnerTopicFeedContainer">
-      {/* Segmented Filter Pills */}
-      <div className="partnerTopicSegmentedBar">
-        <span className="partnerTopicSegmentedLabel">SEGMENTED FEED</span>
-        <div className="partnerTopicSegmentedPills">
-          {SECTION_DEF.map(sec => {
-            const count = sec.tier === 'all' 
-              ? topics.length 
-              : topics.filter(t => (TREND_META[t.state] || TREND_META.insufficient_evidence).tier === sec.tier).length
-            if (sec.tier !== 'all' && count === 0) return null
-            const isActive = selectedFilter === sec.tier
-            return (
-              <button
-                key={sec.tier}
-                type="button"
-                className={'partnerTopicSegmentedPill' + (isActive ? ' active' : '')}
-                onClick={() => setSelectedFilter(sec.tier)}
-              >
-                {sec.title} <span className="partnerTopicPillCount">{count}</span>
-              </button>
-            )
-          })}
+      {tabSuggestions.length === 0 ? (
+        <div className="partnerContentEmptyBoard">
+          <span className="partnerContentAvatar partnerContentAvatarLg"><SparkleIcon /></span>
+          <p>Nothing here yet.</p>
+          <button type="button" className="partnerSuggestionChip" onClick={() => onAsk('What should we write about this week?')}>
+            What should we write about this week?
+          </button>
         </div>
-      </div>
-
-      {/* Structured Table Feed */}
-      <div className="partnerTopicTable">
-        <div className="partnerTopicTableHeader">
-          <span className="partnerTopicHeaderColName">Topic name</span>
-          <span className="partnerTopicHeaderColTrajectory">Momentum Trajectory</span>
-          <span className="partnerTopicHeaderColEvidence">Evidence</span>
-          <span className="partnerTopicHeaderColAction"></span>
-        </div>
-
-        <div className="partnerTopicTableBody">
-          {filteredTopics.map(t => (
-            <TopicTableRow key={t.content_topic_id} topic={t} onAsk={onAsk} />
+      ) : (
+        <div className="partnerSuggestedTopicsGrid">
+          {tabSuggestions.map(s => (
+            <SuggestedTopicCard key={s.content_opportunity_id} suggestion={s} onAsk={onAsk} />
           ))}
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -509,11 +354,8 @@ export default function PartnerContent() {
         onTopicsChanged={() => setRefreshKey(k => k + 1)}
       />
 
-      {/* Suggested for you -- cross-origin ranked suggestions, strongest one flagged */}
+      {/* What should you post today -- tabbed by source, strongest suggestion flagged */}
       <SuggestedTopicsPanel refreshKey={refreshKey} onAsk={askChat} />
-
-      {/* Executive Structured Feed Table */}
-      <TrendingTopicsFeed refreshKey={refreshKey} onAsk={askChat} />
     </div>
   )
 }
