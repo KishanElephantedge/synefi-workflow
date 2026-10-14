@@ -120,7 +120,7 @@ function CompanyDetail({ data, basePath }) {
       <h2 className="partnerSectionTitle">
         Decision-makers <span className="partnerSectionCount">({data.contacts.length})</span>
       </h2>
-      <p className="partnerHint">Click a card for how and when we found this person.</p>
+      <p className="partnerHint">Click a card for their email, LinkedIn, and when they were added.</p>
 
       {data.contacts.length === 0 ? (
         <div className="partnerCardWrap"><div className="partnerEmptyState">No contacts found at this company yet.</div></div>
@@ -284,12 +284,6 @@ function ContactCard({ contact }) {
               <span className="partnerDetailEmpty">Not found yet</span>
             )}
           </div>
-          {contact.source_note && (
-            <div className="partnerDetailRow">
-              <span>How we found them</span>
-              <span>{contact.source_note}</span>
-            </div>
-          )}
           {contact.found_at && (
             <div className="partnerDetailRow">
               <span>Added</span>
