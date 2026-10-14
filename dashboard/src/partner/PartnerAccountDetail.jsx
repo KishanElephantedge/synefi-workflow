@@ -108,16 +108,12 @@ function CompanyDetail({ data, basePath }) {
         {data.location && <div className="partnerFact"><span>Location</span>{data.location}</div>}
       </div>
 
-      {data.discovered_via?.objective_label && (
+      {data.discovered_via?.job_title && data.discovered_via?.posting_url && (
         <div className="partnerFoundVia">
-          <span className="partnerFoundViaLabel">Found via</span>
-          <span>{data.discovered_via.objective_label}</span>
-          {data.discovered_via.job_title && <span className="partnerFoundViaSub"> — “{data.discovered_via.job_title}”</span>}
-          {data.discovered_via.posting_url && (
-            <a href={data.discovered_via.posting_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink">
-              View posting →
-            </a>
-          )}
+          <span className="partnerFoundViaSub">Hiring: “{data.discovered_via.job_title}”</span>
+          <a href={data.discovered_via.posting_url} target="_blank" rel="noreferrer" className="partnerFoundViaLink">
+            View posting →
+          </a>
         </div>
       )}
 
