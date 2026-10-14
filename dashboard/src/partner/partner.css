@@ -1915,7 +1915,10 @@ a.partnerLogoutBtn {
 
 .partnerSuggestedTopicsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  /* capped at 360px, not 1fr -- with auto-fit, a single card in a tab (e.g. Your Voice with
+     exactly one suggestion) had nothing to share the row with and stretched to the full
+     container width instead of staying a normal card size (2026-10-15, real bug seen live). */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 360px));
   gap: 14px;
   margin-top: 14px;
 }
