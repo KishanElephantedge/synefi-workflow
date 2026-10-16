@@ -109,10 +109,17 @@ const PLACEHOLDER_TABS = [
 // broken/empty without its own config (content/email_campaigns both did, live), so those stay
 // gated on readiness -- not ready, or still loading (readiness === null), shows Request Access.
 function isTabReady(key, enabledFeatures, readiness) {
+  // internal_tasks is never reached here unless adminMode is already true -- allTabs (below)
+  // drops it entirely otherwise. The enabledFeatures/RequestAccess gate exists to ask a
+  // PARTNER to request a feature they don't have yet; that concept doesn't apply to an
+  // admin's own internal tooling about them, so it skips straight to the real page instead of
+  // a "Request Access" wall nobody but us would ever action (2026-10-16, explicit instruction:
+  // "this is not their partner task to show that thing so remove that").
+  if (key === 'internal_tasks') return true
   if (!enabledFeatures.includes(key)) return false
-  // Same exemption as "accounts": no per-tenant config exists for this feature to be "ready"
+  // Same reasoning as "accounts": no per-tenant config exists for this feature to be "ready"
   // against, so there is nothing for a readiness check to ever confirm.
-  if (key === 'accounts' || key === 'internal_tasks') return true
+  if (key === 'accounts') return true
   return Boolean(readiness?.[key]?.ready)
 }
 
