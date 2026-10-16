@@ -2240,34 +2240,50 @@ a.partnerLogoutBtn {
   font-size: 14px;
 }
 
-/* ---- Internal Tasks (2026-10-16, admin-only) ---- */
-.taskColumns {
+/* ---- Internal Tasks (2026-10-16, admin-only; redesigned same day -- status dropdown + tabs
+   instead of a checkbox + raw two-column list, one owner switch instead of two columns, notes) ---- */
+
+.taskOwnerTabs {
   display: flex;
-  gap: 32px;
-  margin-top: 20px;
-  flex-wrap: wrap;
+  gap: 4px;
+  margin: 20px 0 16px;
+  border-bottom: 1px solid var(--p-line);
 }
 
-.taskColumn {
-  flex: 1;
-  min-width: 280px;
-  max-width: 480px;
+.taskOwnerTab {
+  padding: 8px 2px;
+  margin-right: 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--p-muted);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.taskColumnTitle {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0 0 12px;
+.taskOwnerTab:hover {
+  color: var(--p-ink);
+}
+
+.taskOwnerTabActive {
+  color: var(--p-ink);
+  border-bottom-color: var(--p-ink);
 }
 
 .taskAddForm {
+  margin-bottom: 20px;
+}
+
+.taskAddFormRow {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .taskAddInput {
   flex: 1;
+  min-width: 180px;
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--p-line);
@@ -2285,32 +2301,126 @@ a.partnerLogoutBtn {
   font-size: 13px;
 }
 
+.taskAddNoteToggle {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-muted);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.taskAddNoteToggle:hover {
+  background: var(--p-hover);
+}
+
+.taskAddNote {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.taskStatusTabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.taskStatusTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.taskStatusTab:hover {
+  background: var(--p-hover);
+}
+
+.taskStatusTabActive {
+  background: var(--p-ink);
+  border-color: var(--p-ink);
+  color: var(--p-paper);
+}
+
+.taskStatusTabCount {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.taskList {
+  max-width: 760px;
+}
+
 .taskRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--p-line-soft);
 }
 
-.taskRowCheck {
+.taskRowMain {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  cursor: pointer;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
-.taskRowCheck input {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+.taskRowText {
+  min-width: 0;
+}
+
+.taskTitle {
+  font-size: 14px;
 }
 
 .taskTitleDone {
+  font-size: 14px;
   color: var(--p-muted);
   text-decoration: line-through;
+}
+
+.taskNote {
+  font-size: 12.5px;
+  color: var(--p-muted);
+  margin-top: 2px;
+}
+
+.taskStatusSelect {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--p-line);
+  background: var(--p-hover);
+  color: var(--p-ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.taskStatusSelect--completed {
+  background: var(--p-ink);
+  color: var(--p-paper);
+  border-color: var(--p-ink);
 }
 
 .taskRowMeta {
@@ -2331,13 +2441,4 @@ a.partnerLogoutBtn {
 
 .taskRowDelete:hover {
   color: var(--p-warn-ink);
-}
-
-.taskDoneDivider {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-muted-2);
-  margin: 16px 0 4px;
 }
