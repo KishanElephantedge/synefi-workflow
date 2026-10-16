@@ -2240,81 +2240,342 @@ a.partnerLogoutBtn {
   font-size: 14px;
 }
 
-/* ---- Internal Tasks (2026-10-16, admin-only; second redesign pass same day -- pill-style
-   active tabs, a three-dot status menu instead of a native <select>, card-style rows, and a
-   popup for adding a task instead of an always-visible inline form) ---- */
-
-.taskOwnerTabs {
+/* ---- Internal Tasks (Redesigned Executive Project Management Architecture) ---- */
+.partnerTasksPage {
   display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0;
+}
+
+/* Header */
+.partnerTasksHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 4px;
+}
+
+.partnerTasksBadgeRow {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin: 20px 0 14px;
+  margin-bottom: 8px;
 }
 
-.taskStatusTabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 18px;
+.partnerTasksInternalBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--p-ink);
+  color: var(--p-paper);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.taskStatusTab {
+.partnerTasksPartnerBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+  color: var(--p-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.partnerTasksHeaderInfo h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--p-ink);
+  margin: 0 0 5px 0;
+}
+
+.partnerTasksHeaderInfo p {
+  font-size: 13.5px;
+  color: var(--p-muted);
+  margin: 0;
+  line-height: 1.45;
+  max-width: 680px;
+}
+
+.partnerTasksNewBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Metrics Summary Cards */
+.partnerTasksSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.partnerTasksMetricCard {
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.partnerTasksMetricCardWarn {
+  border-color: #B3261E;
+}
+
+.partnerTasksMetricLabel {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--p-muted);
+}
+
+.partnerTasksMetricVal {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--p-ink);
+}
+
+.partnerTasksMetricCardWarn .partnerTasksMetricVal {
+  color: #B3261E;
+}
+
+.partnerTasksMetricSub {
+  font-size: 12px;
+  color: var(--p-muted-2);
+}
+
+/* Controls Bar */
+.partnerTasksControlsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--p-line);
+}
+
+.partnerTasksFilterPills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.partnerTasksFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-muted);
+  margin-right: 4px;
+}
+
+.partnerTasksFilterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid var(--p-line);
   background: var(--p-paper);
-  color: var(--p-muted);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--p-ink-soft);
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.taskStatusTab:hover {
+.partnerTasksFilterPill:hover {
+  background: var(--p-hover);
+  color: var(--p-ink);
+}
+
+.partnerTasksFilterPill.active {
+  background: var(--p-ink);
+  color: var(--p-paper);
+  border-color: var(--p-ink);
+  font-weight: 600;
+}
+
+.partnerTasksViewSwitcher {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+}
+
+.partnerTasksViewBtn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--p-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.partnerTasksViewBtn.active {
+  background: var(--p-paper);
+  color: var(--p-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Two-Column Side-by-Side Board */
+.partnerTasksBoardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+.partnerTasksColumn {
+  display: flex;
+  flex-direction: column;
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  padding: 16px;
+  gap: 12px;
+  min-height: 480px;
+}
+
+.partnerTasksColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--p-line);
+}
+
+.partnerTasksColumnTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partnerTasksColIcon {
+  font-size: 18px;
+}
+
+.partnerTasksColumnTitle strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-ink);
+}
+
+.partnerTasksColumnTitle span {
+  display: block;
+  font-size: 12px;
+  color: var(--p-muted);
+}
+
+.partnerTasksColCount {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  color: var(--p-ink);
+}
+
+.partnerTasksColumnBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Workspace Task Card */
+.taskWorkspaceCard {
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+
+.taskWorkspaceCard:hover {
+  border-color: var(--p-muted-2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.taskWorkspaceCardDone {
+  opacity: 0.65;
   background: var(--p-hover);
 }
 
-.taskStatusTabActive {
+.taskWorkspaceCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.taskCheckbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--p-line);
+  background: var(--p-paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 700;
+  color: transparent;
+  transition: all 0.15s ease;
+}
+
+.taskCheckbox:hover {
+  border-color: var(--p-ink);
+}
+
+.taskCheckboxChecked {
   background: var(--p-ink);
   border-color: var(--p-ink);
   color: var(--p-paper);
 }
 
-.taskStatusTabCount {
-  font-weight: 600;
-  opacity: 0.7;
-}
-
-.taskList {
-  max-width: 760px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.taskCard {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--p-line);
-  border-radius: 10px;
-  background: var(--p-paper);
-}
-
-.taskCard:hover {
-  border-color: var(--p-muted-2);
-}
-
-.taskCardMain {
-  min-width: 0;
+.taskWorkspaceCardTitleArea {
   flex: 1;
+  min-width: 0;
 }
 
 .taskTitle {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--p-ink);
+  line-height: 1.35;
 }
 
 .taskTitleDone {
@@ -2322,93 +2583,185 @@ a.partnerLogoutBtn {
   font-weight: 500;
   color: var(--p-muted);
   text-decoration: line-through;
+  line-height: 1.35;
 }
 
 .taskNote {
   font-size: 12.5px;
   color: var(--p-muted);
-  margin-top: 4px;
+  margin: 4px 0 0;
   line-height: 1.4;
 }
 
-.taskCardMeta {
+.taskWorkspaceCardFooter {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--p-line-soft);
 }
 
-/* Row-level popover (Edit/Delete) -- the status pill + its own menu were dropped same day
-   (2026-10-16, third redesign pass): only two real states now, surfaced as ONE "Mark as done"
-   button per row (toggles to "Completed", click again to reopen) instead of a menu or a second
-   checkbox-style control, so one popover per row covers Edit/Delete only. */
-.taskCardDone {
-  opacity: 0.6;
+.taskWorkspaceCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.taskMarkDoneBtn {
-  flex-shrink: 0;
-  padding: 5px 10px;
+.taskOwnerTag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--p-hover);
+  color: var(--p-ink);
+  border: 1px solid var(--p-line);
+}
+
+.taskOwnerTagUs {
+  background: var(--p-hover);
+}
+
+.taskOwnerTagPartner {
+  background: var(--p-paper);
+}
+
+/* Deadline Badges */
+.taskDeadlineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--p-hover);
+  color: var(--p-muted);
+  border: 1px solid var(--p-line);
+}
+
+.taskDeadlineBadge--overdue {
+  background: #FFF0F0;
+  color: #B3261E;
+  border-color: #F5C6C6;
+}
+
+.taskDeadlineBadge--today {
+  background: var(--p-ink);
+  color: var(--p-paper);
+  border-color: var(--p-ink);
+}
+
+.taskDeadlineBadge--urgent {
+  background: var(--p-hover);
+  color: var(--p-ink);
+  border-color: var(--p-ink);
+}
+
+.taskTableNoDeadline {
+  font-size: 12px;
+  color: var(--p-muted-2);
+}
+
+.taskInlineDoneBtn {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
   border-radius: 6px;
   border: 1px solid var(--p-line);
   background: var(--p-paper);
-  color: var(--p-muted);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--p-ink);
   cursor: pointer;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-.taskMarkDoneBtn:hover {
-  background: var(--p-hover);
-  color: var(--p-ink);
-}
-
-.taskMarkDoneBtnActive {
+.taskInlineDoneBtn:hover {
   background: var(--p-ink);
-  border-color: var(--p-ink);
   color: var(--p-paper);
+  border-color: var(--p-ink);
 }
 
-.taskMarkDoneBtnActive:hover {
-  opacity: 0.85;
+.taskInlineDoneBtnActive {
+  background: var(--p-hover);
+  color: var(--p-muted);
+  border-color: var(--p-line);
 }
 
-.taskStatusMenuPopover {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--p-paper);
-  border: 1px solid var(--p-line);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 4px;
-  z-index: 20;
-  min-width: 140px;
+/* Empty Column */
+.partnerTasksEmptyColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  text-align: center;
+  gap: 10px;
 }
 
-.taskStatusMenuOption {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 7px 10px;
-  border-radius: 5px;
-  border: none;
-  background: none;
-  color: var(--p-ink);
+.partnerTasksEmptyColumn p {
   font-size: 13px;
-  cursor: pointer;
+  color: var(--p-muted);
+  margin: 0;
 }
 
-.taskStatusMenuOption:hover {
+/* Table View */
+.partnerTasksListTable {
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-paper);
+  overflow: hidden;
+}
+
+.partnerTasksTableHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--p-hover);
+  border-bottom: 1px solid var(--p-line);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--p-muted);
+}
+
+.partnerTasksTableBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.partnerTasksTableRow {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--p-line-soft);
+  transition: background 0.15s ease;
+}
+
+.partnerTasksTableRow:last-child {
+  border-bottom: none;
+}
+
+.partnerTasksTableRow:hover {
   background: var(--p-hover);
 }
 
-.taskStatusMenuOptionDanger {
-  color: #C0392B;
+.partnerTasksTableRowDone {
+  opacity: 0.6;
 }
 
-/* Row-level three-dot menu (delete, for now) */
+.partnerTasksTableColMain {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding-right: 16px;
+}
+
+/* Row Action Popover */
 .taskRowMenu {
   position: relative;
 }
@@ -2418,10 +2771,11 @@ a.partnerLogoutBtn {
   border: none;
   color: var(--p-muted-2);
   cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 4px 6px;
-  border-radius: 5px;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .taskRowMenuBtn:hover {
@@ -2430,92 +2784,434 @@ a.partnerLogoutBtn {
 }
 
 .taskRowMenuPopover {
-  min-width: 100px;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  z-index: 50;
+  min-width: 140px;
 }
 
-/* New-task popup */
-.taskModal {
+.taskStatusMenuOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--p-ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.taskStatusMenuOption:hover {
+  background: var(--p-hover);
+}
+
+.taskStatusMenuOptionDanger {
+  color: #B3261E;
+}
+
+/* Modern Task Modal */
+.taskModalNew {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 420px;
+  width: 480px;
   max-width: calc(100vw - 32px);
   background: var(--p-paper);
   border: 1px solid var(--p-line);
-  border-radius: 12px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  padding: 24px;
   z-index: 100;
 }
 
-.taskModalTitle {
-  font-size: 16px;
+.taskModalNewHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--p-line-soft);
+}
+
+.taskModalNewTitle {
+  font-size: 17px;
   font-weight: 700;
-  margin: 0 0 16px;
+  color: var(--p-ink);
+  margin: 0 0 3px 0;
+}
+
+.taskModalNewSubtitle {
+  font-size: 12.5px;
+  color: var(--p-muted);
+  margin: 0;
+}
+
+.taskModalCloseBtn {
+  background: none;
+  border: none;
+  color: var(--p-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.taskModalCloseBtn:hover {
+  background: var(--p-hover);
+  color: var(--p-ink);
+}
+
+.taskModalNewBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.taskModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .taskModalLabel {
-  display: block;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--p-muted);
-  margin-bottom: 12px;
 }
 
-.taskModalLabel .taskAddInput,
-.taskModalLabel .taskAddDate,
-.taskModalLabel .taskAddNote {
+/* Owner Selector Cards */
+.taskModalOwnerSelector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.taskModalOwnerOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--p-line);
+  background: var(--p-paper);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.taskModalOwnerOption:hover {
+  background: var(--p-hover);
+}
+
+.taskModalOwnerOptionActive {
+  border-color: var(--p-ink);
+  background: var(--p-hover);
+}
+
+.taskModalOwnerIcon {
+  font-size: 18px;
+}
+
+.taskModalOwnerInfo strong {
   display: block;
-  width: 100%;
-  margin-top: 6px;
-  box-sizing: border-box;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--p-ink);
 }
 
-.taskAddInput {
-  padding: 8px 10px;
+.taskModalOwnerInfo span {
+  display: block;
+  font-size: 11px;
+  color: var(--p-muted);
+}
+
+/* Slack Notification Field */
+.taskModalSlackField {
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.taskModalCheckboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.taskModalCheckboxRow input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.taskModalSlackTitle {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-ink);
+}
+
+.taskModalSlackDesc {
+  display: block;
+  font-size: 11.5px;
+  color: var(--p-muted);
+  margin-top: 2px;
+}
+
+.taskModalActionsNew {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--p-line-soft);
+}
+
+@media (max-width: 900px) {
+  .partnerTasksSummaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .partnerTasksBoardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Task Detail Drawer (Slide-Over Detail Page for Notes & Context) */
+.taskWorkspaceCard {
+  cursor: pointer;
+}
+
+.taskHasNotesIndicator {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--p-muted);
+  margin-top: 4px;
+}
+
+.taskDetailDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 500px;
+  max-width: calc(100vw - 20px);
+  height: 100vh;
+  background: var(--p-paper);
+  border-left: 1px solid var(--p-line);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.16);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.taskDetailDrawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--p-line);
+  background: var(--p-hover);
+}
+
+.taskDetailDrawerBadgeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taskStatusBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+  color: var(--p-ink);
+}
+
+.taskStatusBadgeDone {
+  background: var(--p-ink);
+  color: var(--p-paper);
+}
+
+.taskDetailDrawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.taskDetailDrawerTitleSection {
+  padding-bottom: 4px;
+}
+
+.taskDetailTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--p-ink);
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.taskDetailTitleDone {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--p-muted);
+  text-decoration: line-through;
+  margin: 0;
+}
+
+/* Quick Properties Card inside Drawer */
+.taskDetailPropsCard {
+  background: var(--p-hover);
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.taskDetailPropRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taskDetailPropLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-muted);
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.taskDetailPropValue {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.taskDetailSelect {
+  padding: 5px 10px;
   border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+}
+
+.taskDetailDateInput {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 12px;
+  outline: none;
+}
+
+/* Instructions & Notes section */
+.taskDetailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.taskDetailSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.taskDetailSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-ink);
+}
+
+.taskDetailSectionHint {
+  font-size: 11.5px;
+  color: var(--p-muted-2);
+}
+
+.taskDetailNotesTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 8px;
   border: 1px solid var(--p-line);
   background: var(--p-paper);
   color: var(--p-ink);
   font-size: 13.5px;
-}
-
-.taskAddDate {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-ink);
-  font-size: 13px;
-}
-
-.taskAddNote {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-ink);
-  font-size: 13px;
   font-family: inherit;
+  line-height: 1.5;
   resize: vertical;
+  min-height: 180px;
+  outline: none;
 }
 
-.taskModalError {
-  font-size: 12.5px;
-  color: #C0392B;
-  margin-bottom: 12px;
-}
-
-.taskModalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.taskModalSave {
-  background: var(--p-ink);
-  color: var(--p-paper);
+.taskDetailNotesTextarea:focus {
   border-color: var(--p-ink);
+  box-shadow: 0 0 0 1px var(--p-ink);
+}
+
+/* Drawer Footer */
+.taskDetailDrawerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--p-line);
+  background: var(--p-paper);
+}
+
+.taskDetailDrawerFooterLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.taskDetailDeleteBtn {
+  background: none;
+  border: none;
+  color: #B3261E;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.taskDetailDeleteBtn:hover {
+  background: #FFF0F0;
+}
+
+.taskDetailDrawerFooterRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
