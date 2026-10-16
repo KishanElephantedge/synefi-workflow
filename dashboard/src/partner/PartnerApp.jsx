@@ -12,6 +12,7 @@ import PartnerWebinars from './PartnerWebinars.jsx'
 import PartnerWebinarDetail from './PartnerWebinarDetail.jsx'
 import PartnerEmailCampaigns from './PartnerEmailCampaigns.jsx'
 import PartnerEmailCampaignDetail from './PartnerEmailCampaignDetail.jsx'
+import PartnerInternalTasks from './PartnerInternalTasks.jsx'
 import PartnerSettings from './PartnerSettings.jsx'
 import RequestAccess from './RequestAccess.jsx'
 import PartnerWorkspaceSwitcher from './PartnerWorkspaceSwitcher.jsx'
@@ -74,6 +75,18 @@ const FEATURE_PAGES = {
     description: 'Your email campaign sends, opens, and replies.',
     extraRoutes: [{ path: 'email-campaigns/:campaignId', element: <PartnerEmailCampaignDetail /> }],
   },
+  // Internal-only (2026-10-16, explicit instruction: "this will be only visible to us... and
+  // that partners shouldnt see this as this is for internal"). internalOnly marks a tab allTabs
+  // (below) must drop whenever adminMode is false -- i.e. a real partner login never sees this
+  // entry in FEATURE_PAGES at all, regardless of whether "internal_tasks" is in their own
+  // enabledFeatures. The backend enforces the same boundary independently (x-internal-user,
+  // see app/routes/api.py's _require_internal_viewer) -- this is belt-and-suspenders, not the
+  // only guard, since a frontend-only hide is never real security on its own.
+  internal_tasks: {
+    label: 'Internal Tasks', path: 'internal-tasks', element: <PartnerInternalTasks />,
+    description: 'What we owe this partner and what they owe us.',
+    internalOnly: true,
+  },
 }
 
 // Placeholder-only sidebar entries (2026-09-11, originally explicit instruction to show them as
@@ -97,7 +110,9 @@ const PLACEHOLDER_TABS = [
 // gated on readiness -- not ready, or still loading (readiness === null), shows Request Access.
 function isTabReady(key, enabledFeatures, readiness) {
   if (!enabledFeatures.includes(key)) return false
-  if (key === 'accounts') return true
+  // Same exemption as "accounts": no per-tenant config exists for this feature to be "ready"
+  // against, so there is nothing for a readiness check to ever confirm.
+  if (key === 'accounts' || key === 'internal_tasks') return true
   return Boolean(readiness?.[key]?.ready)
 }
 
@@ -182,8 +197,13 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
   // drives both the nav AND the routes, so a tab can never silently exist in one but not the
   // other -- the exact failure mode the old PLACEHOLDER_TABS (plain divs, no route at all) and
   // FEATURE_PAGES (route only if enabled) split caused when they were two different lists.
+  // internalOnly entries are dropped entirely outside adminMode -- not shown as a locked/
+  // RequestAccess tab either, just absent, so a partner's own login has no way to discover
+  // this page exists at all (not in the nav list, and its route below is never registered).
   const allTabs = [
-    ...Object.entries(FEATURE_PAGES).map(([key, page]) => ({ key, ...page })),
+    ...Object.entries(FEATURE_PAGES)
+      .filter(([, page]) => !page.internalOnly || adminMode)
+      .map(([key, page]) => ({ key, ...page })),
     ...PLACEHOLDER_TABS.map((t) => ({ ...t, path: t.key, extraRoutes: [] })),
   ]
 

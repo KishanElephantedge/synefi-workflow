@@ -81,6 +81,29 @@ export function updateCrmLead(leadId, updates) {
   return client.patch(`/gtm-os/partner/crm/leads/${leadId}`, updates).then(res => res.data)
 }
 
+// Internal Tasks (2026-10-16) -- never reachable by the partner's own login. The backend 404s
+// any request missing a real x-internal-user header, which only the gateway can set (from the
+// logged-in user's actual role) -- these calls only ever succeed when made from an internal
+// admin's session viewing a partner through /v2/partner-view, same as every other call this
+// client makes against the active tenant.
+export function getPartnerTasks() {
+  return client.get('/gtm-os/internal/tasks').then(res => res.data)
+}
+
+export function createPartnerTask({ title, owner, deadline, createdBy }) {
+  return client.post('/gtm-os/internal/tasks', {
+    title, owner, deadline: deadline || null, created_by: createdBy || null,
+  }).then(res => res.data)
+}
+
+export function updatePartnerTask(taskId, updates) {
+  return client.patch(`/gtm-os/internal/tasks/${taskId}`, updates).then(res => res.data)
+}
+
+export function deletePartnerTask(taskId) {
+  return client.delete(`/gtm-os/internal/tasks/${taskId}`).then(res => res.data)
+}
+
 // A plain navigation URL, not an axios call -- the browser needs to hit this directly (via a
 // download link) so it can follow the backend's Content-Disposition header itself and stream
 // the file straight to disk instead of us buffering the whole CSV as a JS string first. The
