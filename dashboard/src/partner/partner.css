@@ -2528,8 +2528,7 @@ a.partnerLogoutBtn {
 }
 
 .taskWorkspaceCardDone {
-  opacity: 0.65;
-  background: var(--p-hover);
+  background: var(--p-paper);
 }
 
 .taskWorkspaceCardHeader {
@@ -2582,7 +2581,7 @@ a.partnerLogoutBtn {
   font-size: 14px;
   font-weight: 500;
   color: var(--p-muted);
-  text-decoration: line-through;
+  /* text-decoration: none; */
   line-height: 1.35;
 }
 
@@ -2748,9 +2747,7 @@ a.partnerLogoutBtn {
   background: var(--p-hover);
 }
 
-.partnerTasksTableRowDone {
-  opacity: 0.6;
-}
+
 
 .partnerTasksTableColMain {
   flex: 1;
@@ -3077,7 +3074,7 @@ a.partnerLogoutBtn {
   font-size: 18px;
   font-weight: 600;
   color: var(--p-muted);
-  text-decoration: line-through;
+  /* text-decoration: none; */
   margin: 0;
 }
 
@@ -3214,4 +3211,36 @@ a.partnerLogoutBtn {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+
+/* Clear End Status Badges */
+.taskStatusTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.taskStatusTag--completed {
+  background: #E8F5E9;
+  color: #1B5E20;
+  border: 1px solid #C8E6C9;
+}
+
+.taskStatusTag--overdue {
+  background: #FFEBEE;
+  color: #C62828;
+  border: 1px solid #FFCDD2;
+}
+
+.taskStatusTag--upcoming {
+  background: var(--p-hover);
+  color: var(--p-ink);
+  border: 1px solid var(--p-line);
 }

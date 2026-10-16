@@ -26,34 +26,27 @@ function formatDeadlineDisplay(deadline) {
 
 function DeadlineBadge({ deadline, bucket }) {
   if (!deadline) return <span className="taskTableNoDeadline">No deadline</span>
-  const diff = Math.ceil((new Date(`${deadline}T00:00:00`) - new Date(new Date().toDateString())) / 86400000)
-  const isOverdue = bucket === 'pending'
-  const isDueToday = diff === 0
-  const isUrgent = diff > 0 && diff <= 2
-
-  let badgeClass = 'taskDeadlineBadge'
-  let label = formatDeadlineDisplay(deadline)
-
-  if (isOverdue) {
-    badgeClass += ' taskDeadlineBadge--overdue'
-    label = `${Math.abs(diff)}d overdue (${label})`
-  } else if (isDueToday) {
-    badgeClass += ' taskDeadlineBadge--today'
-    label = `Due today (${label})`
-  } else if (isUrgent) {
-    badgeClass += ' taskDeadlineBadge--urgent'
-    label = `In ${diff}d (${label})`
-  }
-
   return (
-    <span className={badgeClass}>
+    <span className="taskDeadlineBadge">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
-      {label}
+      {formatDeadlineDisplay(deadline)}
     </span>
   )
+}
+
+function TaskStatusBadge({ task }) {
+  if (task.status === 'completed') {
+    return <span className="taskStatusTag taskStatusTag--completed">✓ Completed</span>
+  }
+  const bucket = bucketOf(task)
+  if (bucket === 'pending') {
+    const diff = Math.ceil((new Date(`${task.deadline}T00:00:00`) - new Date(new Date().toDateString())) / 86400000)
+    return <span className="taskStatusTag taskStatusTag--overdue">⚠ Overdue ({Math.abs(diff)}d)</span>
+  }
+  return <span className="taskStatusTag taskStatusTag--upcoming">Upcoming</span>
 }
 
 function RowMenu({ onEdit, onDelete }) {
@@ -141,13 +134,9 @@ function TaskCardItem({ task, partnerName, onSelect, onMarkDone, onEdit, onDelet
           </span>
           <DeadlineBadge deadline={task.deadline} bucket={bucket} />
         </div>
-        <button
-          type="button"
-          className={'taskInlineDoneBtn' + (done ? ' taskInlineDoneBtnActive' : '')}
-          onClick={(e) => { e.stopPropagation(); onMarkDone(task, done ? 'pending' : 'completed') }}
-        >
-          {done ? '✓ Done' : 'Mark Done'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <TaskStatusBadge task={task} />
+        </div>
       </div>
     </div>
   )
@@ -722,14 +711,8 @@ export default function PartnerInternalTasks({ partnerName }) {
                     <div style={{ width: 160 }}>
                       <DeadlineBadge deadline={t.deadline} bucket={bucket} />
                     </div>
-                    <div style={{ width: 130 }}>
-                      <button
-                        type="button"
-                        className={'taskInlineDoneBtn' + (done ? ' taskInlineDoneBtnActive' : '')}
-                        onClick={(e) => { e.stopPropagation(); handleMarkDone(t, done ? 'pending' : 'completed') }}
-                      >
-                        {done ? '✓ Completed' : 'Mark Done'}
-                      </button>
+                    <div style={{ width: 140 }}>
+                      <TaskStatusBadge task={t} />
                     </div>
                     <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end' }}>
                       <RowMenu onEdit={() => setModal(t)} onDelete={() => handleDelete(t)} />
