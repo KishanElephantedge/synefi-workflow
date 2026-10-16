@@ -104,7 +104,7 @@ function TaskColumn({ title, owner, tasks, onAdd, onToggle, onDelete }) {
   )
 }
 
-export default function PartnerInternalTasks() {
+export default function PartnerInternalTasks({ partnerName }) {
   const { user } = useTenant()
   const [tasks, setTasks] = useState(null)
   const [error, setError] = useState(null)
@@ -141,8 +141,8 @@ export default function PartnerInternalTasks() {
       <h1>Internal Tasks</h1>
       <p>Only visible to Elephant Edge -- the partner never sees this page.</p>
       <div className="taskColumns">
-        <TaskColumn title="Our tasks" owner="us" tasks={ours} onAdd={handleAdd} onToggle={handleToggle} onDelete={handleDelete} />
-        <TaskColumn title="Their tasks" owner="partner" tasks={theirs} onAdd={handleAdd} onToggle={handleToggle} onDelete={handleDelete} />
+        <TaskColumn title="Fractional Partner" owner="us" tasks={ours} onAdd={handleAdd} onToggle={handleToggle} onDelete={handleDelete} />
+        <TaskColumn title={partnerName || 'Partner'} owner="partner" tasks={theirs} onAdd={handleAdd} onToggle={handleToggle} onDelete={handleDelete} />
       </div>
     </div>
   )

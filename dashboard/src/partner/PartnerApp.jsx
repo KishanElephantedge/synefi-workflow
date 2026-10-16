@@ -198,6 +198,11 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
   // stage is turned on for a tenant.
   const defaultPath = firstFeature ? FEATURE_PAGES[firstFeature].path : 'settings'
 
+  // Same strip the sidebar label below already applies -- computed once here so any feature
+  // page that needs the partner's real display name (e.g. internal_tasks' "Their tasks" ->
+  // the actual partner name) doesn't duplicate the regex.
+  const partnerName = tenant.name.replace(/^Partner\s*[—-]\s*/, '')
+
   // Every tab is now clickable (2026-10-12, explicit instruction, generalized for every
   // partner): a key the partner HAS gets its real page+route; a key they don't gets the SAME
   // RequestAccess page+route, just scoped to that feature's own label/description. One list
@@ -225,7 +230,7 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
           {/* Every partner Tenant.name is stored as "Partner — <name>" (helps internal admins
               spot partner tenants in the search/tenant list) -- stripped here since a partner
               looking at their own dashboard doesn't need to be told they're a partner. */}
-          <span className="partnerTenantName">{tenant.name.replace(/^Partner\s*[—-]\s*/, '')}</span>
+          <span className="partnerTenantName">{partnerName}</span>
           {adminMode && <span className="partnerAdminBadge">Viewing as admin</span>}
           {adminMode && <PartnerWorkspaceSwitcher />}
         </div>
@@ -264,7 +269,7 @@ function PartnerAppInner({ tenantOverride, basePath = '/partner', adminMode = fa
               path={tab.path}
               element={
                 isTabReady(tab.key, features, readiness)
-                  ? cloneElement(tab.element, { basePath })
+                  ? cloneElement(tab.element, { basePath, partnerName })
                   : <RequestAccess featureKey={tab.key} label={tab.label} />
               }
             />
