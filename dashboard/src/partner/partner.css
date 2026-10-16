@@ -2240,106 +2240,27 @@ a.partnerLogoutBtn {
   font-size: 14px;
 }
 
-/* ---- Internal Tasks (2026-10-16, admin-only; redesigned same day -- status dropdown + tabs
-   instead of a checkbox + raw two-column list, one owner switch instead of two columns, notes) ---- */
+/* ---- Internal Tasks (2026-10-16, admin-only; second redesign pass same day -- pill-style
+   active tabs, a three-dot status menu instead of a native <select>, card-style rows, and a
+   popup for adding a task instead of an always-visible inline form) ---- */
 
 .taskOwnerTabs {
   display: flex;
-  gap: 4px;
-  margin: 20px 0 16px;
-  border-bottom: 1px solid var(--p-line);
-}
-
-.taskOwnerTab {
-  padding: 8px 2px;
-  margin-right: 24px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--p-muted);
-  font-size: 14.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.taskOwnerTab:hover {
-  color: var(--p-ink);
-}
-
-.taskOwnerTabActive {
-  color: var(--p-ink);
-  border-bottom-color: var(--p-ink);
-}
-
-.taskAddForm {
-  margin-bottom: 20px;
-}
-
-.taskAddFormRow {
-  display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-}
-
-.taskAddInput {
-  flex: 1;
-  min-width: 180px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-ink);
-  font-size: 13.5px;
-}
-
-.taskAddDate {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-ink);
-  font-size: 13px;
-}
-
-.taskAddNoteToggle {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-muted);
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.taskAddNoteToggle:hover {
-  background: var(--p-hover);
-}
-
-.taskAddNote {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--p-line);
-  background: var(--p-paper);
-  color: var(--p-ink);
-  font-size: 13px;
-  font-family: inherit;
-  resize: vertical;
+  margin: 20px 0 14px;
 }
 
 .taskStatusTabs {
   display: flex;
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .taskStatusTab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid var(--p-line);
   background: var(--p-paper);
@@ -2366,35 +2287,39 @@ a.partnerLogoutBtn {
 
 .taskList {
   max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.taskRow {
+.taskCard {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--p-line-soft);
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-paper);
 }
 
-.taskRowMain {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.taskCard:hover {
+  border-color: var(--p-muted-2);
+}
+
+.taskCardMain {
+  min-width: 0;
   flex: 1;
-  min-width: 0;
-}
-
-.taskRowText {
-  min-width: 0;
 }
 
 .taskTitle {
   font-size: 14px;
+  font-weight: 500;
 }
 
 .taskTitleDone {
   font-size: 14px;
+  font-weight: 500;
   color: var(--p-muted);
   text-decoration: line-through;
 }
@@ -2402,43 +2327,195 @@ a.partnerLogoutBtn {
 .taskNote {
   font-size: 12.5px;
   color: var(--p-muted);
-  margin-top: 2px;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
-.taskStatusSelect {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: 5px;
-  border: 1px solid var(--p-line);
-  background: var(--p-hover);
-  color: var(--p-ink-soft);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.taskStatusSelect--completed {
-  background: var(--p-ink);
-  color: var(--p-paper);
-  border-color: var(--p-ink);
-}
-
-.taskRowMeta {
+.taskCardMeta {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
 
-.taskRowDelete {
+/* Row-level popover (Edit/Delete) -- the status pill + its own menu were dropped same day
+   (2026-10-16, third redesign pass): only two real states now, surfaced as ONE "Mark as done"
+   button per row (toggles to "Completed", click again to reopen) instead of a menu or a second
+   checkbox-style control, so one popover per row covers Edit/Delete only. */
+.taskCardDone {
+  opacity: 0.6;
+}
+
+.taskMarkDoneBtn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.taskMarkDoneBtn:hover {
+  background: var(--p-hover);
+  color: var(--p-ink);
+}
+
+.taskMarkDoneBtnActive {
+  background: var(--p-ink);
+  border-color: var(--p-ink);
+  color: var(--p-paper);
+}
+
+.taskMarkDoneBtnActive:hover {
+  opacity: 0.85;
+}
+
+.taskStatusMenuPopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  z-index: 20;
+  min-width: 140px;
+}
+
+.taskStatusMenuOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: none;
+  background: none;
+  color: var(--p-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.taskStatusMenuOption:hover {
+  background: var(--p-hover);
+}
+
+.taskStatusMenuOptionDanger {
+  color: #C0392B;
+}
+
+/* Row-level three-dot menu (delete, for now) */
+.taskRowMenu {
+  position: relative;
+}
+
+.taskRowMenuBtn {
   background: none;
   border: none;
   color: var(--p-muted-2);
   cursor: pointer;
-  font-size: 13px;
-  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 5px;
 }
 
-.taskRowDelete:hover {
-  color: var(--p-warn-ink);
+.taskRowMenuBtn:hover {
+  background: var(--p-hover);
+  color: var(--p-ink);
+}
+
+.taskRowMenuPopover {
+  min-width: 100px;
+}
+
+/* New-task popup */
+.taskModal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  background: var(--p-paper);
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  z-index: 100;
+}
+
+.taskModalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.taskModalLabel {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--p-muted);
+  margin-bottom: 12px;
+}
+
+.taskModalLabel .taskAddInput,
+.taskModalLabel .taskAddDate,
+.taskModalLabel .taskAddNote {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+.taskAddInput {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 13.5px;
+}
+
+.taskAddDate {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 13px;
+}
+
+.taskAddNote {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--p-line);
+  background: var(--p-paper);
+  color: var(--p-ink);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.taskModalError {
+  font-size: 12.5px;
+  color: #C0392B;
+  margin-bottom: 12px;
+}
+
+.taskModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.taskModalSave {
+  background: var(--p-ink);
+  color: var(--p-paper);
+  border-color: var(--p-ink);
 }

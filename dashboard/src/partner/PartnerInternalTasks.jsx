@@ -1,139 +1,178 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTenant } from '../context/TenantContext'
 import { getPartnerTasks, createPartnerTask, updatePartnerTask, deletePartnerTask, formatApiError } from '../v2/api.js'
 
 // Internal-only task tracker (2026-10-16, Majji's request): what Elephant Edge owes this
 // partner and what the partner owes us, each with a deadline. Never reachable by the partner's
-// own login -- the backend 404s any request missing the gateway's x-internal-user header, so
-// this page only ever renders real data when viewed through /v2/partner-view as an internal
-// admin.
+// own login -- see PartnerTask's own docstring (app/db/models.py) for the real security
+// boundary this depends on.
 //
-// Redesigned same day per explicit instruction, after the first pass (checkbox, raw two-column
-// list) shipped: a status DROPDOWN instead of a binary checkbox, status TABS instead of a raw
-// list, one OWNER switch instead of two columns side by side, and an optional NOTE per task --
-// the minimum set every mainstream tracker (Asana, Trello, Linear, ClickUp) converges on for
-// exactly this shape of work: a flat list of discrete, deadline-bound items with no sub-tasks,
-// no assignee beyond "us or them," and nothing resembling a board/kanban view, since that would
-// be scope well past what this is for.
+// Third pass, same day, explicit redesign instructions:
+//  - Only two real stored states (pending/completed) -- "in progress" dropped. "Upcoming" vs
+//    "Pending" is a function of deadline vs today, not a state anyone sets by hand, so it's
+//    computed here from deadline + status rather than stored on the backend.
+//  - One "Mark as done" action per row, not buried in a menu.
+//  - One three-dot menu per row: Edit (reopens this same modal, pre-filled, for any field) and
+//    Delete -- not a separate status menu and a separate row menu.
+//  - Add/Edit both go through the same popup instead of an inline bar.
 
-const OWNER_TABS = (partnerName) => [
-  { value: 'us', label: 'Fractional Partner' },
-  { value: 'partner', label: partnerName || 'Partner' },
-]
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
 
-const STATUSES = [
+// A task's real bucket -- never stored, always derived, so it can never drift from "what date
+// is it right now."
+function bucketOf(task) {
+  if (task.status === 'completed') return 'completed'
+  if (task.deadline && task.deadline < todayStr()) return 'pending'
+  return 'upcoming' // no deadline, or deadline is today/future
+}
+
+const BUCKET_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'upcoming', label: 'Upcoming' },
   { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
 ]
 
-const STATUS_FILTERS = [{ value: 'all', label: 'All' }, ...STATUSES]
-
-function daysUntil(deadline) {
+function DeadlineBadge({ deadline, bucket }) {
   if (!deadline) return null
-  return Math.ceil((new Date(`${deadline}T00:00:00`) - new Date(new Date().toDateString())) / 86400000)
-}
-
-function DeadlineBadge({ deadline, status }) {
-  if (!deadline) return null
-  const diff = daysUntil(deadline)
-  const overdue = status !== 'completed' && diff < 0
-  const dueSoon = status !== 'completed' && diff >= 0 && diff <= 2
+  const diff = Math.ceil((new Date(`${deadline}T00:00:00`) - new Date(new Date().toDateString())) / 86400000)
   return (
-    <span className={'partnerTag' + (overdue ? ' partnerTagWarn' : dueSoon ? ' partnerTagPrimary' : '')}>
-      {overdue ? `${Math.abs(diff)}d overdue` : diff === 0 ? 'Due today' : `Due ${deadline}`}
+    <span className={'partnerTag' + (bucket === 'pending' ? ' partnerTagWarn' : diff <= 2 && bucket === 'upcoming' ? ' partnerTagPrimary' : '')}>
+      {bucket === 'pending' ? `${Math.abs(diff)}d overdue` : diff === 0 ? 'Due today' : `Due ${deadline}`}
     </span>
   )
 }
 
-function StatusSelect({ task, onChange }) {
+function RowMenu({ onEdit, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   return (
-    <select
-      className={'taskStatusSelect taskStatusSelect--' + task.status}
-      value={task.status}
-      onChange={(e) => onChange(task, e.target.value)}
-    >
-      {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-    </select>
+    <div className="taskRowMenu" ref={ref}>
+      <button type="button" className="taskRowMenuBtn" onClick={() => setOpen((v) => !v)} aria-label="Task options">
+        &#8942;
+      </button>
+      {open && (
+        <div className="taskStatusMenuPopover taskRowMenuPopover">
+          <button type="button" className="taskStatusMenuOption" onClick={() => { setOpen(false); onEdit() }}>
+            Edit
+          </button>
+          <button type="button" className="taskStatusMenuOption taskStatusMenuOptionDanger" onClick={() => { setOpen(false); onDelete() }}>
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
-function TaskRow({ task, onStatusChange, onDelete }) {
+function TaskRow({ task, onMarkDone, onEdit, onDelete }) {
+  const bucket = bucketOf(task)
+  const done = task.status === 'completed'
   return (
-    <div className="taskRow">
-      <div className="taskRowMain">
-        <StatusSelect task={task} onChange={onStatusChange} />
-        <div className="taskRowText">
-          <span className={task.status === 'completed' ? 'taskTitleDone' : 'taskTitle'}>{task.title}</span>
-          {task.notes && <div className="taskNote">{task.notes}</div>}
-        </div>
+    <div className={'taskCard' + (done ? ' taskCardDone' : '')}>
+      <div className="taskCardMain">
+        <div className={done ? 'taskTitleDone' : 'taskTitle'}>{task.title}</div>
+        {task.notes && <div className="taskNote">{task.notes}</div>}
       </div>
-      <div className="taskRowMeta">
-        <DeadlineBadge deadline={task.deadline} status={task.status} />
-        <button type="button" className="taskRowDelete" onClick={() => onDelete(task)} aria-label="Delete task">x</button>
+      <div className="taskCardMeta">
+        <DeadlineBadge deadline={task.deadline} bucket={bucket} />
+        <button
+          type="button"
+          className={'taskMarkDoneBtn' + (done ? ' taskMarkDoneBtnActive' : '')}
+          onClick={() => onMarkDone(task, done ? 'pending' : 'completed')}
+        >
+          {done ? '✓ Completed' : 'Mark as done'}
+        </button>
+        <RowMenu onEdit={onEdit} onDelete={onDelete} />
       </div>
     </div>
   )
 }
 
-function AddTaskForm({ owner, onAdd }) {
-  const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [notes, setNotes] = useState('')
-  const [notesOpen, setNotesOpen] = useState(false)
+function TaskModal({ owner, initial, onSave, onClose }) {
+  const [title, setTitle] = useState(initial?.title || '')
+  const [deadline, setDeadline] = useState(initial?.deadline || '')
+  const [notes, setNotes] = useState(initial?.notes || '')
   const [saving, setSaving] = useState(false)
+  const [modalError, setModalError] = useState(null)
+  const isEdit = Boolean(initial)
 
   const submit = async (e) => {
     e.preventDefault()
     if (!title.trim() || saving) return
     setSaving(true)
+    setModalError(null)
     try {
-      await onAdd({ title: title.trim(), owner, deadline, notes })
-      setTitle('')
-      setDeadline('')
-      setNotes('')
-      setNotesOpen(false)
+      await onSave({ title: title.trim(), owner, deadline, notes })
+      onClose()
+    } catch (err) {
+      setModalError(formatApiError(err))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <form className="taskAddForm" onSubmit={submit}>
-      <div className="taskAddFormRow">
-        <input
-          type="text"
-          placeholder="Add a task..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="taskAddInput"
-        />
-        <input
-          type="date"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          className="taskAddDate"
-        />
-        <button
-          type="button"
-          className="taskAddNoteToggle"
-          onClick={() => setNotesOpen((v) => !v)}
-          aria-label="Add a note"
-        >
-          {notesOpen ? 'Hide note' : '+ Note'}
-        </button>
-        <button type="submit" className="partnerBtnSecondary" disabled={saving || !title.trim()}>Add</button>
+    <>
+      <div className="partnerExecDrawerOverlay" onClick={onClose} />
+      <div className="taskModal">
+        <h3 className="taskModalTitle">{isEdit ? 'Edit task' : 'New task'}</h3>
+        <form onSubmit={submit}>
+          <label className="taskModalLabel">
+            Title
+            <input
+              type="text"
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="taskAddInput"
+              placeholder="What needs to happen?"
+            />
+          </label>
+          <label className="taskModalLabel">
+            Deadline (optional)
+            <input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="taskAddDate"
+            />
+          </label>
+          <label className="taskModalLabel">
+            Note (optional)
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="taskAddNote"
+              rows={3}
+              placeholder="Any detail worth keeping..."
+            />
+          </label>
+          {modalError && <div className="taskModalError">{modalError}</div>}
+          <div className="taskModalActions">
+            <button type="button" className="partnerBtnSecondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="partnerBtnSecondary taskModalSave" disabled={saving || !title.trim()}>
+              {saving ? 'Saving...' : isEdit ? 'Save changes' : 'Add task'}
+            </button>
+          </div>
+        </form>
       </div>
-      {notesOpen && (
-        <textarea
-          className="taskAddNote"
-          placeholder="Optional note..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-        />
-      )}
-    </form>
+    </>
   )
 }
 
@@ -142,7 +181,8 @@ export default function PartnerInternalTasks({ partnerName }) {
   const [tasks, setTasks] = useState(null)
   const [error, setError] = useState(null)
   const [owner, setOwner] = useState('us')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [bucketFilter, setBucketFilter] = useState('all')
+  const [modal, setModal] = useState(null) // null | 'new' | a task object being edited
 
   const reload = () => {
     getPartnerTasks().then(setTasks).catch((e) => setError(formatApiError(e)))
@@ -150,27 +190,27 @@ export default function PartnerInternalTasks({ partnerName }) {
 
   useEffect(reload, [])
 
-  const handleAdd = ({ title, owner: taskOwner, deadline, notes }) =>
-    createPartnerTask({ title, owner: taskOwner, deadline, notes, createdBy: user?.email })
-      .then(reload)
-      .catch((e) => setError(formatApiError(e)))
+  const handleCreate = ({ title, owner: taskOwner, deadline, notes }) =>
+    createPartnerTask({ title, owner: taskOwner, deadline, notes, createdBy: user?.email }).then(reload)
 
-  const handleStatusChange = (task, status) =>
-    updatePartnerTask(task.id, { status })
-      .then(reload)
-      .catch((e) => setError(formatApiError(e)))
+  const handleEditSave = (task) => ({ title, deadline, notes }) =>
+    updatePartnerTask(task.id, { title, deadline: deadline || '', notes: notes || '' }).then(reload)
+
+  const handleMarkDone = (task, status) =>
+    updatePartnerTask(task.id, { status }).then(reload).catch((e) => setError(formatApiError(e)))
 
   const handleDelete = (task) =>
-    deletePartnerTask(task.id)
-      .then(reload)
-      .catch((e) => setError(formatApiError(e)))
+    deletePartnerTask(task.id).then(reload).catch((e) => setError(formatApiError(e)))
 
-  const ownerTabs = OWNER_TABS(partnerName)
+  const ownerTabs = [
+    { value: 'us', label: 'Fractional Partner' },
+    { value: 'partner', label: partnerName || 'Partner' },
+  ]
 
   const counts = useMemo(() => {
     const byOwner = (tasks || []).filter((t) => t.owner === owner)
-    return Object.fromEntries(STATUS_FILTERS.map((f) => [
-      f.value, f.value === 'all' ? byOwner.length : byOwner.filter((t) => t.status === f.value).length,
+    return Object.fromEntries(BUCKET_FILTERS.map((f) => [
+      f.value, f.value === 'all' ? byOwner.length : byOwner.filter((t) => bucketOf(t) === f.value).length,
     ]))
   }, [tasks, owner])
 
@@ -179,19 +219,25 @@ export default function PartnerInternalTasks({ partnerName }) {
 
   const visible = tasks
     .filter((t) => t.owner === owner)
-    .filter((t) => statusFilter === 'all' || t.status === statusFilter)
+    .filter((t) => bucketFilter === 'all' || bucketOf(t) === bucketFilter)
+    .sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999'))
 
   return (
     <div className="partnerAccountsHeader">
-      <h1>Internal Tasks</h1>
-      <p>Only visible to Elephant Edge -- the partner never sees this page.</p>
+      <div className="partnerAccountsHeaderRow">
+        <div>
+          <h1>Internal Tasks</h1>
+          <p>Only visible to Elephant Edge -- the partner never sees this page.</p>
+        </div>
+        <button type="button" className="partnerBtnSecondary" onClick={() => setModal('new')}>+ New Task</button>
+      </div>
 
       <div className="taskOwnerTabs">
         {ownerTabs.map((t) => (
           <button
             key={t.value}
             type="button"
-            className={'taskOwnerTab' + (owner === t.value ? ' taskOwnerTabActive' : '')}
+            className={'taskStatusTab' + (owner === t.value ? ' taskStatusTabActive' : '')}
             onClick={() => setOwner(t.value)}
           >
             {t.label}
@@ -199,15 +245,13 @@ export default function PartnerInternalTasks({ partnerName }) {
         ))}
       </div>
 
-      <AddTaskForm owner={owner} onAdd={handleAdd} />
-
       <div className="taskStatusTabs">
-        {STATUS_FILTERS.map((f) => (
+        {BUCKET_FILTERS.map((f) => (
           <button
             key={f.value}
             type="button"
-            className={'taskStatusTab' + (statusFilter === f.value ? ' taskStatusTabActive' : '')}
-            onClick={() => setStatusFilter(f.value)}
+            className={'taskStatusTab' + (bucketFilter === f.value ? ' taskStatusTabActive' : '')}
+            onClick={() => setBucketFilter(f.value)}
           >
             {f.label} <span className="taskStatusTabCount">{counts[f.value]}</span>
           </button>
@@ -217,9 +261,22 @@ export default function PartnerInternalTasks({ partnerName }) {
       <div className="taskList">
         {visible.length === 0 && <p className="partnerEmptyFeatures">Nothing here yet.</p>}
         {visible.map((t) => (
-          <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={handleDelete} />
+          <TaskRow
+            key={t.id}
+            task={t}
+            onMarkDone={handleMarkDone}
+            onEdit={() => setModal(t)}
+            onDelete={() => handleDelete(t)}
+          />
         ))}
       </div>
+
+      {modal === 'new' && (
+        <TaskModal owner={owner} onSave={handleCreate} onClose={() => setModal(null)} />
+      )}
+      {modal && modal !== 'new' && (
+        <TaskModal owner={modal.owner} initial={modal} onSave={handleEditSave(modal)} onClose={() => setModal(null)} />
+      )}
     </div>
   )
 }

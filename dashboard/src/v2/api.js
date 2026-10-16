@@ -90,9 +90,9 @@ export function getPartnerTasks() {
   return client.get('/gtm-os/internal/tasks').then(res => res.data)
 }
 
-export function createPartnerTask({ title, owner, deadline, createdBy }) {
+export function createPartnerTask({ title, owner, deadline, notes, createdBy }) {
   return client.post('/gtm-os/internal/tasks', {
-    title, owner, deadline: deadline || null, created_by: createdBy || null,
+    title, owner, deadline: deadline || null, notes: notes || null, created_by: createdBy || null,
   }).then(res => res.data)
 }
 
