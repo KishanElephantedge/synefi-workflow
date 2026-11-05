@@ -1061,6 +1061,25 @@
   color: var(--ssl-primary-hover) !important;
 }
 
+/* Gated action prompt (Export/Share/View More) */
+.ssl-gated-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #9a3412;
+}
+
+.ssl-view-more-row {
+  margin-top: 16px;
+}
+
 /* CTA Banner (Step 3 Bottom) */
 .ssl-cta-banner {
   background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);

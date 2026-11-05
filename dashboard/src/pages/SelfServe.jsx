@@ -13,6 +13,8 @@ const STEP = {
   EMAIL: 'email',
 }
 
+const VISIBLE_ACCOUNTS_LIMIT = 5
+
 const FAQS = [
   {
     q: 'How does Fractional Partner determine my ideal customer profile?',
@@ -64,9 +66,12 @@ export default function SelfServe() {
   const [newGeoTag, setNewGeoTag] = useState('')
 
   // UI state
-  const [copiedLink, setCopiedLink] = useState(false)
   const [openFaqIndex, setOpenFaqIndex] = useState(0)
   const [initialLoading, setInitialLoading] = useState(false)
+  // Results preview is capped at VISIBLE_ACCOUNTS_LIMIT -- "View More", "Export CSV" and
+  // "Share Link" are all gated behind booking a call rather than actually running, per explicit
+  // instruction: this page is a teaser, the full list is the reason to book.
+  const [gatedPrompt, setGatedPrompt] = useState(null) // 'more' | 'export' | 'share' | null
 
   const toolRef = useRef(null)
 
@@ -312,12 +317,6 @@ export default function SelfServe() {
     URL.revokeObjectURL(url)
   }
 
-  function handleCopyShareLink() {
-    navigator.clipboard.writeText(window.location.href)
-    setCopiedLink(true)
-    setTimeout(() => setCopiedLink(false), 2500)
-  }
-
   function handleReset() {
     setStep(STEP.INPUT)
     setResults(null)
@@ -327,6 +326,7 @@ export default function SelfServe() {
     setEvidence(null)
     setWebsiteError(null)
     setDiscoverError(null)
+    setGatedPrompt(null)
 
     const url = new URL(window.location.href)
     url.searchParams.delete('token')
@@ -792,11 +792,11 @@ export default function SelfServe() {
                   </div>
 
                   <div className="ssl-results-actions">
-                    <button type="button" className="ssl-btn-outline" onClick={handleDownloadCsv}>
+                    <button type="button" className="ssl-btn-outline" onClick={() => setGatedPrompt('export')}>
                       Export CSV
                     </button>
-                    <button type="button" className="ssl-btn-outline" onClick={handleCopyShareLink}>
-                      {copiedLink ? 'Link Copied!' : 'Share Link'}
+                    <button type="button" className="ssl-btn-outline" onClick={() => setGatedPrompt('share')}>
+                      Share Link
                     </button>
                     <button
                       type="button"
@@ -814,9 +814,22 @@ export default function SelfServe() {
                   </div>
                 </div>
 
-                {/* Company Cards List */}
+                {gatedPrompt && (
+                  <div className="ssl-gated-banner">
+                    <span>
+                      {gatedPrompt === 'more' && 'Book a call with our team to see the rest of your matching accounts.'}
+                      {gatedPrompt === 'export' && 'Book a call with our team to export your full account list.'}
+                      {gatedPrompt === 'share' && 'Book a call with our team to get a shareable link to your full report.'}
+                    </span>
+                    <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="ssl-btn-primary ssl-btn-sm">
+                      Book a Call
+                    </a>
+                  </div>
+                )}
+
+                {/* Company Cards List -- capped at VISIBLE_ACCOUNTS_LIMIT; "View More" is gated, not a reveal */}
                 <div className="ssl-accounts-list">
-                  {(results.companies || []).map((company, index) => (
+                  {(results.companies || []).slice(0, VISIBLE_ACCOUNTS_LIMIT).map((company, index) => (
                     <div className="ssl-account-card" key={index}>
                       <div className="ssl-account-main">
                         <div className="ssl-account-avatar">
@@ -845,25 +858,32 @@ export default function SelfServe() {
                       </div>
 
                       <div className="ssl-account-action">
-                        {company.linkedin_url && (
-                          <a
-                            href={company.linkedin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ssl-linkedin-btn"
-                          >
-                            <span>View on LinkedIn</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                          </a>
-                        )}
+                        <button
+                          type="button"
+                          className="ssl-linkedin-btn"
+                          onClick={() => {
+                            setStep(STEP.EMAIL)
+                            scrollToTool()
+                          }}
+                        >
+                          <span>Outreach</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M22 2 11 13" />
+                            <path d="M22 2 15 22 11 13 2 9 22 2Z" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {(results.companies || []).length > VISIBLE_ACCOUNTS_LIMIT && (
+                  <div className="ssl-view-more-row">
+                    <button type="button" className="ssl-btn-outline ssl-btn-full" onClick={() => setGatedPrompt('more')}>
+                      View {(results.companies || []).length - VISIBLE_ACCOUNTS_LIMIT} More Accounts
+                    </button>
+                  </div>
+                )}
 
                 {/* Next Step Banner leading to Step 4 or Booking */}
                 <div className="ssl-cta-banner">
