@@ -926,18 +926,18 @@ export default function SelfServe() {
                 </div>
 
                 <div className="ssl-email-centered">
-                  <h2 className="ssl-view-title">Where should we deliver your account report?</h2>
+                  <h2 className="ssl-view-title">Where should we CC you on outreach?</h2>
                   <p className="ssl-view-desc">
-                    Enter your work email to receive your verified matching accounts and permanent link.
+                    We'll run outreach to these matching accounts on your behalf -- enter your work email and we'll CC you on every message sent, so you can see it happening.
                   </p>
 
                   {emailSaved ? (
                     <div className="ssl-saved-banner">
                       <div className="ssl-saved-icon">✓</div>
                       <div>
-                        <strong>Account report sent!</strong>
+                        <strong>You're set!</strong>
                         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#475569' }}>
-                          Your discovered accounts have been associated with {email}.
+                          We'll CC {email} on the outreach we send to these accounts on your behalf.
                         </p>
                       </div>
                     </div>
@@ -964,7 +964,7 @@ export default function SelfServe() {
                         disabled={discoverBusy || !email.trim()}
                         onClick={handleSaveEmail}
                       >
-                        {discoverBusy ? 'Saving…' : 'Save & Send Report'}
+                        {discoverBusy ? 'Saving…' : 'Confirm & CC Me on Outreach'}
                       </button>
                     </div>
                   )}
