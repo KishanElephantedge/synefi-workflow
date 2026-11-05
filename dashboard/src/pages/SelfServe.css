@@ -1061,23 +1061,61 @@
   color: var(--ssl-primary-hover) !important;
 }
 
-/* Gated action prompt (Export/Share/View More) */
-.ssl-gated-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: #9a3412;
-}
-
 .ssl-view-more-row {
   margin-top: 16px;
+}
+
+/* Gated action prompt (Export/Share/View More) -- a modal, not an inline banner */
+.ssl-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.ssl-modal {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.3);
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.ssl-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.ssl-modal-close:hover {
+  color: #475569;
+}
+
+.ssl-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.ssl-modal-desc {
+  font-size: 14px;
+  color: #475569;
+  margin: 0 0 20px;
+  line-height: 1.5;
 }
 
 /* CTA Banner (Step 3 Bottom) */

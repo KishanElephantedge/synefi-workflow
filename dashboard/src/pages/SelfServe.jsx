@@ -814,18 +814,6 @@ export default function SelfServe() {
                   </div>
                 </div>
 
-                {gatedPrompt && (
-                  <div className="ssl-gated-banner">
-                    <span>
-                      {gatedPrompt === 'more' && 'Book a call with our team to see the rest of your matching accounts.'}
-                      {gatedPrompt === 'export' && 'Book a call with our team to export your full account list.'}
-                      {gatedPrompt === 'share' && 'Book a call with our team to get a shareable link to your full report.'}
-                    </span>
-                    <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="ssl-btn-primary ssl-btn-sm">
-                      Book a Call
-                    </a>
-                  </div>
-                )}
 
                 {/* Company Cards List -- capped at VISIBLE_ACCOUNTS_LIMIT; "View More" is gated, not a reveal */}
                 <div className="ssl-accounts-list">
@@ -1230,6 +1218,25 @@ export default function SelfServe() {
           <span>© {new Date().getFullYear()} Fractional Partners. All rights reserved.</span>
         </div>
       </footer>
+
+      {gatedPrompt && (
+        <div className="ssl-modal-overlay" onClick={() => setGatedPrompt(null)}>
+          <div className="ssl-modal" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="ssl-modal-close" onClick={() => setGatedPrompt(null)} aria-label="Close">
+              ×
+            </button>
+            <h3 className="ssl-modal-title">Book a call to unlock this</h3>
+            <p className="ssl-modal-desc">
+              {gatedPrompt === 'more' && 'Book a call with our team to see the rest of your matching accounts.'}
+              {gatedPrompt === 'export' && 'Book a call with our team to export your full account list.'}
+              {gatedPrompt === 'share' && 'Book a call with our team to get a shareable link to your full report.'}
+            </p>
+            <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="ssl-btn-primary ssl-btn-lg ssl-btn-full">
+              Book a Call
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
