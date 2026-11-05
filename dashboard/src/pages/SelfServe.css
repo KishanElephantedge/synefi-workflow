@@ -1,226 +1,1639 @@
-/* Public self-serve landing page (app.elephantedge.ai/home) -- scoped under .self-serve so
-   nothing here can leak into the authenticated app's own styles, same convention as
-   src/partner/partner.css and src/v2/v2.css. Colors reuse the app's own :root tokens
-   (src/index.css) so this matches the real product and follows its light/dark modes for free. */
+/* ==========================================================================
+   Fractional Partners - Public Self-Serve Landing Page (Light Theme)
+   Scoped strictly under .self-serve-light to prevent any style leak.
+   ========================================================================== */
 
-.self-serve {
+:root {
+  --ssl-bg: #f8fafc;
+  --ssl-card-bg: #ffffff;
+  --ssl-border: #e2e8f0;
+  --ssl-border-hover: #cbd5e1;
+
+  --ssl-text: #0f172a;
+  --ssl-text-muted: #475569;
+  --ssl-text-faint: #94a3b8;
+
+  /* Restored brand purple / indigo */
+  --ssl-primary: #4f46e5;
+  --ssl-primary-hover: #4338ca;
+  --ssl-primary-light: #eef2ff;
+
+  --ssl-success: #10b981;
+  --ssl-success-light: #ecfdf5;
+  --ssl-success-text: #047857;
+
+  --ssl-warning: #f59e0b;
+  --ssl-warning-light: #fffbeb;
+  --ssl-warning-text: #b45309;
+
+  --ssl-danger: #ef4444;
+  --ssl-danger-light: #fef2f2;
+  --ssl-danger-text: #b91c1c;
+
+  --ssl-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --ssl-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --ssl-shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+.self-serve-light {
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  padding: 0 16px 64px;
+  background-color: var(--ssl-bg);
+  color: var(--ssl-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 0;
+  width: 100%;
 }
 
-.self-serve-wrap {
-  max-width: 640px;
+/* --------------------------------------------------------------------------
+   Top Navbar
+   -------------------------------------------------------------------------- */
+.ssl-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--ssl-border);
+  width: 100%;
+}
+
+.ssl-nav-container {
+  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
 }
 
-.self-serve-header {
-  padding: 48px 0 24px;
+.ssl-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.ssl-logo-wrap {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ssl-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ssl-brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  letter-spacing: -0.02em;
+}
+
+.ssl-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+/* Navbar Links: STRICTLY NEUTRAL, NO PURPLE PILL ON HOVER */
+.self-serve-light .ssl-nav-link,
+.self-serve-light a.ssl-nav-link,
+.self-serve-light button.ssl-nav-link {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  color: #475569 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transform: none !important;
+  font-family: inherit !important;
+  transition: color 0.15s ease !important;
+}
+
+.self-serve-light .ssl-nav-link:hover,
+.self-serve-light a.ssl-nav-link:hover,
+.self-serve-light button.ssl-nav-link:hover,
+.self-serve-light .ssl-nav-link:focus,
+.self-serve-light a.ssl-nav-link:focus,
+.self-serve-light button.ssl-nav-link:focus,
+.self-serve-light .ssl-nav-link:active,
+.self-serve-light a.ssl-nav-link:active,
+.self-serve-light button.ssl-nav-link:active {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  color: #0f172a !important; /* Neutral dark on hover */
+  outline: none !important;
+  transform: none !important;
+}
+
+.ssl-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons: Primary Purple/Indigo Brand Buttons Restored!
+   -------------------------------------------------------------------------- */
+.self-serve-light .ssl-btn-primary,
+.self-serve-light a.ssl-btn-primary,
+.self-serve-light button.ssl-btn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  background: var(--ssl-primary) !important; /* #4f46e5 purple brand */
+  border: 1px solid var(--ssl-primary) !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25) !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+}
+
+.self-serve-light .ssl-btn-primary:hover:not(:disabled),
+.self-serve-light a.ssl-btn-primary:hover,
+.self-serve-light button.ssl-btn-primary:hover:not(:disabled) {
+  background: var(--ssl-primary-hover) !important; /* #4338ca */
+  border-color: var(--ssl-primary-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35) !important;
+}
+
+.self-serve-light .ssl-btn-primary:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.self-serve-light .ssl-btn-sm {
+  padding: 8px 16px !important;
+  font-size: 13.5px !important;
+}
+
+.self-serve-light .ssl-btn-lg {
+  padding: 12px 24px !important;
+  font-size: 15px !important;
+  border-radius: 9px !important;
+}
+
+.self-serve-light .ssl-btn-full {
+  width: 100% !important;
+}
+
+.self-serve-light .ssl-btn-outline,
+.self-serve-light a.ssl-btn-outline,
+.self-serve-light button.ssl-btn-outline {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 9px 18px !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: var(--ssl-text) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+}
+
+.self-serve-light .ssl-btn-outline:hover,
+.self-serve-light a.ssl-btn-outline:hover,
+.self-serve-light button.ssl-btn-outline:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: var(--ssl-text) !important;
+}
+
+.self-serve-light .ssl-btn-ghost,
+.self-serve-light a.ssl-btn-ghost,
+.self-serve-light button.ssl-btn-ghost {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #475569 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  outline: none !important;
+}
+
+.self-serve-light .ssl-btn-ghost:hover,
+.self-serve-light a.ssl-btn-ghost:hover,
+.self-serve-light button.ssl-btn-ghost:hover {
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+}
+
+.self-serve-light .ssl-btn-back,
+.self-serve-light button.ssl-btn-back {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: color 0.15s ease !important;
+}
+
+.self-serve-light .ssl-btn-back:hover,
+.self-serve-light button.ssl-btn-back:hover {
+  color: var(--ssl-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Hero Section
+   -------------------------------------------------------------------------- */
+.ssl-main {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 56px 32px 88px;
+}
+
+.ssl-hero {
   text-align: center;
+  max-width: 980px;
+  margin: 0 auto 40px;
 }
 
-.self-serve-header h1 {
-  font-size: 28px;
-  line-height: 1.25;
-  margin: 0 0 10px;
-}
-
-.self-serve-header p {
-  color: var(--text-muted);
-  font-size: 15px;
-  margin: 0;
-}
-
-.self-serve-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 24px;
+.ssl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--ssl-primary-light);
+  border: 1px solid #c7d2fe;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ssl-primary);
   margin-bottom: 20px;
 }
 
-.self-serve-step-label {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--primary);
-  font-weight: 700;
-  margin-bottom: 10px;
+.ssl-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ssl-primary);
 }
 
-.self-serve-toggle {
+/* Heading strictly on one line on desktop */
+.ssl-hero-title {
+  font-size: 38px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--ssl-text);
+  letter-spacing: -0.03em;
+  margin: 0 0 16px;
+  max-width: 1000px;
+  white-space: normal;
+}
+
+@media (min-width: 860px) {
+  .ssl-hero-title {
+    white-space: nowrap;
+  }
+}
+
+.ssl-hero-subtitle {
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--ssl-text-muted);
+  margin: 0 auto;
+  max-width: 720px;
+}
+
+/* --------------------------------------------------------------------------
+   Studio Card Container
+   -------------------------------------------------------------------------- */
+.ssl-studio-section {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto 80px;
+  scroll-margin-top: 80px;
+}
+
+.ssl-card {
+  background: var(--ssl-card-bg);
+  border: 1px solid var(--ssl-border);
+  border-radius: 16px;
+  padding: 36px;
+  box-shadow: var(--ssl-shadow-lg);
+}
+
+/* --------------------------------------------------------------------------
+   Stepper: Active Step is Purple / Indigo
+   -------------------------------------------------------------------------- */
+.ssl-stepper {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ssl-border);
+}
+
+.ssl-step {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 18px;
-}
-
-.self-serve-toggle button {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--text-muted);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.self-serve-toggle button.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  font-weight: 600;
-}
-
-.self-serve input[type='text'],
-.self-serve input[type='email'],
-.self-serve input[type='number'],
-.self-serve input[type='file'] {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--text);
-  font-size: 15px;
-  margin-bottom: 10px;
-}
-
-.self-serve-field-label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 4px 0 2px;
-}
-
-.self-serve-btn {
-  display: inline-block;
-  padding: 12px 20px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: var(--primary);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
-}
-
-.self-serve-btn:hover {
-  background: var(--primary-hover);
-}
-
-.self-serve-btn:disabled {
   opacity: 0.5;
-  cursor: default;
+  transition: opacity 0.2s ease;
 }
 
-.self-serve-btn.secondary {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
+.ssl-step.active {
+  opacity: 1;
 }
 
-.self-serve-btn.full {
-  width: 100%;
-  box-sizing: border-box;
+.ssl-step.done {
+  opacity: 0.9;
 }
 
-.self-serve-row {
+.ssl-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: var(--ssl-text-muted);
+  border: 1px solid var(--ssl-border);
+}
+
+.ssl-step.active .ssl-step-num {
+  background: var(--ssl-primary);
+  color: #ffffff;
+  border-color: var(--ssl-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.ssl-step.done .ssl-step-num {
+  background: var(--ssl-success-light);
+  color: var(--ssl-success-text);
+  border-color: #a7f3d0;
+}
+
+.ssl-step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ssl-text-muted);
+}
+
+.ssl-step.active .ssl-step-label {
+  color: var(--ssl-text);
+}
+
+.ssl-step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--ssl-border);
+  margin: 0 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Step View Layout
+   -------------------------------------------------------------------------- */
+.ssl-step-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.ssl-view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ssl-view-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.ssl-view-desc {
+  font-size: 14px;
+  color: var(--ssl-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Mode Toggle Tabs (Clean, NO PURPLE PILL ON HOVER) */
+.self-serve-light .ssl-toggle-group {
+  display: flex !important;
+  background: #f1f5f9 !important;
+  padding: 3px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.self-serve-light .ssl-toggle-btn,
+.self-serve-light button.ssl-toggle-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transform: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.self-serve-light .ssl-toggle-btn:hover,
+.self-serve-light button.ssl-toggle-btn:hover,
+.self-serve-light .ssl-toggle-btn:focus,
+.self-serve-light button.ssl-toggle-btn:focus {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+.self-serve-light .ssl-toggle-btn.active,
+.self-serve-light button.ssl-toggle-btn.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Step 1: Website Input Form
+   -------------------------------------------------------------------------- */
+.ssl-form-area {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ssl-input-row {
+  display: flex;
+  align-items: stretch;
   gap: 10px;
 }
 
-.self-serve-row > div {
+.ssl-input-field {
   flex: 1;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--ssl-border);
+  border-radius: 8px;
+  background: #ffffff;
+  padding-left: 12px;
+  transition: all 0.15s ease;
 }
 
-.self-serve-hint {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 6px;
+.ssl-input-field:focus-within {
+  border-color: var(--ssl-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
-.self-serve-error {
-  font-size: 13px;
-  color: var(--danger);
-  margin-top: 8px;
-}
-
-.self-serve-summary {
+.ssl-input-addon {
   font-size: 14px;
-  margin: 0 0 10px;
+  color: var(--ssl-text-faint);
+  font-family: ui-monospace, 'SF Mono', monospace;
+  user-select: none;
 }
 
-.self-serve-confidence {
+.ssl-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  color: var(--ssl-text);
+  padding: 10px 12px;
+}
+
+.ssl-input::placeholder {
+  color: var(--ssl-text-faint);
+}
+
+.ssl-input-lg {
+  font-size: 16px;
+  padding: 12px 14px;
+}
+
+.ssl-btn-submit {
+  flex-shrink: 0;
+}
+
+.ssl-hint-text {
+  font-size: 12.5px;
+  color: var(--ssl-text-faint);
+  margin: 6px 0 0;
+}
+
+/* Progress notice */
+.ssl-progress-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--ssl-primary-light);
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--ssl-primary);
+  font-weight: 500;
+}
+
+.ssl-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(79, 70, 229, 0.25);
+  border-top-color: var(--ssl-primary);
+  border-radius: 50%;
+  animation: sslSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sslSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ssl-loading-box {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ssl-text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssl-error-banner {
+  padding: 10px 14px;
+  background: var(--ssl-danger-light);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: var(--ssl-danger-text);
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   CSV Template Mode Area
+   -------------------------------------------------------------------------- */
+.ssl-template-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ssl-template-download-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid var(--ssl-border);
+  border-radius: 10px;
+}
+
+.ssl-card-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ssl-text);
+  margin-bottom: 2px;
+}
+
+.ssl-card-caption {
+  font-size: 12.5px;
+  color: var(--ssl-text-muted);
+}
+
+.ssl-file-picker {
+  border: 2px dashed var(--ssl-border);
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ssl-file-picker:hover {
+  border-color: var(--ssl-primary);
+  background: var(--ssl-primary-light);
+}
+
+.ssl-hidden-file {
+  display: none;
+}
+
+.ssl-file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--ssl-text-muted);
+}
+
+.ssl-file-label svg {
+  color: var(--ssl-text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   Step 2: Confirm & Edit ICP
+   -------------------------------------------------------------------------- */
+.ssl-sub-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.ssl-confidence-badge {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-.self-serve-confidence.high {
-  background: var(--success-soft);
-  color: var(--success);
+.ssl-confidence-badge.high {
+  background: var(--ssl-success-light);
+  color: var(--ssl-success-text);
+  border: 1px solid #a7f3d0;
 }
 
-.self-serve-confidence.medium {
-  background: var(--warning-soft);
-  color: var(--warning);
+.ssl-confidence-badge.medium {
+  background: var(--ssl-warning-light);
+  color: var(--ssl-warning-text);
+  border: 1px solid #fde68a;
 }
 
-.self-serve-confidence.low {
-  background: var(--surface-alt);
-  color: var(--text-faint);
+.ssl-confidence-badge.low {
+  background: #f1f5f9;
+  color: var(--ssl-text-faint);
+  border: 1px solid var(--ssl-border);
 }
 
-.self-serve-evidence {
+.ssl-summary-box {
+  background: #f8fafc;
+  border: 1px solid var(--ssl-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.ssl-summary-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ssl-primary);
+  margin-bottom: 4px;
+}
+
+.ssl-summary-text {
+  font-size: 14px;
+  color: var(--ssl-text);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+.ssl-evidence-quote {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--ssl-text-muted);
   font-style: italic;
-  margin-top: 10px;
-  border-left: 2px solid var(--border);
+  border-left: 2px solid var(--ssl-primary);
   padding-left: 10px;
+  margin-top: 8px;
 }
 
-.self-serve-company {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  margin-bottom: 10px;
-  background: var(--surface-alt);
+/* Form Grid */
+.ssl-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
 }
 
-.self-serve-company-name {
+.ssl-field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssl-field-wide {
+  grid-column: span 2;
+}
+
+.ssl-label {
+  font-size: 13px;
   font-weight: 600;
-  font-size: 15px;
+  color: var(--ssl-text);
 }
 
-.self-serve-company-meta {
-  color: var(--text-muted);
+/* Tag List & Tag Chips */
+.ssl-tag-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ssl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #f1f5f9;
+  border: 1px solid var(--ssl-border);
+  border-radius: 6px;
   font-size: 13px;
+  color: var(--ssl-text);
+}
+
+.ssl-tag-geo {
+  background: var(--ssl-primary-light);
+  border-color: #c7d2fe;
+  color: var(--ssl-primary);
+}
+
+.self-serve-light .ssl-tag-del,
+.self-serve-light button.ssl-tag-del {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: var(--ssl-text-faint) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.self-serve-light .ssl-tag-del:hover,
+.self-serve-light button.ssl-tag-del:hover {
+  color: var(--ssl-danger) !important;
+}
+
+.ssl-tag-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.ssl-tag-input {
+  flex: 1;
+  border: 1px solid var(--ssl-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--ssl-text);
+  outline: none;
+}
+
+.ssl-tag-input:focus {
+  border-color: var(--ssl-primary);
+}
+
+.self-serve-light .ssl-tag-add-btn,
+.self-serve-light button.ssl-tag-add-btn {
+  background: #f8fafc !important;
+  border: 1px solid var(--ssl-border) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ssl-text-muted) !important;
+  cursor: pointer !important;
+}
+
+.self-serve-light .ssl-tag-add-btn:hover:not(:disabled),
+.self-serve-light button.ssl-tag-add-btn:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  color: var(--ssl-text) !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Headcount Range */
+.ssl-range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ssl-range-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ssl-range-hint {
+  font-size: 11.5px;
+  color: var(--ssl-text-faint);
+}
+
+.ssl-range-row .ssl-input {
+  border: 1px solid var(--ssl-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+}
+
+.ssl-range-sep {
+  color: var(--ssl-text-faint);
+  margin-top: 18px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.ssl-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 4px;
+  flex-wrap: wrap;
 }
 
-.self-serve-company a {
-  color: var(--primary);
-  text-decoration: none;
+.ssl-presets-text {
+  font-size: 11.5px;
+  color: var(--ssl-text-faint);
+}
+
+.self-serve-light .ssl-preset-chip,
+.self-serve-light button.ssl-preset-chip {
+  background: #f8fafc !important;
+  border: 1px solid var(--ssl-border) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  padding: 2px 7px !important;
+  font-size: 11.5px !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.self-serve-light .ssl-preset-chip:hover,
+.self-serve-light button.ssl-preset-chip:hover {
+  background: var(--ssl-primary-light) !important;
+  border-color: #c7d2fe !important;
+  color: var(--ssl-primary) !important;
+}
+
+.ssl-action-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* --------------------------------------------------------------------------
+   Step 3: Accounts Results List & Booking CTA
+   -------------------------------------------------------------------------- */
+.ssl-results-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ssl-border);
+}
+
+.ssl-results-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ssl-success-light);
+  border: 1px solid #a7f3d0;
+  color: var(--ssl-success-text);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.ssl-results-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Accounts List */
+.ssl-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.ssl-account-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid var(--ssl-border);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.ssl-account-card:hover {
+  border-color: var(--ssl-border-hover);
+  box-shadow: var(--ssl-shadow-sm);
+}
+
+.ssl-account-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ssl-account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--ssl-primary-light);
+  color: var(--ssl-primary);
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ssl-account-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssl-account-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ssl-text);
+}
+
+.ssl-account-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: var(--ssl-text-muted);
+}
+
+.ssl-account-meta {
   font-size: 13px;
+  color: var(--ssl-text-muted);
+  margin-top: 2px;
 }
 
-.self-serve-cta {
-  text-align: center;
-  margin-top: 24px;
+.ssl-account-action {
+  flex-shrink: 0;
 }
 
-.self-serve-footer {
-  text-align: center;
-  color: var(--text-faint);
+.self-serve-light .ssl-linkedin-btn,
+.self-serve-light a.ssl-linkedin-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--ssl-primary) !important;
+  text-decoration: none !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  background: var(--ssl-primary-light) !important;
+  transition: all 0.15s ease !important;
+}
+
+.self-serve-light .ssl-linkedin-btn:hover,
+.self-serve-light a.ssl-linkedin-btn:hover {
+  background: #e0e7ff !important;
+  color: var(--ssl-primary-hover) !important;
+}
+
+/* CTA Banner (Step 3 Bottom) */
+.ssl-cta-banner {
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 28px 32px;
+}
+
+.ssl-cta-banner-content {
+  max-width: 720px;
+}
+
+.ssl-cta-banner-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.ssl-cta-banner-desc {
+  font-size: 14.5px;
+  color: var(--ssl-text-muted);
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+
+.ssl-cta-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ssl-cta-meta {
   font-size: 12px;
-  margin-top: 40px;
+  color: var(--ssl-text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   Step 4: Work Email & Final Booking Card
+   -------------------------------------------------------------------------- */
+.ssl-email-centered {
+  text-align: center;
+  max-width: 600px;
+  margin: 10px auto 20px;
+}
+
+.ssl-email-input-box {
+  display: flex;
+  gap: 10px;
+  margin: 24px 0 16px;
+}
+
+.ssl-email-input-box .ssl-input {
+  border: 1px solid var(--ssl-border);
+  border-radius: 8px;
+}
+
+.ssl-email-input-box .ssl-input:focus {
+  border-color: var(--ssl-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.ssl-saved-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--ssl-success-light);
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.ssl-saved-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ssl-success);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.ssl-booking-next-box {
+  margin-top: 32px;
+  padding: 28px;
+  background: #f8fafc;
+  border: 1px solid var(--ssl-border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.ssl-booking-next-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  margin: 0 0 6px;
+}
+
+.ssl-booking-next-desc {
+  font-size: 14px;
+  color: var(--ssl-text-muted);
+  margin: 0 0 20px;
+}
+
+.ssl-booking-next-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Sections: How It Works
+   -------------------------------------------------------------------------- */
+.ssl-section {
+  padding: 72px 0;
+  border-top: 1px solid var(--ssl-border);
+}
+
+.ssl-section-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 44px;
+}
+
+.ssl-eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ssl-primary);
+  margin-bottom: 6px;
+}
+
+.ssl-section-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ssl-text);
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+
+.ssl-section-sub {
+  font-size: 15px;
+  color: var(--ssl-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* 3-Column Grid */
+.ssl-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.ssl-feature-card {
+  background: #ffffff;
+  border: 1px solid var(--ssl-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--ssl-shadow-sm);
+}
+
+.ssl-feature-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--ssl-primary-light);
+  color: var(--ssl-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.ssl-feature-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  margin: 0 0 8px;
+}
+
+.ssl-feature-desc {
+  font-size: 13.5px;
+  color: var(--ssl-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Platform Highlights
+   -------------------------------------------------------------------------- */
+.ssl-highlights-list {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ssl-highlight-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--ssl-border);
+}
+
+.ssl-highlight-row:first-child {
+  border-top: 1px solid var(--ssl-border);
+}
+
+.ssl-highlight-bullet {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ssl-primary);
+  font-family: ui-monospace, 'SF Mono', monospace;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.ssl-highlight-info {
+  flex: 1;
+}
+
+.ssl-highlight-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--ssl-text);
+  margin: 0 0 6px;
+}
+
+.ssl-highlight-desc {
+  font-size: 14px;
+  color: var(--ssl-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   FAQ Section: 2-Column Layout with ZERO PURPLE ON HOVER OR OPEN
+   -------------------------------------------------------------------------- */
+.ssl-faq-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 56px;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ssl-faq-sidebar {
+  position: sticky;
+  top: 100px;
+}
+
+.ssl-faq-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Overriding App.css completely: clean neutral background on hover & open */
+.self-serve-light .ssl-faq-row,
+.self-serve-light .ssl-faq-row.open {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+/* Neutral light gray hover - NO PURPLE BACKGROUND */
+.self-serve-light .ssl-faq-row:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+.self-serve-light .ssl-faq-btn,
+.self-serve-light button.ssl-faq-btn {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 18px 20px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  text-align: left !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  outline: none !important;
+}
+
+.self-serve-light .ssl-faq-btn:hover,
+.self-serve-light button.ssl-faq-btn:hover,
+.self-serve-light .ssl-faq-btn:focus,
+.self-serve-light button.ssl-faq-btn:focus,
+.self-serve-light .ssl-faq-btn:active,
+.self-serve-light button.ssl-faq-btn:active {
+  background: transparent !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.self-serve-light .ssl-faq-btn span {
+  color: #0f172a !important;
+}
+
+.self-serve-light .ssl-faq-toggle {
+  font-size: 18px !important;
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+}
+
+.self-serve-light .ssl-faq-body {
+  padding: 0 20px 18px !important;
+  font-size: 14px !important;
+  color: #475569 !important;
+  line-height: 1.55 !important;
+  background: transparent !important;
+}
+
+.self-serve-light .ssl-faq-body p {
+  margin: 0 !important;
+  color: #475569 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Bottom CTA Callout
+   -------------------------------------------------------------------------- */
+.ssl-bottom-callout {
+  padding: 24px 0 40px;
+}
+
+.ssl-bottom-card {
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid var(--ssl-border);
+  border-radius: 16px;
+  padding: 52px 32px;
+  box-shadow: var(--ssl-shadow-md);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.ssl-bottom-heading {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ssl-text);
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.ssl-bottom-desc {
+  font-size: 15px;
+  color: var(--ssl-text-muted);
+  max-width: 580px;
+  margin: 0 auto 28px;
+  line-height: 1.55;
+}
+
+.ssl-bottom-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+.ssl-footer {
+  border-top: 1px solid var(--ssl-border);
+  background: #ffffff;
+  padding: 40px 32px 28px;
+  width: 100%;
+}
+
+.ssl-footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ssl-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ssl-footer-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssl-footer-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.ssl-footer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ssl-text);
+}
+
+.ssl-footer-sub {
+  font-size: 12px;
+  color: var(--ssl-text-faint);
+  margin: 0;
+}
+
+.ssl-footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Footer Nav Links: NEUTRAL, NO PURPLE */
+.self-serve-light .ssl-footer-nav-link,
+.self-serve-light a.ssl-footer-nav-link,
+.self-serve-light button.ssl-footer-nav-link {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+  color: #64748b !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+  font-family: inherit !important;
+  transition: color 0.15s ease !important;
+}
+
+.self-serve-light .ssl-footer-nav-link:hover,
+.self-serve-light a.ssl-footer-nav-link:hover,
+.self-serve-light button.ssl-footer-nav-link:hover,
+.self-serve-light .ssl-footer-nav-link:focus,
+.self-serve-light a.ssl-footer-nav-link:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+  outline: none !important;
+}
+
+.ssl-footer-bottom {
+  max-width: 1280px;
+  margin: 16px auto 0;
+  font-size: 12px;
+  color: var(--ssl-text-faint);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Media Queries
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .ssl-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .ssl-faq-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .ssl-faq-sidebar {
+    position: static;
+  }
+
+  .ssl-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ssl-field-wide {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 680px) {
+  .ssl-nav-container,
+  .ssl-main,
+  .ssl-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .ssl-nav-links {
+    display: none;
+  }
+
+  .ssl-hero-title {
+    font-size: 28px;
+    white-space: normal;
+  }
+
+  .ssl-hero-subtitle {
+    font-size: 15px;
+  }
+
+  .ssl-card {
+    padding: 20px 16px;
+  }
+
+  .ssl-step-label {
+    display: none;
+  }
+
+  .ssl-view-header {
+    flex-direction: column;
+  }
+
+  .ssl-input-row {
+    flex-direction: column;
+  }
+
+  .ssl-email-input-box {
+    flex-direction: column;
+  }
+
+  .ssl-results-header {
+    flex-direction: column;
+  }
+
+  .ssl-account-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ssl-account-action {
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .ssl-linkedin-btn {
+    padding: 0;
+  }
+
+  .ssl-footer-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
