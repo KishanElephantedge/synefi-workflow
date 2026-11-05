@@ -1,0 +1,226 @@
+/* Public self-serve landing page (app.elephantedge.ai/home) -- scoped under .self-serve so
+   nothing here can leak into the authenticated app's own styles, same convention as
+   src/partner/partner.css and src/v2/v2.css. Colors reuse the app's own :root tokens
+   (src/index.css) so this matches the real product and follows its light/dark modes for free. */
+
+.self-serve {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  padding: 0 16px 64px;
+}
+
+.self-serve-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.self-serve-header {
+  padding: 48px 0 24px;
+  text-align: center;
+}
+
+.self-serve-header h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 0 0 10px;
+}
+
+.self-serve-header p {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+.self-serve-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.self-serve-step-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.self-serve-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.self-serve-toggle button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.self-serve-toggle button.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.self-serve input[type='text'],
+.self-serve input[type='email'],
+.self-serve input[type='number'],
+.self-serve input[type='file'] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.self-serve-field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 2px;
+}
+
+.self-serve-btn {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.self-serve-btn:hover {
+  background: var(--primary-hover);
+}
+
+.self-serve-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.self-serve-btn.secondary {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.self-serve-btn.full {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.self-serve-row {
+  display: flex;
+  gap: 10px;
+}
+
+.self-serve-row > div {
+  flex: 1;
+}
+
+.self-serve-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.self-serve-error {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 8px;
+}
+
+.self-serve-summary {
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+
+.self-serve-confidence {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.self-serve-confidence.high {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.self-serve-confidence.medium {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.self-serve-confidence.low {
+  background: var(--surface-alt);
+  color: var(--text-faint);
+}
+
+.self-serve-evidence {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 10px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.self-serve-company {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--surface-alt);
+}
+
+.self-serve-company-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.self-serve-company-meta {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.self-serve-company a {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.self-serve-cta {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.self-serve-footer {
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+  margin-top: 40px;
+}

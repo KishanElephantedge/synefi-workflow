@@ -21,6 +21,7 @@ import { useUsageTracking } from './api/usage'
 import V2App from './v2/V2App.jsx'
 import AdminPartnerView from './v2/AdminPartnerView.jsx'
 import PartnerApp from './partner/PartnerApp.jsx'
+import SelfServe from './pages/SelfServe.jsx'
 import './App.css'
 
 function TenantSwitcher() {
@@ -318,9 +319,21 @@ function Gate() {
 function App() {
   return (
     <BrowserRouter>
-      <TenantProvider>
-        <Gate />
-      </TenantProvider>
+      <Routes>
+        {/* Public, no login -- app.elephantedge.ai/home, the self-serve landing page Majji
+            shares directly. Declared here, OUTSIDE TenantProvider/Gate, since Gate()
+            unconditionally redirects to <Login /> for every path when no user is signed in. */}
+        <Route path="/home" element={<SelfServe />} />
+        <Route path="/self-serve" element={<SelfServe />} />
+        <Route
+          path="/*"
+          element={
+            <TenantProvider>
+              <Gate />
+            </TenantProvider>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   )
 }
