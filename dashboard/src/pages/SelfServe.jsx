@@ -85,7 +85,11 @@ export default function SelfServe() {
         .then((res) => res.json())
         .then((data) => {
           if (data.ok) {
-            setResults(data)
+            // GET /self-serve/results/{token} doesn't echo the token back in its own body --
+            // without this, handleSaveEmail's results.token check fails on a reloaded page
+            // (e.g. via a bookmarked or shared ?token= link), showing "Something went wrong"
+            // even though the results loaded fine.
+            setResults({ ...data, token })
             if (data.website_url) setWebsiteUrl(data.website_url)
             if (data.icp) setIcp(data.icp)
             setStep(STEP.RESULTS)
