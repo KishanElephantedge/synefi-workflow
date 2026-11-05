@@ -614,7 +614,6 @@ export default function SelfServe() {
                   <p className="ssl-summary-text">
                     {companySummary || "Here is what we inferred from your website, edit any criteria below that isn't quite right."}
                   </p>
-                  {evidence && <div className="ssl-evidence-quote">“{evidence}”</div>}
                 </div>
 
                 <div className="ssl-form-grid">
