@@ -311,6 +311,19 @@ function Gate() {
     )
   }
 
+  // Same elephant-edge-tenant partner login, white-labeled -- confined to V2 only. No V1
+  // AppShell (old branding, no brand override applied there), no admin partner-view, no raw
+  // "/{tenantSlug}" escape hatch. Internal logins are untouched below -- they still get every
+  // shell this product has.
+  if (user.role === 'partner' && user.tenant?.slug === 'elephant-edge') {
+    return (
+      <Routes>
+        <Route path="/v2/*" element={<V2App />} />
+        <Route path="*" element={<Navigate to="/v2" replace />} />
+      </Routes>
+    )
+  }
+
   return (
     <Routes>
       <Route path="/" element={<RootRedirect />} />

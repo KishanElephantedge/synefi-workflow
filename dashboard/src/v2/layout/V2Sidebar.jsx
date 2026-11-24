@@ -33,6 +33,23 @@ function V2WorkspaceSwitcher() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // A white-labeled login has nowhere else to switch to (App.jsx's Gate() confines it to V2
+  // only, see that file's comment) and must never see "Elephant Edge" / "V2" surface at all --
+  // a dropdown offering those as if they were other options would leak exactly the real
+  // branding this login exists to hide. Plain static label, no dropdown, nothing clickable.
+  if (brandName) {
+    return (
+      <div className="v2-workspace-switcher">
+        <div className="v2-workspace-trigger">
+          <div>
+            <div className="v2-brand-name">{brandName}</div>
+            <div className="v2-brand-sub">Sales execution</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="v2-workspace-switcher" ref={dropdownRef}>
       <div
