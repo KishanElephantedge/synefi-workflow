@@ -297,7 +297,12 @@ function Gate() {
   // reject anything outside a partner's own tenant), mirrored here so the UI never even offers
   // the full V1/V2 chooser, tenant switcher, or a raw "/{tenantSlug}" route it could type into
   // the address bar and have the request simply 403 rather than silently doing nothing.
-  if (user.role === 'partner') {
+  // A partner login attached directly to the elephant-edge tenant itself (not a separate
+  // partner tenant) is a white-labeled view of the REAL main V2 dashboard, not the partner
+  // portal -- e.g. a reseller shown the real product under their own name (see User.brand in
+  // gateway/app/db.py). Still fully scoped server-side: /api/tenants only ever returns their
+  // one tenant for role="partner", so nothing below exposes any other tenant's data.
+  if (user.role === 'partner' && user.tenant?.slug !== 'elephant-edge') {
     return (
       <Routes>
         <Route path="/partner/*" element={<PartnerApp />} />
