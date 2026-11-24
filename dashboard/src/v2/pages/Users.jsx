@@ -118,6 +118,13 @@ function AddUserWizard({ onDone, onCancel }) {
   const [revenueMin, setRevenueMin] = useState('')
   const [revenueMax, setRevenueMax] = useState('')
 
+  // White-label (optional) -- for a login attached to an EXISTING tenant (most often
+  // elephant-edge itself) that should see a different displayed name instead of the real one.
+  // Never changes the tenant record, so every other login on that same tenant is unaffected.
+  const [whitelabel, setWhitelabel] = useState(false)
+  const [brandName, setBrandName] = useState('')
+  const [brandSupportEmail, setBrandSupportEmail] = useState('')
+
   const step1Valid = email.trim() && password.trim().length >= 8
   const step2Valid = tenantMode === 'new' ? newTenantName.trim() : !!selectedTenant
 
@@ -135,6 +142,9 @@ function AddUserWizard({ onDone, onCancel }) {
 
       await client.post('/api/admin/users', {
         email: email.trim().toLowerCase(), password, name: name.trim() || null, tenant_id: tenant.id,
+        brand: whitelabel && brandName.trim()
+          ? { name: brandName.trim(), support_email: brandSupportEmail.trim() || null }
+          : null,
       }, { tenantScoped: false })
 
       // ICP is stored against the product backend, not the gateway -- reached through the
@@ -200,13 +210,34 @@ function AddUserWizard({ onDone, onCancel }) {
       )}
 
       {step === 2 && (
-        <TenantPicker
-          mode={tenantMode} setMode={setTenantMode}
-          newName={newTenantName} setNewName={setNewTenantName}
-          query={tenantQuery} setQuery={setTenantQuery}
-          results={tenantResults} setResults={setTenantResults}
-          selected={selectedTenant} setSelected={setSelectedTenant}
-        />
+        <div>
+          <TenantPicker
+            mode={tenantMode} setMode={setTenantMode}
+            newName={newTenantName} setNewName={setNewTenantName}
+            query={tenantQuery} setQuery={setTenantQuery}
+            results={tenantResults} setResults={setTenantResults}
+            selected={selectedTenant} setSelected={setSelectedTenant}
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: '1rem', fontSize: 13.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={whitelabel} onChange={e => setWhitelabel(e.target.checked)} />
+            White-label this login (show a different name instead of the real tenant's)
+          </label>
+          {whitelabel && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <div className="v2-field">
+                <label className="v2-field-label">Displayed name</label>
+                <input className="v2-input" type="text" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="e.g. ITData" />
+              </div>
+              <div className="v2-field">
+                <label className="v2-field-label">Support email (optional)</label>
+                <input className="v2-input" type="email" value={brandSupportEmail} onChange={e => setBrandSupportEmail(e.target.value)} placeholder="support@itdatasol.com" />
+              </div>
+              <p style={{ fontSize: 12.5, color: 'var(--v2-text-muted)', marginTop: 0 }}>
+                This only changes what THIS login sees -- the real tenant name stays unchanged for every other user, and the underlying data is identical.
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {step === 3 && (
@@ -299,7 +330,7 @@ export default function Users() {
       ) : (
         <table className="v2-table">
           <thead>
-            <tr><th>Email</th><th>Name</th><th>Role</th><th>Workspace</th><th>Created</th></tr>
+            <tr><th>Email</th><th>Name</th><th>Role</th><th>Workspace</th><th>Shown as</th><th>Created</th></tr>
           </thead>
           <tbody>
             {users.map(u => (
@@ -308,6 +339,7 @@ export default function Users() {
                 <td>{u.name || '—'}</td>
                 <td>{u.role}</td>
                 <td>{u.tenant ? u.tenant.name : '—'}</td>
+                <td>{u.brand?.name || '—'}</td>
                 <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
               </tr>
             ))}

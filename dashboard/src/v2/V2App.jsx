@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { V2ThemeProvider } from './theme/V2ThemeContext.jsx'
 import { setActiveTenant } from '../api/client'
+import { useTenant } from '../context/TenantContext.jsx'
 import V2AppShell from './layout/V2AppShell.jsx'
 import JobsToBeDone from './pages/JobsToBeDone.jsx'
 import Briefing from './pages/Briefing.jsx'
@@ -31,9 +32,18 @@ export default function V2App() {
   // The shared api client only tenant-scopes a request once setActiveTenant() has been called
   // for this browser session -- V1's TenantScope does that per-route; V2 has no equivalent
   // wrapper, so it's set once here instead, reusing the exact same client-level mechanism.
+  const { user } = useTenant()
+  const brandName = user?.brand?.name
+
   useEffect(() => {
     setActiveTenant('elephant-edge')
   }, [])
+
+  // White-label login (see User.brand) -- browser tab shows their name, not ours, while
+  // they're looking at it. Reverts to the real default on logout/reload for every other user.
+  useEffect(() => {
+    if (brandName) document.title = brandName
+  }, [brandName])
 
   return (
     <V2ThemeProvider>

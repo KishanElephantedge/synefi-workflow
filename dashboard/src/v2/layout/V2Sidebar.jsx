@@ -14,7 +14,11 @@ import { getJobsToBeDone, getOverridesEvals } from '../api.js'
 // internal batch-management UI. Picking "Elephant Edge V2" just closes the menu since we're
 // already there.
 function V2WorkspaceSwitcher() {
-  const { tenants } = useTenant()
+  const { tenants, user } = useTenant()
+  // White-label override for this login only (see User.brand in gateway/app/db.py) -- when
+  // set, replaces every "Elephant Edge V2" / tenant-name string this switcher would otherwise
+  // show, without touching the real tenant record every other login still sees correctly.
+  const brandName = user?.brand?.name
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -36,7 +40,7 @@ function V2WorkspaceSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div>
-          <div className="v2-brand-name">Elephant Edge V2</div>
+          <div className="v2-brand-name">{brandName || 'Elephant Edge V2'}</div>
           <div className="v2-brand-sub">Sales execution</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -53,11 +57,11 @@ function V2WorkspaceSwitcher() {
                   setIsOpen(false)
                 }}
               >
-                {t.name}
+                {t.slug === 'elephant-edge' && brandName ? brandName : t.name}
               </div>
               {t.slug === 'elephant-edge' && (
                 <div className="v2-workspace-option selected" onClick={() => setIsOpen(false)}>
-                  Elephant Edge V2
+                  {brandName || 'Elephant Edge V2'}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
               )}
